@@ -1,223 +1,120 @@
 # OpenGeoLab
 
-OpenGeoLab is a JupyterLab-based computational workspace for open geographic
-modeling and simulation with web-accessible resource services.
+OpenGeoLab is a Jupyter-centered geospatial modeling workspace for reproducible research. It connects OpenGMS model services, project data, executable notebooks, interactive geovisualization, and an AI-assisted modeling environment in one place.
 
-This repository accompanies the manuscript:
+The project is designed for research systems where a paper, a model service, a dataset, and a runnable experiment should stay close together instead of living in separate tools.
 
-> OpenGeoLab: A JupyterLab-Based Computational Workspace for Open Geographic
-> Modeling and Simulation
+## Project Intent
 
-OpenGeoLab connects an OpenGMS-style resource service catalog, project data,
-generated Python service calls, container-supported JupyterLab sessions, and
-notebook-side result analysis in one research workspace. The prototype includes
-a web portal, a Node.js service layer, a JupyterLab extension, Docker runtime
-definitions, and the two case-study notebooks described in the manuscript.
+OpenGeoLab is not only a web portal around JupyterLab. Its goal is to make geospatial modeling experiments easier to publish, inspect, and rerun:
 
-## Repository Contents
+- researchers can enter through a unified research access page;
+- projects and case studies are managed as reusable workspaces;
+- each case keeps data, model invocation parameters, notebook outputs, maps, and interpretation in one executable record;
+- OpenGMS model calls can be submitted from the notebook while archived/reference outputs keep the published analysis reproducible.
+
+### Research Access
+
+The platform starts from a research-oriented login flow, so OpenGMS accounts and project workspaces can be linked before model execution.
+
+![OpenGeoLab research access](docs/images/readme/research-access.jpg)
+
+### Workspace Directory
+
+Researchers can manage paper-ready cases, private workspaces, runtime environments, and reusable project assets from My Space.
+
+![OpenGeoLab workspace directory](docs/images/readme/workspace-directory.jpg)
+
+### Executable Case Notebook
+
+A case opens as an executable notebook workspace. The notebook preview keeps code, outputs, maps, model parameters, and interpretation visible before opening JupyterLab for further execution.
+
+![OpenGeoLab executable notebook preview](docs/images/readme/notebook-preview.jpg)
+
+## Core Capabilities
+
+- OpenGMS model service invocation from Jupyter notebooks.
+- Reproducible case workspaces with bundled data, reference outputs, and notebook records.
+- Interactive geospatial visualization for raster and vector model results.
+- Runtime management for Docker-based Jupyter environments.
+- Project data management for reusable research assets.
+- AI-assisted modeling support through the companion agent service and JupyterLab extension.
+
+## Repository Layout
 
 ```text
-OpenGeoLab/
-├── GeoModelWeb/
-│   ├── client/              # Vue 3 + Vite web portal
-│   ├── server/              # Express service layer, case seeding, Jupyter runtime control
-│   ├── docs/                # deployment and environment notes
-│   └── scripts/             # helper scripts for runtime images and host configuration
-├── jupyterlab-geomodel/     # JupyterLab extension for resource browsing and code insertion
-├── docs/
-│   └── REPRODUCIBILITY.md   # code, data, and reproducibility notes for review
-├── LICENSE
-├── CITATION.cff
+OpenGMS-Jupyter/
+├── GeoModelWeb/           # Web application
+│   ├── client/            # Vue 3 frontend
+│   └── server/            # Node.js/Express backend and Jupyter runtime orchestration
+├── agent-service/         # Python agent service
+├── jupyterlab-geomodel/   # JupyterLab extension
+├── docs/                  # Project documentation and README media
 └── README.md
 ```
 
-## Main Components
+## Quick Start
 
-- **Web portal**: prepares projects, runtime environments, case-library access,
-  data assets, and JupyterLab launch flows.
-- **Server layer**: exposes OpenGeoLab APIs, project/case management, OpenGMS
-  model and data-method access, and Docker-backed JupyterLab sessions.
-- **JupyterLab extension**: adds an OpenGeoLab resource panel for browsing
-  model/data-method services, configuring tasks, previewing generated calls,
-  and inserting executable Python code into notebooks.
-- **Runtime images**: Dockerfiles define JupyterLab environments with the
-  OpenGeoLab extension and geospatial Python tooling.
-- **Case studies**: notebook projects for Suzhou urban expansion simulation and
-  Nanjing rooftop photovoltaic potential assessment.
-
-## Requirements
-
-Recommended development environment:
-
-- Node.js 20 or later
-- npm 10 or later
-- Python 3.10 or later
-- JupyterLab 4.x
-- Docker Desktop or Docker Engine
-- MongoDB 6 or later, or another MongoDB-compatible endpoint
-
-The case-study notebooks additionally use geospatial Python packages such as
-`geopandas`, `rasterio`, `matplotlib`, `folium`, and `pygeomodel` in the
-selected Jupyter runtime.
-
-## Configuration
-
-The repository includes example environment files:
-
-- `GeoModelWeb/client/.env.example`
-- `GeoModelWeb/server/.env.example`
-
-Copy them to `.env` files before running local services. Do not commit local
-`.env` files.
-
-Important variables:
-
-| Variable | Purpose |
-| --- | --- |
-| `HOST_IP` / `VITE_HOST_IP` | Hostname or IP used by the portal, server, and JupyterLab launch URLs. |
-| `MONGODB_URI` / `MONGODB_DB_NAME` | MongoDB connection for user, project, and model metadata. |
-| `JWT_SECRET` | Secret used for local JWT authentication. |
-| `OGMS_TOKEN` | Token for OpenGMS data-method/model-service requests. |
-| `OGMS_DEPLOYED_MODEL_QUERY_TOKEN` | Optional query token for deployed OpenGMS model metadata. |
-| `USER_DATA_DIR` | Persistent workspace directory mounted into JupyterLab containers. |
-| `VITE_API_BASE_URL` | Client-side API base URL. |
-
-Live OpenGMS service invocation requires valid service credentials and network
-access to the corresponding OpenGMS endpoints. The notebooks also contain cached
-or bundled example outputs so that the analysis workflow can be inspected
-without re-running every remote service.
-
-## Installation
-
-Install the web portal client:
-
-```bash
-cd GeoModelWeb/client
-npm install
-npm run build
-```
-
-Install the server:
+### 1. Start the backend
 
 ```bash
 cd GeoModelWeb/server
 npm install
-cp .env.example .env
 npm start
 ```
 
-Install the JupyterLab extension for development:
-
-```bash
-cd jupyterlab-geomodel
-npm install
-pip install -e .
-jupyter labextension develop . --overwrite
-npm run build
-```
-
-## Local Development
-
-Run the server:
-
-```bash
-cd GeoModelWeb/server
-npm start
-```
-
-Run the web portal in development mode:
+### 2. Start the frontend
 
 ```bash
 cd GeoModelWeb/client
+npm install
 npm run dev
 ```
 
-Then open:
-
-```text
-http://localhost:5173
-```
-
-## Runtime Images
-
-OpenGeoLab starts JupyterLab sessions from Docker images. The default image is
-configured in `GeoModelWeb/server/utils/jupyterRuntime.js`, and runtime
-Dockerfiles are stored under:
-
-```text
-GeoModelWeb/server/docker/
-GeoModelWeb/server/docker/runtimes/
-```
-
-Build the default runtime:
+### 3. Start the agent service
 
 ```bash
-cd GeoModelWeb/server
-npm run build:runtime
+cd agent-service
+pip install -e .
+python run.py
 ```
 
-Build all configured runtimes:
+### 4. Install the JupyterLab extension for development
 
 ```bash
-npm run build:runtimes
+cd jupyterlab-geomodel
+pip install -e .
+jupyter labextension develop . --overwrite
 ```
 
-## Case Studies
+## Configuration
 
-The manuscript uses two demonstration projects:
+Copy the relevant `.env.example` files before running the system locally or deploying it on a server. The deployment-oriented notes are maintained in:
 
-1. `GeoModelWeb/server/case-seeds/urban-m2m-suzhou-expansion/project/main.ipynb`
-2. `GeoModelWeb/server/case-seeds/nanjing-rooftop-pv/project/main.ipynb`
+- `GeoModelWeb/docs/ENV_CONFIG.md`
+- `GeoModelWeb/docs/JUPYTER_SETUP.md`
+- `GeoModelWeb/docs/PRODUCTION_DEPLOYMENT.md`
 
-Seed the local case library:
+Common environment groups include OpenGMS credentials, Jupyter gateway settings, Docker runtime settings, API base URLs, and optional AI-agent configuration.
 
-```bash
-cd GeoModelWeb/server
-npm run seed:cases
-```
+## Example Cases
 
-The notebooks can also be opened directly in a JupyterLab environment with the
-required geospatial Python packages installed.
+The repository includes case workspaces used to demonstrate the intended research workflow:
 
-## Reproducibility
+- Suzhou urban expansion simulation with the UrbanM2M OpenGMS model.
+- Xuanwu District rooftop photovoltaic potential assessment.
 
-See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for:
+Each case is structured as a notebook-first experiment with data inspection, model configuration, output visualization, and result interpretation.
 
-- the Computers & Geosciences code-availability checklist,
-- included code and data artifacts,
-- known service/data limitations,
-- suggested smoke-test commands, and
-- how the two manuscript case studies map to repository files.
+## Technology Stack
 
-## Tests
-
-The repository includes focused Node.js unit tests for display logic, data
-binding, runtime helpers, and local case seeding.
-
-Run client tests individually, for example:
-
-```bash
-cd GeoModelWeb/client
-node --test tests/*.test.mjs
-```
-
-Run server tests individually, for example:
-
-```bash
-cd GeoModelWeb/server
-node --test tests/*.test.mjs
-```
-
-Some server tests require local fixture data, Docker, MongoDB, or OpenGMS network
-access. If those services are unavailable, use the tests that target pure helper
-modules and documented case-seed structure.
+- Frontend: Vue 3, Vite
+- Backend: Node.js, Express
+- Notebook runtime: JupyterLab, Docker
+- Geospatial analysis: GeoPandas, Rasterio, Folium, Plotly
+- Agent service: Python, FastAPI/LangChain-style tooling
+- JupyterLab extension: TypeScript, React
 
 ## License
 
-This repository is released under the MIT License. See [LICENSE](LICENSE).
-
-## Citation
-
-If you use OpenGeoLab in academic work, please cite the manuscript listed in
-[CITATION.cff](CITATION.cff). A DOI can be added after publication or archival
-release.
+MIT

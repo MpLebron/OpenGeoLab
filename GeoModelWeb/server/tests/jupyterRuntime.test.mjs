@@ -15,7 +15,8 @@ const {
   getRuntimeCatalog,
   inspectRuntimeReadiness,
   formatDockerImageSize,
-  buildDockerCommandEnv
+  buildDockerCommandEnv,
+  buildOpenGmsCredentialEnv
 } = require('../utils/jupyterRuntime.js')
 
 test('resolves runtime.imageId before legacy runtimeImageId', () => {
@@ -97,6 +98,48 @@ test('all buildable runtime Dockerfiles exist in the repository', () => {
   }
 })
 
+test('default runtime Dockerfile keeps dependency and local wheel layers separate', () => {
+  const serverRoot = path.resolve(import.meta.dirname, '..')
+  const spec = getRuntimeBuildSpec(DEFAULT_IMAGE, { serverRoot })
+  const dockerfile = fs.readFileSync(spec.dockerfilePath, 'utf8')
+
+  const mambaLayer = dockerfile.indexOf('RUN mamba install')
+  const wheelCopy = dockerfile.indexOf('COPY jupyterlab_geomodel-0.1.0-py3-none-any.whl')
+  const pipLayer = dockerfile.indexOf('RUN pip install --no-cache-dir')
+
+  assert.ok(mambaLayer > -1)
+  assert.ok(wheelCopy > -1)
+  assert.ok(pipLayer > -1)
+  assert.ok(mambaLayer < wheelCopy)
+  assert.ok(wheelCopy < pipLayer)
+})
+
+test('extension release updater targets installed catalog runtime images', () => {
+  const repoRoot = path.resolve(import.meta.dirname, '../../..')
+  const defaultRuntimeImage = JUPYTER_IMAGES[DEFAULT_IMAGE].name
+  const updateDockerfile = fs.readFileSync(
+    path.join(repoRoot, 'GeoModelWeb/server/docker/Dockerfile.update'),
+    'utf8'
+  )
+  const releaseScript = fs.readFileSync(
+    path.join(repoRoot, 'GeoModelWeb/scripts/release-jupyter-agent-image.sh'),
+    'utf8'
+  )
+
+  assert.match(updateDockerfile, new RegExp(`ARG BASE_IMAGE=${defaultRuntimeImage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`))
+  assert.match(updateDockerfile, /FROM \$\{BASE_IMAGE\}/)
+  assert.match(updateDockerfile, /--force-reinstall/)
+  assert.doesNotMatch(updateDockerfile, /FROM geomodel-jupyter:latest/)
+
+  assert.match(releaseScript, new RegExp(`DEFAULT_RUNTIME_IMAGE="${defaultRuntimeImage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
+  assert.match(releaseScript, /getRuntimeCatalog/)
+  assert.match(releaseScript, /docker image inspect "\$\{runtime_image\}"/)
+  assert.match(releaseScript, /--build-arg BASE_IMAGE="\$\{runtime_image\}"/)
+  assert.match(releaseScript, /-t "\$\{runtime_image\}"/)
+  assert.doesNotMatch(releaseScript, /mapfile/)
+  assert.doesNotMatch(releaseScript, /geomodel-jupyter:latest/)
+})
+
 test('runtime build spec rejects unregistered images', () => {
   const spec = getRuntimeBuildSpec('unknown-runtime')
 
@@ -163,4 +206,25 @@ test('removes Windows npipe Docker host when running on non-Windows platforms', 
 
   assert.equal(env.PATH, '/usr/local/bin')
   assert.equal(env.DOCKER_HOST, undefined)
+})
+
+test('builds OpenGMS credential environment for Jupyter runtime containers', () => {
+  const env = buildOpenGmsCredentialEnv({
+    OGMS_TOKEN: 'token-value',
+    OGMS_BASE_PORTAL_URL: 'https://portal.example',
+    OGMS_BASE_MANAGER_URL: 'https://portal.example/managerServer',
+    OGMS_BASE_DATA_URL: 'https://portal.example/dataTransferServer',
+    OPENGMS_ROOF_PV_TOKEN: 'roof-token',
+    PYGEOMODEL_OPENAI_API_KEY: 'openai-key',
+    EMPTY_VALUE: ''
+  })
+
+  assert.deepEqual(env, {
+    OGMS_TOKEN: 'token-value',
+    OGMS_BASE_PORTAL_URL: 'https://portal.example',
+    OGMS_BASE_MANAGER_URL: 'https://portal.example/managerServer',
+    OGMS_BASE_DATA_URL: 'https://portal.example/dataTransferServer',
+    OPENGMS_ROOF_PV_TOKEN: 'roof-token',
+    PYGEOMODEL_OPENAI_API_KEY: 'openai-key'
+  })
 })

@@ -14,8 +14,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT",
-  "description": "OpenGeoLab server layer for project, case, OpenGMS service, and JupyterLab runtime orchestration.",
+  "license": "ISC",
+  "description": "",
   "dependencies": {
     "axios": "^1.13.2",
     "body-parser": "^2.2.0",
@@ -23,6 +23,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "form-data": "^4.0.5",
+    "http-proxy": "^1.18.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.1.0",
     "multer": "^2.0.2",

@@ -158,7 +158,7 @@
                 v-if="notebookPreviewHtml"
                 class="notebook-frame"
                 :srcdoc="notebookPreviewHtml"
-                sandbox=""
+                sandbox="allow-scripts allow-same-origin"
                 title="Notebook preview"
               ></iframe>
             </section>

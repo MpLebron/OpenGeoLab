@@ -6,6 +6,7 @@ const express = require('express');
 const { exec, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
@@ -19,7 +20,8 @@ const {
     resolveProjectRuntime,
     checkDockerDaemon,
     inspectRuntimeReadiness,
-    buildDockerCommandEnv
+    buildDockerCommandEnv,
+    buildOpenGmsCredentialEnv
 } = require('../utils/jupyterRuntime');
 const {
     dockerContainerExists,
@@ -28,6 +30,14 @@ const {
 } = require('../utils/dockerContainerState');
 const { normalizeOpenGmsModelFavorite } = require('../utils/openGmsModelLinks');
 const { summarizeProjectFiles } = require('../utils/projectFileSummary');
+const {
+    buildJupyterBasePath,
+    buildJupyterLaunchUrl,
+    buildJupyterServerId,
+    buildLoopbackDockerPortBinding,
+    defaultJupyterGatewayRegistry,
+    normalizePublicOrigin
+} = require('../utils/jupyterGateway');
 const {
     buildDownloadContentDisposition,
     createProjectDataBinding,
@@ -67,13 +77,16 @@ function cleanupTempUpload(file) {
 const DATA_SERVER_URL = process.env.DATA_SERVER_URL || 'http://221.224.35.86:38083/data';
 const API_TOKEN = process.env.API_TOKEN || process.env.OGMS_TOKEN || '';
 const OGMS_PORTAL_URL = process.env.OGMS_PORTAL_URL || 'http://222.192.7.75';
+const NOTEBOOK_PREVIEW_MAX_BUFFER = Number.parseInt(
+    process.env.NOTEBOOK_PREVIEW_MAX_BUFFER || `${96 * 1024 * 1024}`,
+    10
+);
 
 // 配置
 const JUPYTER_BASE_PORT = 8888;
-
-// 从 HOST_IP 自动生成 Jupyter 访问地址
-const HOST_IP = process.env.HOST_IP || 'localhost';
-const JUPYTER_HOST = process.env.JUPYTER_HOST || HOST_IP;
+const PUBLIC_ORIGIN = process.env.PUBLIC_ORIGIN || process.env.BACKEND_URL || '';
+const JUPYTER_PUBLIC_BASE_PATH = process.env.JUPYTER_PUBLIC_BASE_PATH || '/jupyter';
+const JUPYTER_BIND_HOST = process.env.JUPYTER_BIND_HOST || '127.0.0.1';
 let USER_DATA_DIR = process.env.USER_DATA_DIR || path.join(__dirname, '..', 'jupyter-data');
 if (!path.isAbsolute(USER_DATA_DIR)) {
     USER_DATA_DIR = path.join(__dirname, '..', USER_DATA_DIR);
@@ -99,6 +112,17 @@ function generateToken() {
         token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return token;
+}
+
+function shellQuote(value) {
+    return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function redactDockerCommand(command) {
+    return String(command).replace(
+        /(-e\s+(?:OGMS_TOKEN|OPENGMS_ROOF_PV_TOKEN|PYGEOMODEL_[A-Z0-9_]*API_KEY|PYGEOMODEL_CONSENSUS_API_KEY)=)'[^']*'/g,
+        '$1[redacted]'
+    );
 }
 
 // 执行 Docker 命令
@@ -183,6 +207,123 @@ function findDirectoryByContainerSegment(parentDir, segment) {
     } catch (error) {
         return '';
     }
+}
+
+function parseWorkspaceInfoFromContainerName(containerName = '') {
+    const match = String(containerName || '').match(/^jupyter-([^-]+)-(.+)$/i);
+    if (!match) {
+        return null;
+    }
+
+    const userSegment = match[1];
+    const projectSegment = match[2];
+    const userName = findDirectoryByContainerSegment(USER_DATA_DIR, userSegment) || userSegment;
+    const projectName = findDirectoryByContainerSegment(
+        path.join(USER_DATA_DIR, userName),
+        projectSegment
+    ) || projectSegment;
+
+    return {
+        containerName,
+        userName,
+        username: userName,
+        projectName
+    };
+}
+
+function getProjectWorkspaceId(meta = {}) {
+    return String(meta.workspaceId || meta.projectId || meta.uuid || meta.id || '').trim();
+}
+
+function ensureProjectWorkspaceId(projectPath, meta = {}) {
+    const existingWorkspaceId = getProjectWorkspaceId(meta);
+    if (existingWorkspaceId) {
+        if (!meta.projectId) {
+            meta.projectId = existingWorkspaceId;
+            saveProjectMeta(projectPath, meta);
+        }
+        return existingWorkspaceId;
+    }
+
+    const projectId = crypto.randomUUID();
+    meta.projectId = projectId;
+    saveProjectMeta(projectPath, meta);
+    return projectId;
+}
+
+function resolveUserProject(username, projectIdentifier = '') {
+    const userDir = path.join(USER_DATA_DIR, username);
+    const identifier = String(projectIdentifier || '').trim();
+    if (!identifier || !fs.existsSync(userDir)) {
+        return null;
+    }
+
+    const directProjectDir = path.join(userDir, identifier);
+    if (fs.existsSync(directProjectDir) && fs.statSync(directProjectDir).isDirectory()) {
+        const meta = getProjectMeta(directProjectDir);
+        return {
+            projectName: identifier,
+            projectDir: directProjectDir,
+            meta,
+            projectId: ensureProjectWorkspaceId(directProjectDir, meta)
+        };
+    }
+
+    const projectEntries = fs.readdirSync(userDir, { withFileTypes: true });
+    for (const entry of projectEntries) {
+        if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === '__pycache__') {
+            continue;
+        }
+
+        const projectDir = path.join(userDir, entry.name);
+        const meta = getProjectMeta(projectDir);
+        const projectId = getProjectWorkspaceId(meta);
+        if (projectId !== identifier) continue;
+
+        return {
+            projectName: entry.name,
+            projectDir,
+            meta,
+            projectId: ensureProjectWorkspaceId(projectDir, meta)
+        };
+    }
+
+    return null;
+}
+
+function findProjectByWorkspaceId(workspaceId = '') {
+    const normalizedWorkspaceId = String(workspaceId || '').trim();
+    if (!normalizedWorkspaceId || !fs.existsSync(USER_DATA_DIR)) {
+        return null;
+    }
+
+    const userEntries = fs.readdirSync(USER_DATA_DIR, { withFileTypes: true });
+    for (const userEntry of userEntries) {
+        if (!userEntry.isDirectory()) continue;
+
+        const userName = userEntry.name;
+        const userDir = path.join(USER_DATA_DIR, userName);
+        const projectEntries = fs.readdirSync(userDir, { withFileTypes: true });
+        for (const projectEntry of projectEntries) {
+            if (!projectEntry.isDirectory()) continue;
+
+            const projectName = projectEntry.name;
+            const projectDir = path.join(userDir, projectName);
+            const meta = getProjectMeta(projectDir);
+            if (getProjectWorkspaceId(meta) !== normalizedWorkspaceId) continue;
+
+            return {
+                userName,
+                username: userName,
+                projectName,
+                projectDir,
+                meta,
+                containerName: getContainerName(userName, projectName)
+            };
+        }
+    }
+
+    return null;
 }
 
 async function fetchProjectDataDownloadStream(url) {
@@ -318,14 +459,20 @@ router.get('/status', async (req, res) => {
         });
     }
 
-    const containerName = getContainerName(username, projectName);
-    const containerKey = `${userId}-${projectName}`;
+    const resolvedProject = resolveUserProject(username, projectName);
+    const canonicalProjectName = resolvedProject?.projectName || projectName;
+    const containerName = getContainerName(username, canonicalProjectName);
+    const containerKey = `${userId}-${canonicalProjectName}`;
+    const workspaceId = resolvedProject
+        ? resolvedProject.projectId
+        : buildJupyterServerId(username, canonicalProjectName);
 
     try {
         const running = await isContainerRunning(containerName);
 
         if (!running) {
             jupyterContainers.delete(containerKey);
+            defaultJupyterGatewayRegistry.unregister(workspaceId);
             return res.json({
                 status: 'stopped',
                 message: 'No Jupyter container running for this project'
@@ -337,10 +484,31 @@ router.get('/status', async (req, res) => {
         if (!containerInfo) {
             const port = await getContainerPort(containerName);
             if (port) {
+                const publicOrigin = normalizePublicOrigin(PUBLIC_ORIGIN, req);
+                const proxyPath = buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH);
+                const url = buildJupyterLaunchUrl({
+                    publicOrigin,
+                    basePath: JUPYTER_PUBLIC_BASE_PATH,
+                    workspaceId,
+                    token: 'check-container-logs',
+                    containerName,
+                    username,
+                    projectName: canonicalProjectName
+                });
+                defaultJupyterGatewayRegistry.register({
+                    workspaceId,
+                    port,
+                    containerName,
+                    username,
+                    projectName: canonicalProjectName
+                });
                 containerInfo = {
                     port,
                     token: 'check-container-logs',
-                    url: `http://${JUPYTER_HOST}:${port}/lab`
+                    url,
+                    publicUrl: url,
+                    proxyPath,
+                    workspaceId
                 };
             }
         }
@@ -349,10 +517,13 @@ router.get('/status', async (req, res) => {
             return res.json({
                 status: 'running',
                 url: containerInfo.url,
+                publicUrl: containerInfo.publicUrl || containerInfo.url,
+                proxyPath: containerInfo.proxyPath,
+                workspaceId: containerInfo.workspaceId || workspaceId,
                 token: containerInfo.token,
                 port: containerInfo.port,
                 containerName,
-                projectName
+                projectName: canonicalProjectName
             });
         }
 
@@ -360,7 +531,7 @@ router.get('/status', async (req, res) => {
             status: 'running',
             message: 'Container is running but unable to get details',
             containerName,
-            projectName
+            projectName: canonicalProjectName
         });
     } catch (error) {
         console.error('Error checking status:', error);
@@ -439,22 +610,25 @@ router.post('/start', async (req, res) => {
         return res.status(400).json({ error: '需要指定项目名称' });
     }
 
-    const containerName = getContainerName(username, projectName);
-    const containerKey = `${userId}-${projectName}`;
-
     try {
         // 检查项目是否存在
-        const projectDir = path.join(USER_DATA_DIR, username, projectName);
-        if (!fs.existsSync(projectDir)) {
+        const resolvedProject = resolveUserProject(username, projectName);
+        if (!resolvedProject) {
             return res.status(404).json({ error: '项目不存在' });
         }
 
-        const projectMeta = getProjectMeta(projectDir);
+        const canonicalProjectName = resolvedProject.projectName;
+        const projectDir = resolvedProject.projectDir;
+        const projectMeta = resolvedProject.meta;
+        const containerName = getContainerName(username, canonicalProjectName);
+        const containerKey = `${userId}-${canonicalProjectName}`;
+        const workspaceId = resolvedProject.projectId;
+        const proxyPath = buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH);
         let projectDataManifest = null;
         const dataBindingWarnings = [];
         try {
             const { dataList } = getUserDataList(userId);
-            projectMeta.name = projectMeta.name || projectName;
+            projectMeta.name = projectMeta.name || canonicalProjectName;
             const prepared = await materializeProjectDataForJupyter(
                 projectDir,
                 projectMeta,
@@ -504,13 +678,23 @@ router.post('/start', async (req, res) => {
         if (running) {
             const containerInfo = jupyterContainers.get(containerKey);
             if (containerInfo) {
+                defaultJupyterGatewayRegistry.register({
+                    workspaceId: containerInfo.workspaceId || workspaceId,
+                    port: containerInfo.port,
+                    containerName,
+                    username,
+                    projectName: canonicalProjectName
+                });
                 return res.json({
                     status: 'already_running',
                     url: containerInfo.url,
+                    publicUrl: containerInfo.publicUrl || containerInfo.url,
+                    proxyPath: containerInfo.proxyPath || proxyPath,
+                    workspaceId: containerInfo.workspaceId || workspaceId,
                     token: containerInfo.token,
                     port: containerInfo.port,
                     containerName,
-                    projectName,
+                    projectName: canonicalProjectName,
                     runtime: containerInfo.runtime || runtimeResult.runtime,
                     runtimeSource: containerInfo.runtimeSource || runtimeResult.runtimeSource,
                     dataBindingManifest: projectDataManifest,
@@ -529,6 +713,11 @@ router.post('/start', async (req, res) => {
         const token = generateToken();
         const port = await findAvailablePort(JUPYTER_BASE_PORT);
         const openGeoLabApi = process.env.JUPYTER_OPENGEOLAB_API || process.env.OPENGEOLAB_API || 'http://host.docker.internal:3000/api';
+        const portBinding = buildLoopbackDockerPortBinding(port, JUPYTER_BIND_HOST);
+        const openGmsCredentialEnv = buildOpenGmsCredentialEnv();
+        const openGmsCredentialArgs = Object.entries(openGmsCredentialEnv).map(
+            ([key, value]) => `-e ${key}=${shellQuote(value)}`
+        );
 
         // 将 Windows 项目路径转换为 Docker 可用的格式
         let dockerVolumePath = projectDir;
@@ -536,7 +725,7 @@ router.post('/start', async (req, res) => {
             dockerVolumePath = projectDir.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, letter) => `/${letter.toLowerCase()}`);
         }
 
-        console.log(`Starting JupyterLab container for project ${projectName}...`);
+        console.log(`Starting JupyterLab container for project ${canonicalProjectName}...`);
         console.log(`  Container: ${containerName}`);
         console.log(`  Port: ${port}`);
         console.log(`  Volume: ${dockerVolumePath}:/home/jovyan/work`);
@@ -547,21 +736,24 @@ router.post('/start', async (req, res) => {
             'docker run -d',
             `--name ${containerName}`,
             '--add-host=host.docker.internal:host-gateway',
-            `-p ${port}:8888`,
-            `-v "${dockerVolumePath}:/home/jovyan/work"`,
+            `-p ${shellQuote(portBinding)}`,
+            `-v ${shellQuote(`${dockerVolumePath}:/home/jovyan/work`)}`,
             '-w /home/jovyan/work',
             '-e JUPYTER_ENABLE_LAB=yes',
-            `-e OPENGEOLAB_API=${openGeoLabApi}`,
-            `-e JUPYTER_TOKEN=${token}`,
+            `-e OPENGEOLAB_API=${shellQuote(openGeoLabApi)}`,
+            `-e JUPYTER_TOKEN=${shellQuote(token)}`,
+            ...openGmsCredentialArgs,
             '--user root',
             '-e CHOWN_HOME=yes',
             '-e CHOWN_HOME_OPTS="-R"',
             '-e GRANT_SUDO=yes',
             imageName,  // 使用选择的镜像
-            'start-notebook.sh'
+            'start-notebook.sh',
+            `--ServerApp.base_url=${shellQuote(proxyPath)}`,
+            '--ServerApp.trust_xheaders=True'
         ].join(' ');
 
-        console.log('Docker command:', dockerCommand);
+        console.log('Docker command:', redactDockerCommand(dockerCommand));
 
         const containerId = await runDockerCommand(dockerCommand);
         console.log(`Container started: ${containerId.substring(0, 12)}`);
@@ -572,8 +764,25 @@ router.post('/start', async (req, res) => {
         const authHeader = req.headers.authorization || req.headers['authorization'] || '';
         const jwtToken = authHeader.replace('Bearer ', '');
         console.log('  JWT Token for extension:', jwtToken ? 'present' : 'missing');
-        // 添加 container 和 project 参数，让前端可以知道当前的用户和项目
-        const url = `http://${JUPYTER_HOST}:${port}/lab?token=${token}&geomodel_token=${encodeURIComponent(jwtToken)}&container=${encodeURIComponent(containerName)}&user=${encodeURIComponent(username)}&project=${encodeURIComponent(projectName || '')}`;
+        const publicOrigin = normalizePublicOrigin(PUBLIC_ORIGIN, req);
+        const url = buildJupyterLaunchUrl({
+            publicOrigin,
+            basePath: JUPYTER_PUBLIC_BASE_PATH,
+            workspaceId,
+            token,
+            geomodelToken: jwtToken,
+            containerName,
+            username,
+            projectName: canonicalProjectName
+        });
+
+        defaultJupyterGatewayRegistry.register({
+            workspaceId,
+            port,
+            containerName,
+            username,
+            projectName: canonicalProjectName
+        });
 
         // 存储容器信息
         jupyterContainers.set(containerKey, {
@@ -582,8 +791,11 @@ router.post('/start', async (req, res) => {
             port,
             token,
             url,
+            publicUrl: url,
+            proxyPath,
+            workspaceId,
             username,
-            projectName,
+            projectName: canonicalProjectName,
             runtime: runtimeResult.runtime,
             runtimeSource: runtimeResult.runtimeSource,
             startTime: new Date()
@@ -595,10 +807,13 @@ router.post('/start', async (req, res) => {
         res.json({
             status: 'started',
             url,
+            publicUrl: url,
+            proxyPath,
+            workspaceId,
             token,
             port,
             containerName,
-            projectName,
+            projectName: canonicalProjectName,
             runtime: runtimeResult.runtime,
             runtimeSource: runtimeResult.runtimeSource,
             dataBindingManifest: projectDataManifest,
@@ -612,6 +827,102 @@ router.post('/start', async (req, res) => {
             message: error.stderr || error.message || 'Unknown error'
         });
     }
+});
+
+/**
+ * GET /api/jupyter/workspaces/:workspaceId
+ * Resolve public Jupyter gateway workspace metadata without repeating it in the launch URL.
+ */
+router.get('/workspaces/:workspaceId', async (req, res) => {
+    const workspaceId = req.params.workspaceId;
+    if (!workspaceId) {
+        return res.status(400).json({ error: 'Invalid workspace id' });
+    }
+
+    const registered = defaultJupyterGatewayRegistry.get(workspaceId);
+    if (registered) {
+        return res.json({
+            found: true,
+            workspaceId,
+            containerName: registered.containerName || workspaceId,
+            userName: registered.username || registered.userName || '',
+            username: registered.username || registered.userName || '',
+            projectName: registered.projectName || '',
+            port: registered.port || null,
+            proxyPath: buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH)
+        });
+    }
+
+    try {
+        const project = findProjectByWorkspaceId(workspaceId);
+        if (project) {
+            const running = await isContainerRunning(project.containerName);
+            const port = running ? await getContainerPort(project.containerName) : null;
+            if (port) {
+                defaultJupyterGatewayRegistry.register({
+                    workspaceId,
+                    port,
+                    containerName: project.containerName,
+                    username: project.userName,
+                    projectName: project.projectName
+                });
+            }
+
+            return res.json({
+                found: true,
+                workspaceId,
+                containerName: project.containerName,
+                userName: project.userName,
+                username: project.userName,
+                projectName: project.projectName,
+                port: port || null,
+                proxyPath: buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH)
+            });
+        }
+
+        const containerCandidates = [
+            workspaceId,
+            workspaceId.startsWith('jupyter-') ? workspaceId : `jupyter-${workspaceId}`
+        ];
+        const runningContainerName = await (async () => {
+            for (const candidate of containerCandidates) {
+                if (await isContainerRunning(candidate)) {
+                    return candidate;
+                }
+            }
+            return '';
+        })();
+
+        if (runningContainerName) {
+            const port = await getContainerPort(runningContainerName);
+            const parsed = parseWorkspaceInfoFromContainerName(runningContainerName) || {};
+
+            if (port) {
+                defaultJupyterGatewayRegistry.register({
+                    workspaceId,
+                    port,
+                    containerName: runningContainerName,
+                    username: parsed.userName || '',
+                    projectName: parsed.projectName || ''
+                });
+            }
+
+            return res.json({
+                found: true,
+                workspaceId,
+                containerName: runningContainerName,
+                userName: parsed.userName || '',
+                username: parsed.userName || '',
+                projectName: parsed.projectName || '',
+                port: port || null,
+                proxyPath: buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH)
+            });
+        }
+    } catch (error) {
+        console.warn('[Jupyter] Workspace metadata lookup failed:', error.message || error);
+    }
+
+    return res.json({ found: false, workspaceId });
 });
 
 /**
@@ -646,21 +957,13 @@ router.get('/container-by-port/:port', async (req, res) => {
             );
             if (result) {
                 const containerName = result.trim().split('\n')[0];
-                const match = containerName.match(/^jupyter-([^-]+)-(.+)$/i);
-                if (match) {
-                    const userSegment = match[1];
-                    const projectSegment = match[2];
-                    const userName = findDirectoryByContainerSegment(USER_DATA_DIR, userSegment) || userSegment;
-                    const projectName = findDirectoryByContainerSegment(
-                        path.join(USER_DATA_DIR, userName),
-                        projectSegment
-                    ) || projectSegment;
-
+                const parsed = parseWorkspaceInfoFromContainerName(containerName);
+                if (parsed) {
                     return res.json({
                         found: true,
-                        containerName: containerName,
-                        userName,
-                        projectName,
+                        containerName,
+                        userName: parsed.userName,
+                        projectName: parsed.projectName,
                         port: port
                     });
                 }
@@ -689,14 +992,20 @@ router.post('/stop', async (req, res) => {
         return res.status(400).json({ error: '需要指定项目名称' });
     }
 
-    const containerName = getContainerName(username, projectName);
-    const containerKey = `${userId}-${projectName}`;
+    const resolvedProject = resolveUserProject(username, projectName);
+    const canonicalProjectName = resolvedProject?.projectName || projectName;
+    const containerName = getContainerName(username, canonicalProjectName);
+    const containerKey = `${userId}-${canonicalProjectName}`;
+    const workspaceId = resolvedProject
+        ? resolvedProject.projectId
+        : buildJupyterServerId(username, canonicalProjectName);
 
     try {
         const running = await isContainerRunning(containerName);
 
         if (!running) {
             jupyterContainers.delete(containerKey);
+            defaultJupyterGatewayRegistry.unregister(workspaceId);
             return res.json({
                 status: 'not_running',
                 message: 'No Jupyter container to stop'
@@ -710,6 +1019,7 @@ router.post('/stop', async (req, res) => {
         await runDockerCommand(`docker rm ${containerName}`);
 
         jupyterContainers.delete(containerKey);
+        defaultJupyterGatewayRegistry.unregister(workspaceId);
 
         res.json({
             status: 'stopped',
@@ -937,7 +1247,9 @@ function renderNotebookPreviewHtml(filePath) {
             'jupyter',
             ['nbconvert', '--to', 'html', '--template', 'lab', '--stdout', filePath],
             {
-                maxBuffer: 16 * 1024 * 1024,
+                maxBuffer: Number.isFinite(NOTEBOOK_PREVIEW_MAX_BUFFER)
+                    ? NOTEBOOK_PREVIEW_MAX_BUFFER
+                    : 96 * 1024 * 1024,
                 env: {
                     ...process.env,
                     PYTHONIOENCODING: 'utf-8'
@@ -1024,8 +1336,10 @@ function buildPublicProjectSummary(username, projectName, projectPath, { caseOnl
 
     const caseMeta = meta.isCase ? getCaseMeta(meta) : null;
     const fileSummary = getProjectFileSummary(projectPath);
+    const projectId = ensureProjectWorkspaceId(projectPath, meta);
 
     return {
+        projectId,
         name: projectName,
         projectName,
         title: caseMeta?.title || meta.name || projectName,
@@ -1095,11 +1409,13 @@ router.get('/projects', (req, res) => {
 
                 // 读取项目元信息
                 const meta = getProjectMeta(projectPath);
+                const projectId = ensureProjectWorkspaceId(projectPath, meta);
                 const caseMeta = meta.isCase ? getCaseMeta(meta) : null;
                 const dataBindings = resolveProjectDataBindings(meta, dataList, { projectDir: projectPath });
                 const fileSummary = getProjectFileSummary(projectPath);
 
                 return {
+                    projectId,
                     name: item.name,
                     description: meta.description || '',
                     ...fileSummary,
@@ -1167,6 +1483,7 @@ router.post('/projects', (req, res) => {
 
         // 创建项目元信息文件
         const projectMeta = {
+            projectId: crypto.randomUUID(),
             name: safeName,
             description: description || '',
             isPublic: false,
@@ -1183,6 +1500,7 @@ router.post('/projects', (req, res) => {
         res.json({
             status: 'created',
             project: {
+                projectId: projectMeta.projectId,
                 name: safeName,
                 description: description || '',
                 notebookCount,
@@ -1214,25 +1532,27 @@ router.post('/projects', (req, res) => {
 router.get('/projects/:projectName', (req, res) => {
     const username = req.user.username;
     const { projectName } = req.params;
-    const userDir = path.join(USER_DATA_DIR, username);
-    const projectDir = path.join(userDir, projectName);
+    const resolvedProject = resolveUserProject(username, projectName);
 
-    if (!fs.existsSync(projectDir)) {
+    if (!resolvedProject) {
         return res.status(404).json({ error: '项目不存在' });
     }
 
     try {
+        const projectDir = resolvedProject.projectDir;
+        const canonicalProjectName = resolvedProject.projectName;
         const stats = fs.statSync(projectDir);
         const files = fs.readdirSync(projectDir);
 
         // 读取项目元信息
-        let projectMeta = { name: projectName };
+        let projectMeta = resolvedProject.meta || { name: canonicalProjectName };
         const metaPath = path.join(projectDir, '.project.json');
         if (fs.existsSync(metaPath)) {
             try {
                 projectMeta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
             } catch (e) {}
         }
+        const projectId = ensureProjectWorkspaceId(projectDir, projectMeta);
         const caseMeta = projectMeta.isCase ? getCaseMeta(projectMeta) : null;
         const { dataList } = getUserDataList(req.user.userId);
         const dataBindings = resolveProjectDataBindings(projectMeta, dataList, { projectDir });
@@ -1275,7 +1595,9 @@ router.get('/projects/:projectName', (req, res) => {
 
         res.json({
             project: {
+                projectId,
                 ...projectMeta,
+                name: projectMeta.name || canonicalProjectName,
                 ...getRuntimeFields(projectMeta),
                 starterTemplate: projectMeta.starterTemplate || 'blank',
                 isCase: !!projectMeta.isCase,
@@ -2712,6 +3034,7 @@ router.post('/fork/:owner/:projectName', (req, res) => {
 
         // 更新元信息
         const newMeta = {
+            projectId: crypto.randomUUID(),
             name: targetName,
             description: sourceMeta.description || '',
             isPublic: false,  // fork 后默认不公开
@@ -2735,6 +3058,7 @@ router.post('/fork/:owner/:projectName', (req, res) => {
         res.json({
             status: 'forked',
             project: {
+                projectId: newMeta.projectId,
                 name: targetName,
                 description: newMeta.description,
                 ...fileSummary,

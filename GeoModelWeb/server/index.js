@@ -38,8 +38,9 @@ const {
     paginateDataCenterContent,
     resolveDataCenterSourceUrl
 } = require('./utils/dataCenterList');
+const { createJupyterProxy } = require('./middleware/jupyterProxy');
 
-// HTTPS agent used for legacy OpenGMS endpoints with nonstandard certificates.
+// 创建忽略 SSL 证书验证的 https agent
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false
 });
@@ -49,18 +50,20 @@ const authRoutes = require('./routes/auth');
 const applicationRoutes = require('./routes/applications');
 const caseRoutes = require('./routes/cases');
 const jupyterRoutes = require('./routes/jupyter');
-// Agent routes proxy to an optional external agent service.
+// 使用 LangGraph 版本的 Agent 路由
 const agentRoutes = require('./routes/agent-langgraph');
+// 保留原始版本作为备份: const agentRoutes = require('./routes/agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const jupyterProxy = createJupyterProxy();
 
-// Core configuration from environment variables.
+// 从环境变量获取核心配置
 const HOST_IP = process.env.HOST_IP || 'localhost';
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://${HOST_IP}:5173`;
 const BACKEND_URL = process.env.BACKEND_URL || `http://${HOST_IP}:${PORT}`;
 
-// Allow local development and LAN access.
+// 允许局域网访问
 app.use(cors({
     origin: [
         'http://localhost:5173',
@@ -71,11 +74,12 @@ app.use(cors({
         BACKEND_URL,
         /^http:\/\/localhost:\d+$/,
         /^http:\/\/127\.0\.0\.1:\d+$/,
-        /^http:\/\/192\.168\.\d+\.\d+:\d+$/,
-        /^http:\/\/172\.\d+\.\d+\.\d+:\d+$/
+        /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // 允许所有 192.168.x.x 的局域网地址
+        /^http:\/\/172\.\d+\.\d+\.\d+:\d+$/   // 允许所有 172.x.x.x 的局域网地址
     ],
     credentials: true
 }));
+app.use(jupyterProxy.httpMiddleware);
 app.use(bodyParser.json());
 app.use('/api/application-covers', express.static(APPLICATION_COVER_DIR, {
     immutable: true,
@@ -89,12 +93,14 @@ app.use('/api/case-assets', express.static(CASE_LIBRARY_DIR, {
 // ==================== Auth & Jupyter Routes ====================
 app.use('/api/auth', authRoutes);
 
-// Jupyter routes: some endpoints are intentionally public for runtime discovery.
+// Jupyter 路由：部分端点公开
 const jupyterOptionalAuth = (req, res, next) => {
-    if (req.path.startsWith('/container-by-port')) {
+    // These endpoints are used by the JupyterLab extension before it can attach auth headers.
+    if (req.path.startsWith('/container-by-port') || req.path.startsWith('/workspaces/')) {
         req.user = req.user || { userId: 'anonymous' };
         return next();
     }
+    // 其他端点需要认证
     return authRoutes.authenticateToken(req, res, next);
 };
 app.use('/api/jupyter', jupyterOptionalAuth, jupyterRoutes);
@@ -103,13 +109,15 @@ app.use('/api/jupyter', jupyterOptionalAuth, jupyterRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/cases', caseRoutes);
 
-// Agent routes use optional authentication in development mode.
+// Agent 路由：使用可选认证中间件
 const agentOptionalAuth = (req, res, next) => {
+    // 这些端点不需要认证（开发模式下全部公开）
     const publicPaths = ['/health', '/providers', '/config', '/test', '/chat', '/tool-results', '/scan-workspace', '/conversations', '/cases'];
     if (publicPaths.some(p => req.path === p || req.path.startsWith(p))) {
         req.user = req.user || { userId: 'anonymous' };
         return next();
     }
+    // 其他端点需要认证
     return authRoutes.authenticateToken(req, res, next);
 };
 app.use('/api/agent', agentOptionalAuth, agentRoutes);
@@ -1890,7 +1898,7 @@ async function startServer() {
         logger: console
     });
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         const databaseInfo = getDatabaseInfo();
         console.log(`Server is running on http://localhost:${PORT}`);
         console.log(`DataMethod API: ${API_BASE_URL}`);
@@ -1900,6 +1908,7 @@ async function startServer() {
         console.log(`Google OAuth callback: http://localhost:${PORT}/api/auth/google/callback`);
         console.log(`Jupyter API: http://localhost:${PORT}/api/jupyter`);
     });
+    server.on('upgrade', jupyterProxy.handleUpgrade);
 }
 
 startServer().catch((error) => {

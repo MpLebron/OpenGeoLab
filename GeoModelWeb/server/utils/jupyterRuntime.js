@@ -512,6 +512,33 @@ function buildDockerCommandEnv(baseEnv = process.env, platform = process.platfor
     return env;
 }
 
+const OPENGMS_RUNTIME_ENV_KEYS = [
+    'OGMS_TOKEN',
+    'OGMS_BASE_PORTAL_URL',
+    'OGMS_BASE_MANAGER_URL',
+    'OGMS_BASE_DATA_URL',
+    'OPENGMS_ROOF_PV_TOKEN',
+    'OPENGMS_LIVE_MODE',
+    'OPENGMS_LIVE_TIMEOUT_SECONDS',
+    'PYGEOMODEL_OPENAI_API_KEY',
+    'PYGEOMODEL_OPENAI_BASE_URL',
+    'PYGEOMODEL_OPENAI_MODEL',
+    'PYGEOMODEL_DIFY_API_KEY',
+    'PYGEOMODEL_DIFY_BASE_URL',
+    'PYGEOMODEL_CONSENSUS_API_KEY',
+    'PYGEOMODEL_CONSENSUS_BASE_URL'
+];
+
+function buildOpenGmsCredentialEnv(baseEnv = process.env) {
+    return OPENGMS_RUNTIME_ENV_KEYS.reduce((env, key) => {
+        const value = String(baseEnv[key] || '').trim();
+        if (value) {
+            env[key] = value;
+        }
+        return env;
+    }, {});
+}
+
 module.exports = {
     JUPYTER_IMAGES,
     DEFAULT_IMAGE,
@@ -523,5 +550,6 @@ module.exports = {
     resolveProjectRuntime,
     checkDockerDaemon,
     inspectRuntimeReadiness,
-    buildDockerCommandEnv
+    buildDockerCommandEnv,
+    buildOpenGmsCredentialEnv
 };

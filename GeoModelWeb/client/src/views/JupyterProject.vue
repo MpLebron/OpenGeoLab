@@ -197,7 +197,7 @@
             v-if="notebookPreviewHtml"
             class="notebook-frame"
             :srcdoc="notebookPreviewHtml"
-            sandbox=""
+            sandbox="allow-scripts allow-same-origin"
             title="Notebook preview"
           ></iframe>
         </section>
@@ -335,6 +335,7 @@ import {
   buildJupyterFileUrl,
   shouldRefreshJupyterLaunchUrl
 } from '../utils/jupyterLaunchUrl.js'
+import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { notify } from '../utils/systemFeedback.js'
 
 hljs.registerLanguage('python', python)
@@ -349,8 +350,11 @@ const route = useRoute()
 const router = useRouter()
 
 // 状态
-const projectName = computed(() => route.params.projectName)
+const projectRouteId = computed(() => String(route.params.projectId || route.params.projectName || ''))
+const resolvedProjectName = ref('')
 const project = ref(null)
+const projectName = computed(() => resolvedProjectName.value || project.value?.name || projectRouteId.value)
+const encodedProjectName = computed(() => encodeURIComponent(projectName.value))
 const files = ref([])
 const selectedFile = ref(null)
 const notebookPreviewHtml = ref('')
@@ -611,7 +615,7 @@ const loadFolderContents = async (folderPath) => {
   if (!token) return
 
   try {
-    const response = await axios.get(`/api/jupyter/projects/${projectName.value}/folder`, {
+    const response = await axios.get(`/api/jupyter/projects/${encodedProjectName.value}/folder`, {
       params: { path: folderPath },
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -653,7 +657,7 @@ const dataBindingStatus = (binding) => getProjectDataStatus(binding)
 
 const loadProjectDataBindings = async () => {
   try {
-    const res = await authAxios().get(`/api/jupyter/projects/${projectName.value}/data-bindings`)
+    const res = await authAxios().get(`/api/jupyter/projects/${encodedProjectName.value}/data-bindings`)
     projectDataBindings.value = res.data.dataBindings || []
   } catch (e) {
     console.error('Failed to load Project Data bindings:', e)
@@ -690,7 +694,7 @@ const attachDataToProject = async (item) => {
   if (!canAttachMyDataItem(item) || isDataAlreadyAttached(item)) return
   isAttachingData.value = true
   try {
-    const res = await authAxios().post(`/api/jupyter/projects/${projectName.value}/data-bindings`, {
+    const res = await authAxios().post(`/api/jupyter/projects/${encodedProjectName.value}/data-bindings`, {
       dataId: item.id
     })
     projectDataBindings.value = res.data.dataBindings || []
@@ -713,7 +717,7 @@ const removeProjectDataBinding = async (binding) => {
   if (!canRemoveProjectDataBinding(binding)) return
   try {
     const res = await authAxios().delete(
-      `/api/jupyter/projects/${projectName.value}/data-bindings/${encodeURIComponent(binding.id)}`
+      `/api/jupyter/projects/${encodedProjectName.value}/data-bindings/${encodeURIComponent(binding.id)}`
     )
     projectDataBindings.value = res.data.dataBindings || []
     if (project.value) {
@@ -732,8 +736,13 @@ const removeProjectDataBinding = async (binding) => {
 // 加载项目详情
 const loadProject = async () => {
   try {
-    const res = await authAxios().get(`/api/jupyter/projects/${projectName.value}`)
+    const res = await authAxios().get(`/api/jupyter/projects/${encodeURIComponent(projectRouteId.value)}`)
     project.value = res.data.project
+    resolvedProjectName.value = res.data.project?.name || res.data.project?.projectName || projectRouteId.value
+    const canonicalProjectRoute = buildWorkspaceProjectRoutePath(res.data.project)
+    if (res.data.project?.projectId && projectRouteId.value !== res.data.project?.projectId) {
+      router.replace(canonicalProjectRoute)
+    }
     files.value = res.data.files
     projectDataBindings.value = res.data.project?.dataBindings || []
 
@@ -780,7 +789,7 @@ const loadTextFileContent = async (filePath) => {
   try {
     const encodedPath = encodeURIComponent(filePath)
     const res = await authAxios().get(
-      `/api/jupyter/projects/${projectName.value}/files/${encodedPath}/content`
+      `/api/jupyter/projects/${encodedProjectName.value}/files/${encodedPath}/content`
     )
     fileContent.value = String(res.data.content || '')
   } catch (e) {
@@ -798,7 +807,7 @@ const loadNotebookPreview = async (notebookPath) => {
     // 使用 encodeURIComponent 编码整个路径，包括斜杠
     const encodedPath = encodeURIComponent(notebookPath)
     const res = await authAxios().get(
-      `/api/jupyter/projects/${projectName.value}/notebooks/${encodedPath}/preview`
+      `/api/jupyter/projects/${encodedProjectName.value}/notebooks/${encodedPath}/preview`
     )
     notebookPreviewHtml.value = String(res.data.html || '')
   } catch (e) {
@@ -935,15 +944,15 @@ onMounted(async () => {
     return
   }
 
-  await Promise.all([
-    loadProject(),
-    fetchJupyterStatus()
-  ])
+  await loadProject()
+  await fetchJupyterStatus()
 })
 
-// 监听项目名变化
-watch(projectName, () => {
-  loadProject()
+// 监听项目路由变化
+watch(projectRouteId, async () => {
+  resolvedProjectName.value = ''
+  await loadProject()
+  await fetchJupyterStatus()
 })
 </script>
 

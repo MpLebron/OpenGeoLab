@@ -1,97 +1,110 @@
-# OpenGeoLab - Jupyter 功能设置指南
+# OpenGeoLab Jupyter 功能设置指南
 
-## 1. 前置条件
-- Docker Desktop 已安装并运行
-- Node.js 已安装
-- GitHub 账户
+OpenGeoLab 的 Jupyter 功能由后端统一管理：用户点击启动后，Express 创建对应 Docker 容器，并把访问地址生成为 `/jupyter/<workspace-id>/lab?...`。公网部署时不直接暴露容器端口，而是通过同源网关访问。
 
-## 2. 创建 GitHub OAuth App
+## 前置条件
 
-1. 访问 https://github.com/settings/developers
-2. 点击 "New OAuth App"
-3. 填写信息：
-   - **Application name**: OpenGeoLab Jupyter
-   - **Homepage URL**: http://localhost:5173
-   - **Authorization callback URL**: http://localhost:3000/api/auth/github/callback
-4. 创建后，记录 Client ID 和 Client Secret
+- Docker 已安装并可由后端进程调用。
+- Node.js 已安装。
+- 已配置 `GeoModelWeb/server/.env.development` 或 `.env.production`。
+- 如果启用 GitHub / Google / OpenGMS OAuth，需要在对应平台创建 OAuth 应用。
 
-## 3. 配置环境变量
-
-在 `server` 目录下创建 `.env` 文件：
-
-```
-GITHUB_CLIENT_ID=你的GitHub_Client_ID
-GITHUB_CLIENT_SECRET=你的GitHub_Client_Secret
-JWT_SECRET=随机字符串作为密钥
-PORT=3000
-FRONTEND_URL=http://localhost:5173
-USER_DATA_DIR=./jupyter-data
-```
-
-## 4. 拉取 Docker 镜像（可选，首次启动会自动拉取）
-
-```bash
-docker pull jupyter/datascience-notebook:latest
-```
-
-## 5. 启动服务
+## 本地启动
 
 后端：
-```bash
-cd server
-npm install
-node index.js
-```
 
-前端：
 ```bash
-cd client
+cd GeoModelWeb/server
 npm install
 npm run dev
 ```
 
-## 6. 使用
-
-1. 访问 http://localhost:5173
-2. 点击导航栏的 "🚀 My Jupyter"
-3. 使用 GitHub 登录
-4. 点击 "启动 JupyterLab"
-5. 等待容器启动，然后点击 "打开 JupyterLab"
-
-## 7. 永久更新 Jupyter 镜像中的扩展
-
-当你修改了 `jupyterlab-geomodel` 或 Agent UI 后，执行：
+前端：
 
 ```bash
-cd /Users/zms/Documents/Projects/OpenGMS-Jupyter
-./GeoModelWeb/scripts/release-jupyter-agent-image.sh
+cd GeoModelWeb/client
+npm install
+npm run dev
 ```
 
-这个脚本会：
-- 构建前端扩展产物
-- 生成新的 `jupyterlab_geomodel` wheel
-- 替换 `GeoModelWeb/server/docker/` 下的 wheel
-- 重建 `geomodel-jupyter:latest` 镜像
+本地访问 `http://localhost:5173`，登录后进入 Jupyter 工作区并启动容器。
 
-执行后请重启现有 Jupyter 容器，新的界面和能力才会生效。
+## 生产访问链路
+
+生产环境建议使用：
+
+```text
+https://opengeolab.geomodeling.njnu.edu.cn
+  -> Nginx
+  -> Express /jupyter/
+  -> http://127.0.0.1:<dynamic-port>
+  -> Jupyter Server inside Docker
+```
+
+后端启动容器时会设置：
+
+```text
+--ServerApp.base_url=/jupyter/<workspace-id>/
+--ServerApp.trust_xheaders=True
+```
+
+因此 JupyterLab 的静态资源、API、kernel WebSocket 都会落在 `/jupyter/` 前缀下，由 Express 网关转发到对应容器。
+
+Docker 端口发布使用回环地址：
+
+```text
+127.0.0.1:<dynamic-port>:8888
+```
+
+这表示 Jupyter 的容器端口只允许服务器本机访问，公网用户必须走 HTTPS 域名和 `/jupyter/` 网关。
+
+## 关键环境变量
+
+```env
+PUBLIC_ORIGIN=https://opengeolab.geomodeling.njnu.edu.cn
+JUPYTER_PUBLIC_BASE_PATH=/jupyter
+JUPYTER_BIND_HOST=127.0.0.1
+JUPYTER_OPENGEOLAB_API=https://opengeolab.geomodeling.njnu.edu.cn/api
+USER_DATA_DIR=/data/opengeolab/jupyter-data
+```
+
+本地开发可以把 `PUBLIC_ORIGIN` 设置为 `http://localhost:5173`，但生产必须使用最终 HTTPS 域名。
 
 ## API 端点
 
-### 认证
-- `GET /api/auth/github` - 跳转到 GitHub OAuth
-- `GET /api/auth/github/callback` - OAuth 回调
-- `GET /api/auth/me` - 获取当前用户信息
-- `POST /api/auth/logout` - 登出
+认证：
 
-### Jupyter 管理
-- `GET /api/jupyter/status` - 获取容器状态
-- `POST /api/jupyter/start` - 启动容器
-- `POST /api/jupyter/stop` - 停止容器
-- `GET /api/jupyter/projects` - 获取项目列表
+- `GET /api/auth/github`
+- `GET /api/auth/github/callback`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
 
-## 注意事项
+Jupyter 管理：
 
-- 首次启动时需要拉取 Docker 镜像，可能需要几分钟
-- 每个用户的数据存储在 `server/jupyter-data/{userId}/` 目录
-- 用户会话使用 JWT token，有效期 7 天
-- 容器会监听 8888+ 端口，确保端口未被占用
+- `GET /api/jupyter/status`
+- `POST /api/jupyter/start`
+- `POST /api/jupyter/stop`
+- `GET /api/jupyter/projects`
+
+`POST /api/jupyter/start` 返回的 `url`、`publicUrl`、`proxyPath`、`workspaceId` 是前端打开 JupyterLab 的依据。生产环境中返回地址应形如：
+
+```text
+https://opengeolab.geomodeling.njnu.edu.cn/jupyter/<workspace-id>/lab?token=...
+```
+
+## 更新 Jupyter 镜像中的扩展
+
+当修改了 `jupyterlab-geomodel` 或 Agent UI 后，执行：
+
+```bash
+./GeoModelWeb/scripts/release-jupyter-agent-image.sh
+```
+
+脚本会构建 JupyterLab 扩展、生成 wheel、替换 Docker 构建上下文并重建 `geomodel-jupyter:latest` 镜像。执行后需要重启已有 Jupyter 容器。
+
+## 排查清单
+
+- `docker ps` 中容器端口应显示为 `127.0.0.1:<dynamic-port>->8888/tcp`。
+- 浏览器打开的 Jupyter 地址应以生产 HTTPS 域名加 `/jupyter/` 开头。
+- Nginx 的 `/jupyter/` location 必须包含 WebSocket upgrade 配置。
+- 如果页面能打开但 kernel 无法连接，优先检查 Nginx `Upgrade` / `Connection` 头和 `proxy_read_timeout`。

@@ -74,7 +74,7 @@ const routes = [
         meta: { title: '登录中...', hideMainNav: true }
     },
     {
-        path: '/jupyter/project/:projectName',
+        path: '/jupyter/project/:projectId',
         name: 'JupyterProject',
         component: JupyterProject,
         meta: { title: 'Project', hideMainNav: true }

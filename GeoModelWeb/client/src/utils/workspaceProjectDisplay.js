@@ -2,6 +2,23 @@ export function getWorkspaceProjectTitle(project = {}) {
   return project.case?.title || project.title || project.name || project.projectName || 'Untitled Project'
 }
 
+export function getWorkspaceProjectRouteId(project = {}) {
+  return String(
+    project.projectId ||
+    project.workspaceId ||
+    project.uuid ||
+    project.id ||
+    project.name ||
+    project.projectName ||
+    ''
+  ).trim()
+}
+
+export function buildWorkspaceProjectRoutePath(project = {}) {
+  const routeId = getWorkspaceProjectRouteId(project)
+  return `/jupyter/project/${encodeURIComponent(routeId)}`
+}
+
 export function getWorkspaceProjectSummary(project = {}) {
   const explicit = String(project.description || project.case?.summary || project.summary || '').trim()
   if (explicit) return explicit

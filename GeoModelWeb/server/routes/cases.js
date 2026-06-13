@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const authRoutes = require('./auth');
 const { getCaseProjectDirectory } = require('../config/cases');
 const { createCaseProjectMeta } = require('../utils/caseProjectMeta');
@@ -167,7 +168,11 @@ router.post('/:identifier/fork', authRoutes.authenticateToken, async (req, res) 
         }
 
         fs.cpSync(projectTemplateDir, targetDir, { recursive: true });
-        writeProjectMeta(targetDir, createCaseProjectMeta(username, targetName, caseDoc));
+        const projectId = crypto.randomUUID();
+        writeProjectMeta(targetDir, {
+            ...createCaseProjectMeta(username, targetName, caseDoc),
+            projectId
+        });
 
         const files = walkProjectFiles(targetDir).filter(item => item.type !== 'folder');
         const notebookCount = files.filter(item => item.path.toLowerCase().endsWith('.ipynb')).length;
@@ -175,6 +180,7 @@ router.post('/:identifier/fork', authRoutes.authenticateToken, async (req, res) 
         res.json({
             status: 'forked',
             project: {
+                projectId,
                 name: targetName,
                 description: caseDoc.summary || caseDoc.description || '',
                 notebookCount,

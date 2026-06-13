@@ -1111,6 +1111,7 @@ import {
   getDataItemTitle,
   getDataKind
 } from '../utils/dataLibraryDisplay.js'
+import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { confirmDialog, notify, promptDialog } from '../utils/systemFeedback.js'
 
 const route = useRoute()
@@ -1771,7 +1772,7 @@ const lastModified = computed(() => {
 // 跳转到项目详情页
 const goToProject = (project) => {
   openMenuProject.value = null
-  router.push(`/jupyter/project/${encodeURIComponent(project.name)}`)
+  router.push(buildWorkspaceProjectRoutePath(project))
 }
 
 const launchProjectInJupyterLab = async (projectName) => {
@@ -1814,12 +1815,12 @@ const createProject = async (projectInput = {}) => {
           await launchProjectInJupyterLab(res.data.project.name)
         } catch (launchError) {
           showToastMessage(getJupyterLaunchErrorMessage(launchError), 'error', 6000)
-          router.push(`/jupyter/project/${encodeURIComponent(res.data.project.name)}`)
+          router.push(buildWorkspaceProjectRoutePath(res.data.project))
         }
         return
       }
 
-      router.push(`/jupyter/project/${encodeURIComponent(res.data.project.name)}`)
+      router.push(buildWorkspaceProjectRoutePath(res.data.project))
     }
   } catch (e) {
     showToastMessage(getUiErrorMessage(e, 'Failed to create project.'), 'error', 6000)

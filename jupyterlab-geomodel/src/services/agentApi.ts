@@ -117,15 +117,24 @@ function getAuthHeaders(): Record<string, string> {
  */
 function getApiBase(): string {
     if (typeof window !== 'undefined') {
-        // 使用与 api.ts 相同的逻辑
+        if (window.location.pathname.startsWith('/jupyter/')) {
+            return window.location.origin.replace(/\/+$/, '');
+        }
+
+        // Direct-port local debugging fallback.
         const hostname = window.location.hostname;
-        // 验证 hostname 有效性，防止构造无效 URL
         if (hostname && hostname.length > 0) {
-            return `http://${hostname}:3000`;
+            const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+            return `${protocol}//${hostname}:3000`;
         }
         console.warn('[AgentAPI] Invalid hostname, falling back to localhost');
     }
     return 'http://localhost:3000';
+}
+
+function extractWorkspaceIdFromPath(pathname: string = ''): string {
+    const match = pathname.match(/^\/jupyter\/([^/]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
 }
 
 /**
@@ -234,7 +243,31 @@ async function extractContainerInfo(): Promise<{ userName: string; projectName: 
             }
         }
         
-        // 3. 尝试从 hostname 推断（Docker 容器中 hostname 可能是容器名）
+        // 3. Gateway URL: resolve project context by workspace id instead of URL query params
+        const workspaceId = extractWorkspaceIdFromPath(window.location.pathname);
+        if (workspaceId) {
+            try {
+                const apiBase = getApiBase();
+                const response = await fetch(`${apiBase}/api/jupyter/workspaces/${encodeURIComponent(workspaceId)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.found) {
+                        console.log('[AgentAPI] Found workspace info:', data);
+                        if (data.projectName) {
+                            localStorage.setItem('geomodel_project', data.projectName);
+                        }
+                        return {
+                            userName: data.userName || data.username || '',
+                            projectName: data.projectName || ''
+                        };
+                    }
+                }
+            } catch (e) {
+                console.log('[AgentAPI] Failed to query workspace metadata:', e);
+            }
+        }
+
+        // 4. 尝试从 hostname 推断（Docker 容器中 hostname 可能是容器名）
         const hostname = window.location.hostname;
         const hostMatch = hostname.match(/^jupyter-([^-]+)-(.+)$/i);
         if (hostMatch) {
@@ -244,7 +277,7 @@ async function extractContainerInfo(): Promise<{ userName: string; projectName: 
             return { userName, projectName };
         }
         
-        // 4. 尝试通过当前端口号查询后端获取容器信息
+        // 5. 尝试通过当前端口号查询后端获取容器信息
         const port = window.location.port;
         if (port && port !== '80' && port !== '443') {
             try {

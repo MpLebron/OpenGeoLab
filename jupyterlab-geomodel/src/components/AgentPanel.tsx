@@ -401,6 +401,10 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ notebookTracker, app }) 
             if (project) {
                 return project;
             }
+            const cachedProject = localStorage.getItem('geomodel_project');
+            if (cachedProject) {
+                return cachedProject;
+            }
             // 尝试从 pathname 解析
             const pathMatch = window.location.pathname.match(/\/lab\/tree\/([^/]+)/);
             if (pathMatch) {

@@ -39,9 +39,6 @@ env/
 node_modules/
 npm-debug.log
 yarn-error.log
-jupyterlab-geomodel/lib/
-jupyterlab-geomodel/jupyterlab_geomodel/labextension/
-jupyterlab-geomodel/tsconfig.tsbuildinfo
 
 # OS
 .DS_Store
@@ -68,6 +65,7 @@ tmp/
 *.yarn/
 
 # Large files
+GeoModelWeb/server/data/computeModel.json
 GeoModelWeb/server/data/*.sqlite
 GeoModelWeb/server/data/*.sqlite-*
 GeoModelWeb/server/jupyter-data/

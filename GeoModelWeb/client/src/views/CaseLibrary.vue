@@ -68,6 +68,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import WorkspaceProjectList from '../components/WorkspaceProjectList.vue'
 import {
+  buildWorkspaceProjectRoutePath,
   getWorkspaceProjectSearchText,
   getWorkspaceProjectTitle
 } from '../utils/workspaceProjectDisplay.js'
@@ -175,9 +176,9 @@ const forkCaseProject = async (project) => {
     const res = await authAxios().post(
       `/api/jupyter/fork/${encodeURIComponent(project.owner)}/${encodeURIComponent(project.projectName)}`
     )
-    const forkedName = res.data?.project?.name
-    if (forkedName) {
-      router.push(`/jupyter/project/${encodeURIComponent(forkedName)}`)
+    const forkedProject = res.data?.project
+    if (forkedProject?.name) {
+      router.push(buildWorkspaceProjectRoutePath(forkedProject))
       return
     }
     router.push('/jupyter')

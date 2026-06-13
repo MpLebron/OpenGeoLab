@@ -189,7 +189,7 @@
                 v-if="notebookPreviewHtml"
                 class="notebook-frame"
                 :srcdoc="notebookPreviewHtml"
-                sandbox=""
+                sandbox="allow-scripts allow-same-origin"
                 title="Notebook preview"
               ></iframe>
             </section>
@@ -274,6 +274,7 @@ import {
   splitLines,
   treeBadge
 } from '../utils/filePreview.js'
+import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { notify } from '../utils/systemFeedback.js'
 
 hljs.registerLanguage('python', python)
@@ -460,7 +461,6 @@ function collectVisibleExplorerEntries(nodes, depth = 0) {
 
 function sanitizeNotebookPreviewHtml(html) {
   return String(html || '')
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
 }
 
@@ -578,9 +578,9 @@ async function forkProject() {
     const response = await authAxios().post(
       `/api/jupyter/fork/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}`
     )
-    const forkedName = response.data?.project?.name
-    if (forkedName) {
-      router.push(`/jupyter/project/${encodeURIComponent(forkedName)}`)
+    const forkedProject = response.data?.project
+    if (forkedProject?.name) {
+      router.push(buildWorkspaceProjectRoutePath(forkedProject))
       return
     }
     forkMessage.value = 'Project forked to your space.'

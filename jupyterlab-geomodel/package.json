@@ -9,9 +9,9 @@
     "geomodel",
     "opengms"
   ],
-  "homepage": "https://github.com/MpLebron/OpenGeoLab",
+  "homepage": "https://github.com/your-org/jupyterlab-geomodel",
   "bugs": {
-    "url": "https://github.com/MpLebron/OpenGeoLab/issues"
+    "url": "https://github.com/your-org/jupyterlab-geomodel/issues"
   },
   "license": "MIT",
   "author": {
@@ -26,7 +26,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/MpLebron/OpenGeoLab.git"
+    "url": "https://github.com/your-org/jupyterlab-geomodel.git"
   },
   "scripts": {
     "build": "jlpm build:lib && jlpm build:labextension:dev",

@@ -146,6 +146,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { notify } from '../utils/systemFeedback.js'
+import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -330,7 +331,8 @@ const runCase = async () => {
 
   try {
     const forkResponse = await authAxios().post(`/api/cases/${encodeURIComponent(caseItem.value.slug)}/fork`)
-    const projectName = forkResponse.data?.project?.name
+    const forkedProject = forkResponse.data?.project
+    const projectName = forkedProject?.name
 
     if (!projectName) {
       throw new Error('Fork succeeded but project name is missing.')
@@ -355,7 +357,7 @@ const runCase = async () => {
     )
 
     actionStatus.value = t('caseDetail.ready')
-    router.push(`/jupyter/project/${encodeURIComponent(projectName)}`)
+    router.push(buildWorkspaceProjectRoutePath(forkedProject))
   } catch (err) {
     if (popupWindow) popupWindow.close()
     actionStatus.value = ''

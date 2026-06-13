@@ -12,10 +12,14 @@ const getApiBaseUrl = (): string => {
       return window.GEOMODEL_API_URL;
     }
 
-    // JupyterLab frontend runs in user's browser
-    // Use the host address that accesses Jupyter (backend port 3000 on same server)
+    if (window.location.pathname.startsWith('/jupyter/')) {
+      return `${window.location.origin.replace(/\/+$/, '')}/api`;
+    }
+
+    // Direct-port local debugging fallback.
     const hostname = window.location.hostname;
-    return `http://${hostname}:3000/api`;
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    return `${protocol}//${hostname}:3000/api`;
   }
   return 'http://localhost:3000/api';
 };
@@ -70,6 +74,11 @@ export const getProjectName = (): string => {
   return params.get('project') || localStorage.getItem('geomodel_project') || '';
 };
 
+function extractWorkspaceIdFromPath(pathname: string = ''): string {
+  const match = pathname.match(/^\/jupyter\/([^/]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
 function parseProjectNameFromContainer(containerName: string | null): string {
   if (!containerName) return '';
   const match = containerName.match(/^jupyter-[^-]+-(.+)$/i);
@@ -83,6 +92,23 @@ export async function resolveProjectName(): Promise<string> {
 
   const directProject = getProjectName();
   if (directProject) return directProject;
+
+  const workspaceId = extractWorkspaceIdFromPath(window.location.pathname);
+  if (workspaceId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jupyter/workspaces/${encodeURIComponent(workspaceId)}`);
+      if (response.ok) {
+        const result = await response.json();
+        const projectName = result?.projectName || parseProjectNameFromContainer(result?.containerName || '');
+        if (projectName) {
+          localStorage.setItem('geomodel_project', projectName);
+          return projectName;
+        }
+      }
+    } catch (error) {
+      console.warn('[GeoModel Extension] Failed to resolve project from Jupyter workspace:', error);
+    }
+  }
 
   const params = new URLSearchParams(window.location.search);
   const projectFromContainer = parseProjectNameFromContainer(params.get('container'));

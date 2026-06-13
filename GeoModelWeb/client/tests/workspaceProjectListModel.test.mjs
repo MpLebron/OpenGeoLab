@@ -1,11 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 
 import {
+  buildWorkspaceProjectRoutePath,
   formatWorkspaceProjectSize,
   getWorkspaceProjectArtifacts,
   getWorkspaceProjectFileLabel,
   getWorkspaceProjectMark,
+  getWorkspaceProjectRouteId,
   getWorkspaceProjectRuntimeImage,
   getWorkspaceProjectRuntimeLabel,
   getWorkspaceProjectSearchText,
@@ -17,6 +21,7 @@ import {
 
 test('normalizes private workspace project display fields', () => {
   const project = {
+    projectId: '550e8400-e29b-41d4-a716-446655440000',
     name: 'Test3',
     description: '',
     notebookCount: 1,
@@ -42,6 +47,8 @@ test('normalizes private workspace project display fields', () => {
   assert.equal(getWorkspaceProjectRuntimeImage(project), 'opengms/geomodel-core:2026.05')
   assert.equal(getWorkspaceProjectRuntimeLabel(project), 'geomodel-core:2026.05')
   assert.equal(getWorkspaceProjectMark(project).label, 'WS')
+  assert.equal(getWorkspaceProjectRouteId(project), '550e8400-e29b-41d4-a716-446655440000')
+  assert.equal(buildWorkspaceProjectRoutePath(project), '/jupyter/project/550e8400-e29b-41d4-a716-446655440000')
 })
 
 test('normalizes public case library records without inventing a different entity type', () => {
@@ -86,4 +93,35 @@ test('formats project size in compact binary units', () => {
   assert.equal(formatWorkspaceProjectSize(0), '0 B')
   assert.equal(formatWorkspaceProjectSize(512), '512 B')
   assert.equal(formatWorkspaceProjectSize(1536), '1.5 KB')
+})
+
+test('project detail page canonicalizes legacy name URLs to project id URLs', () => {
+  const source = fs.readFileSync(
+    path.resolve(import.meta.dirname, '../src/views/JupyterProject.vue'),
+    'utf8'
+  )
+
+  assert.match(source, /buildWorkspaceProjectRoutePath/)
+  assert.match(source, /router\.replace\(canonicalProjectRoute\)/)
+  assert.match(source, /projectRouteId\.value !== res\.data\.project\?\.projectId/)
+})
+
+test('notebook previews allow interactive output scripts in sandboxed iframes', () => {
+  const previewFiles = [
+    '../src/views/JupyterProject.vue',
+    '../src/views/CaseDetail.vue',
+    '../src/views/SharedProjectPreview.vue'
+  ]
+
+  for (const file of previewFiles) {
+    const source = fs.readFileSync(path.resolve(import.meta.dirname, file), 'utf8')
+    assert.doesNotMatch(source, /sandbox=""/)
+    assert.match(source, /sandbox="allow-scripts allow-same-origin"/)
+  }
+
+  const caseDetailSource = fs.readFileSync(
+    path.resolve(import.meta.dirname, '../src/views/CaseDetail.vue'),
+    'utf8'
+  )
+  assert.doesNotMatch(caseDetailSource, /replace\(\s*\/<script/)
 })
