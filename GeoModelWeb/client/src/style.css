@@ -1,0 +1,89 @@
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+  --bg-color: #f5f7fb;
+  --surface: #f5f7fb;
+  --surface-low: #eef2f7;
+  --surface-card: #ffffff;
+  --surface-high: #e5eaf1;
+  --surface-highest: #d7dee9;
+  --text-primary: #111827;
+  --text-secondary: #46556a;
+  --text-muted: #7b8798;
+  --accent-color: #0f766e;
+  --accent-hover: #115e59;
+  --accent-light: rgba(15, 118, 110, 0.1);
+  --accent-soft: #e6f2f0;
+  --accent-rgb: 15, 118, 110;
+  --primary-strong: #0f172a;
+  --primary-soft: #1e293b;
+  --primary-rgb: 15, 23, 42;
+  --success-color: #2f7d4e;
+  --warning-color: #85682f;
+  --danger-color: #a64949;
+  --border-color: #d6deea;
+  --border-light: #e4e9f1;
+  --nav-bg: #111827;
+  --nav-text: #f8fafc;
+  --nav-text-secondary: rgba(248, 250, 252, 0.72);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 3px 10px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 28px rgba(15, 23, 42, 0.08);
+  --max-shell-width: 1440px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg-color);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+  line-height: 1.6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.font-headline {
+  font-family: var(--font-display);
+}
+
+.surface-panel {
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Scrollbar Styling - 浅色风格 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

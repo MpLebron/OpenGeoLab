@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Nanjing rooftop photovoltaic potential assessment</title>
+  <desc id="desc">Stylized urban rooftop map with solar potential colors for the OpenGeoLab case library.</desc>
+  <rect width="1200" height="720" fill="#f8fafc"/>
+  <rect x="0" y="0" width="1200" height="720" fill="#eaf2f6"/>
+  <path d="M0 540 C170 500 260 580 420 535 C575 492 660 435 815 472 C960 506 1030 585 1200 530 L1200 720 L0 720 Z" fill="#d8e7de"/>
+  <path d="M0 78 C170 42 315 58 475 96 C650 137 816 82 991 106 C1080 118 1148 146 1200 166 L1200 0 L0 0 Z" fill="#fff5d8"/>
+  <g opacity="0.18" fill="none" stroke="#36566b" stroke-width="2">
+    <path d="M91 660 L1080 122"/>
+    <path d="M0 452 L787 28"/>
+    <path d="M279 720 L1200 220"/>
+    <path d="M-25 288 L1126 720"/>
+    <path d="M180 120 L1200 504"/>
+  </g>
+  <g transform="translate(175 120)">
+    <rect x="0" y="0" width="850" height="480" rx="22" fill="#ffffff" stroke="#d7e2ee" stroke-width="3"/>
+    <g opacity="0.95">
+      <rect x="62" y="74" width="132" height="74" rx="8" fill="#f6c453"/>
+      <rect x="224" y="54" width="170" height="96" rx="8" fill="#ef7d42"/>
+      <rect x="426" y="84" width="116" height="78" rx="8" fill="#e9563d"/>
+      <rect x="586" y="58" width="190" height="102" rx="8" fill="#bd3f38"/>
+      <rect x="84" y="196" width="210" height="112" rx="8" fill="#f0ad43"/>
+      <rect x="332" y="208" width="122" height="84" rx="8" fill="#f7d36b"/>
+      <rect x="496" y="198" width="256" height="126" rx="8" fill="#d9503c"/>
+      <rect x="122" y="352" width="170" height="68" rx="8" fill="#f4ca5a"/>
+      <rect x="336" y="346" width="220" height="82" rx="8" fill="#ea7040"/>
+      <rect x="612" y="372" width="136" height="62" rx="8" fill="#f2b84b"/>
+    </g>
+    <g fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="5">
+      <path d="M82 104 H174"/>
+      <path d="M245 86 H372"/>
+      <path d="M610 94 H750"/>
+      <path d="M110 250 H270"/>
+      <path d="M522 246 H728"/>
+      <path d="M356 386 H532"/>
+    </g>
+  </g>
+  <g transform="translate(90 572)">
+    <rect width="520" height="86" rx="16" fill="#102033"/>
+    <text x="28" y="38" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="700">Nanjing Rooftop PV</text>
+    <text x="28" y="66" fill="#b8c7d6" font-family="Inter, Arial, sans-serif" font-size="18">OpenGMS model service · PyGeoModel · OpenGeoLab</text>
+  </g>
+  <g transform="translate(930 86)">
+    <circle cx="0" cy="0" r="46" fill="#f6b83f"/>
+    <g stroke="#f6b83f" stroke-width="8" stroke-linecap="round">
+      <path d="M0 -80 V-116"/>
+      <path d="M0 80 V116"/>
+      <path d="M-80 0 H-116"/>
+      <path d="M80 0 H116"/>
+      <path d="M57 -57 L84 -84"/>
+      <path d="M57 57 L84 84"/>
+      <path d="M-57 57 L-84 84"/>
+      <path d="M-57 -57 L-84 -84"/>
+    </g>
+  </g>
+</svg>

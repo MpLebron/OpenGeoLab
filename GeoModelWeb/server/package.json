@@ -1,0 +1,31 @@
+{
+  "name": "opengeolab-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "import:applications": "node scripts/importApplicationSchemes.js",
+    "import:cases": "node scripts/importNotebookCases.js",
+    "seed:cases": "node scripts/seedLocalCases.js",
+    "build:runtime": "node scripts/buildJupyterRuntimeImages.js",
+    "build:runtimes": "node scripts/buildJupyterRuntimeImages.js --all",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "OpenGeoLab server layer for project, case, OpenGMS service, and JupyterLab runtime orchestration.",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "form-data": "^4.0.5",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.1.0",
+    "multer": "^2.0.2",
+    "xml2js": "^0.6.2"
+  }
+}

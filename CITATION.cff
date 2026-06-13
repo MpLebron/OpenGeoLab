@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use OpenGeoLab, please cite the accompanying manuscript."
+title: "OpenGeoLab: A JupyterLab-Based Computational Workspace for Open Geographic Modeling and Simulation"
+authors:
+  - family-names: Ma
+    given-names: Peilong
+  - family-names: Zhou
+    given-names: Minshuo
+  - family-names: Li
+    given-names: Wanhao
+  - family-names: Xie
+    given-names: Wei
+  - family-names: Sheng
+    given-names: Tianyu
+  - family-names: Wen
+    given-names: Yongning
+  - family-names: Yue
+    given-names: Songshan
+  - family-names: Lv
+    given-names: Guonian
+  - family-names: Chen
+    given-names: Min
+type: software
+repository-code: "https://github.com/MpLebron/OpenGeoLab"
+license: MIT
+version: "0.1.0"
+date-released: "2026-06-13"

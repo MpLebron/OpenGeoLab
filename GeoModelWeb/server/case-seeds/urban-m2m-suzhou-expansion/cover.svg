@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Suzhou UrbanM2M expansion case cover</title>
+  <desc id="desc">Raster-style urban expansion map for the OpenGeoLab UrbanM2M case library.</desc>
+  <rect width="1200" height="720" fill="#f7fafc"/>
+  <rect x="64" y="64" width="1072" height="592" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+  <g transform="translate(126 112)">
+    <text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Suzhou Urban Expansion</text>
+    <text x="0" y="38" font-family="Inter, Arial, sans-serif" font-size="15" fill="#64748b">UrbanM2M simulation, 2010 to 2013</text>
+  </g>
+  <g transform="translate(138 190)">
+    <rect x="0" y="0" width="424" height="370" rx="8" fill="#f8fafc" stroke="#dbe3ec"/>
+    <path d="M132 32 L204 18 L278 38 L318 82 L356 126 L320 194 L352 262 L270 334 L180 316 L94 352 L42 284 L68 214 L24 148 L80 94 Z" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+    <g fill="#26384d" opacity="0.9">
+      <rect x="116" y="86" width="8" height="8"/><rect x="129" y="92" width="8" height="8"/><rect x="146" y="110" width="8" height="8"/>
+      <rect x="154" y="122" width="8" height="8"/><rect x="181" y="134" width="8" height="8"/><rect x="192" y="145" width="8" height="8"/>
+      <rect x="204" y="152" width="8" height="8"/><rect x="216" y="165" width="8" height="8"/><rect x="229" y="174" width="8" height="8"/>
+      <rect x="176" y="202" width="8" height="8"/><rect x="188" y="214" width="8" height="8"/><rect x="200" y="226" width="8" height="8"/>
+      <rect x="88" y="250" width="8" height="8"/><rect x="102" y="262" width="8" height="8"/><rect x="118" y="274" width="8" height="8"/>
+      <rect x="252" y="254" width="8" height="8"/><rect x="266" y="264" width="8" height="8"/><rect x="280" y="278" width="8" height="8"/>
+    </g>
+    <text x="24" y="338" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#334155">Observed 2010 urban land</text>
+  </g>
+  <g transform="translate(638 190)">
+    <rect x="0" y="0" width="424" height="370" rx="8" fill="#f8fafc" stroke="#dbe3ec"/>
+    <path d="M132 32 L204 18 L278 38 L318 82 L356 126 L320 194 L352 262 L270 334 L180 316 L94 352 L42 284 L68 214 L24 148 L80 94 Z" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+    <g fill="#26384d" opacity="0.9">
+      <rect x="116" y="86" width="8" height="8"/><rect x="129" y="92" width="8" height="8"/><rect x="146" y="110" width="8" height="8"/>
+      <rect x="154" y="122" width="8" height="8"/><rect x="181" y="134" width="8" height="8"/><rect x="192" y="145" width="8" height="8"/>
+      <rect x="204" y="152" width="8" height="8"/><rect x="216" y="165" width="8" height="8"/><rect x="229" y="174" width="8" height="8"/>
+      <rect x="176" y="202" width="8" height="8"/><rect x="188" y="214" width="8" height="8"/><rect x="200" y="226" width="8" height="8"/>
+      <rect x="88" y="250" width="8" height="8"/><rect x="102" y="262" width="8" height="8"/><rect x="118" y="274" width="8" height="8"/>
+      <rect x="252" y="254" width="8" height="8"/><rect x="266" y="264" width="8" height="8"/><rect x="280" y="278" width="8" height="8"/>
+    </g>
+    <g fill="#ef4444" opacity="0.95">
+      <rect x="138" y="132" width="7" height="7"/><rect x="242" y="180" width="7" height="7"/><rect x="256" y="190" width="7" height="7"/>
+      <rect x="222" y="236" width="7" height="7"/><rect x="236" y="246" width="7" height="7"/><rect x="302" y="228" width="7" height="7"/>
+      <rect x="148" y="272" width="7" height="7"/><rect x="162" y="286" width="7" height="7"/><rect x="106" y="214" width="7" height="7"/>
+      <rect x="294" y="146" width="7" height="7"/><rect x="308" y="156" width="7" height="7"/><rect x="184" y="246" width="7" height="7"/>
+    </g>
+    <text x="24" y="338" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#334155">Simulated 2013 expansion</text>
+  </g>
+  <g transform="translate(126 610)">
+    <rect x="0" y="-22" width="16" height="16" fill="#26384d"/>
+    <text x="26" y="-9" font-family="Inter, Arial, sans-serif" font-size="14" fill="#334155">Existing urban land</text>
+    <rect x="188" y="-22" width="16" height="16" fill="#ef4444"/>
+    <text x="214" y="-9" font-family="Inter, Arial, sans-serif" font-size="14" fill="#334155">New simulated expansion</text>
+  </g>
+</svg>
