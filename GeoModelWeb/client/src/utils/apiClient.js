@@ -5,8 +5,12 @@ export function normalizeApiBaseUrl(value = '') {
   return normalized === '/' ? '' : normalized
 }
 
+function getViteEnv() {
+  return import.meta.env || {}
+}
+
 export function getApiBaseUrl() {
-  return normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || '')
+  return normalizeApiBaseUrl(getViteEnv().VITE_API_BASE_URL || '')
 }
 
 export function configureApiClient() {
@@ -37,8 +41,43 @@ export function getAuthBaseUrl() {
   return ''
 }
 
-export function withAppBasePath(path = '') {
-  const basePath = String(import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+export function withAppBasePath(path = '', baseUrl) {
+  const basePath = String(baseUrl ?? getViteEnv().BASE_URL ?? '/').replace(/\/+$/, '')
   const normalizedPath = String(path || '').replace(/^\/+/, '')
   return `${basePath}/${normalizedPath}`.replace(/\/{2,}/g, '/')
+}
+
+function isAbsoluteResourceUrl(value) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(value)
+}
+
+function isAlreadyUnderBasePath(path, baseUrl) {
+  const basePath = String(baseUrl || '/').replace(/\/+$/, '')
+  if (!basePath || basePath === '/') {
+    return false
+  }
+
+  return path === basePath || path.startsWith(`${basePath}/`)
+}
+
+export function resolvePublicResourceUrl(value = '', options = {}) {
+  const source = String(value || '').trim()
+  if (!source || source.startsWith('#') || isAbsoluteResourceUrl(source)) {
+    return source
+  }
+
+  const apiBaseUrl = normalizeApiBaseUrl(options.apiBaseUrl ?? getApiBaseUrl())
+  const appBaseUrl = options.appBaseUrl ?? getViteEnv().BASE_URL ?? '/'
+
+  if (source.startsWith('/api/')) {
+    return apiBaseUrl ? `${apiBaseUrl}${source}` : source
+  }
+
+  if (source.startsWith('/')) {
+    return isAlreadyUnderBasePath(source, appBaseUrl)
+      ? source
+      : withAppBasePath(source, appBaseUrl)
+  }
+
+  return withAppBasePath(source, appBaseUrl)
 }

@@ -4,7 +4,7 @@
       <div class="case-cover">
         <img
           v-if="caseItem.coverImageUrl && !imageFailed"
-          :src="caseItem.coverImageUrl"
+          :src="coverImageSrc"
           :alt="caseItem.title"
           loading="lazy"
           @error="imageFailed = true"
@@ -33,6 +33,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const props = defineProps({
   caseItem: {
@@ -63,6 +64,8 @@ const visibleTags = computed(() => {
     ? props.caseItem.tags.filter(Boolean).slice(0, 4)
     : []
 })
+
+const coverImageSrc = computed(() => resolvePublicResourceUrl(props.caseItem.coverImageUrl))
 
 const detailTo = computed(() => ({
   name: 'CasesDetail',

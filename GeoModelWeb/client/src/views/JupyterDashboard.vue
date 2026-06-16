@@ -8,8 +8,8 @@
       <div class="nav-right">
         <div v-if="isLoggedIn" class="workspace-avatar" :title="user?.displayName || user?.username">
           <img
-            v-if="user?.avatarUrl && !avatarLoadFailed"
-            :src="user.avatarUrl"
+            v-if="userAvatarSrc && !avatarLoadFailed"
+            :src="userAvatarSrc"
             alt=""
             class="workspace-avatar-image"
             referrerpolicy="no-referrer"
@@ -132,8 +132,8 @@
         <div class="sidebar-user">
           <div class="user-avatar" aria-hidden="true">
             <img
-              v-if="user.avatarUrl && !avatarLoadFailed"
-              :src="user.avatarUrl"
+              v-if="userAvatarSrc && !avatarLoadFailed"
+              :src="userAvatarSrc"
               alt=""
               class="user-avatar-image"
               referrerpolicy="no-referrer"
@@ -1113,7 +1113,7 @@ import {
 } from '../utils/dataLibraryDisplay.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { confirmDialog, notify, promptDialog } from '../utils/systemFeedback.js'
-import { createApiClient, getAuthBaseUrl } from '../utils/apiClient.js'
+import { createApiClient, getAuthBaseUrl, resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -1586,6 +1586,8 @@ const userInitials = computed(() => {
 
   return cleaned.slice(0, 2).toUpperCase()
 })
+
+const userAvatarSrc = computed(() => resolvePublicResourceUrl(user.value?.avatarUrl))
 
 watch(() => user.value?.avatarUrl, () => {
   avatarLoadFailed.value = false

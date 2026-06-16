@@ -23,7 +23,7 @@
           <div class="detail-cover">
             <img
               v-if="application.coverImageUrl && !imageFailed"
-              :src="application.coverImageUrl"
+              :src="coverImageSrc"
               :alt="application.title"
               @error="imageFailed = true"
             >
@@ -116,6 +116,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -141,6 +142,8 @@ const activeLinks = computed(() => {
     { key: 'video', label: t('applicationDetail.links.video'), href: links.video }
   ].filter(link => Boolean(link.href))
 })
+
+const coverImageSrc = computed(() => resolvePublicResourceUrl(application.value?.coverImageUrl))
 
 const renderedContent = computed(() => {
   return renderMarkdown(application.value?.content || '')
@@ -226,7 +229,7 @@ function escapeAttribute(value) {
 function safeUrl(value) {
   const source = String(value || '').trim().replace(/^<|>$/g, '')
   if (/^(https?:|mailto:|\/|#)/i.test(source)) {
-    return source
+    return resolvePublicResourceUrl(source)
   }
   return '#'
 }

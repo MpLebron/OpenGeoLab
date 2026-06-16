@@ -19,7 +19,7 @@
       <template v-else-if="caseItem">
         <section class="hero-panel">
           <div class="hero-cover">
-            <img v-if="caseItem.coverImageUrl && !imageFailed" :src="caseItem.coverImageUrl" :alt="caseItem.title"
+            <img v-if="caseItem.coverImageUrl && !imageFailed" :src="coverImageSrc" :alt="caseItem.title"
               @error="imageFailed = true">
             <div v-else class="hero-cover-fallback" aria-hidden="true">
               <span></span>
@@ -147,7 +147,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { notify } from '../utils/systemFeedback.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
-import { createApiClient } from '../utils/apiClient.js'
+import { createApiClient, resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -205,6 +205,8 @@ const fetchCase = async () => {
 const caseTags = computed(() => {
   return Array.isArray(caseItem.value?.tags) ? caseItem.value.tags.filter(Boolean) : []
 })
+
+const coverImageSrc = computed(() => resolvePublicResourceUrl(caseItem.value?.coverImageUrl))
 
 const caseSteps = computed(() => {
   return Array.isArray(caseItem.value?.steps) ? caseItem.value.steps.filter(Boolean) : []

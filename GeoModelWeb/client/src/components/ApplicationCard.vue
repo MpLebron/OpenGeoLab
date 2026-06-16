@@ -4,7 +4,7 @@
       <div class="application-cover">
         <img
           v-if="application.coverImageUrl && !imageFailed"
-          :src="application.coverImageUrl"
+          :src="coverImageSrc"
           :alt="application.title"
           loading="lazy"
           @error="imageFailed = true"
@@ -57,6 +57,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const props = defineProps({
   application: {
@@ -89,6 +90,8 @@ const tagTooltip = computed(() => {
     ? props.application.tags.filter(Boolean).join(', ')
     : ''
 })
+
+const coverImageSrc = computed(() => resolvePublicResourceUrl(props.application.coverImageUrl))
 
 const actions = computed(() => {
   const links = props.application.links || {}
