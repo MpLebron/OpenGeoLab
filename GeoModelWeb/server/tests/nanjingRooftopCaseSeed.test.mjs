@@ -72,3 +72,19 @@ test('Nanjing rooftop PV notebook follows the original research workflow without
   assert.doesNotMatch(sourceText, /%pip install/)
   assert.doesNotMatch(sourceText, /mapbox/i)
 })
+
+test('curated case seed manifests are discovered without hard-coding each case', () => {
+  const seedRoot = path.resolve(import.meta.dirname, '..', 'case-seeds')
+  const manifestDirs = fs.readdirSync(seedRoot, { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .filter(entry => fs.existsSync(path.join(seedRoot, entry.name, 'case.json')))
+    .map(entry => entry.name)
+
+  const specs = getLocalCaseSeedSpecs()
+  for (const slug of manifestDirs) {
+    const seed = specs.find(item => item.slug === slug)
+    assert.ok(seed, `Missing curated case seed spec for ${slug}`)
+    assert.equal(fs.existsSync(path.join(seed.projectDir, seed.coreNotebook)), true)
+    assert.equal(path.basename(seed.coverPath), seed.coverFileName)
+  }
+})

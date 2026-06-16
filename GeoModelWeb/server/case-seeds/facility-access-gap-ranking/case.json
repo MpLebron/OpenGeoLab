@@ -1,0 +1,42 @@
+{
+  "source": "opengeolab-curated-case",
+  "sourceId": "facility-access-gap-ranking",
+  "title": "Facility Access Gap Ranking",
+  "summary": "Rank zones by local demand and observation intensity to flag facility access gaps.",
+  "description": "A case notebook for demand screening, spatial aggregation, and cartographic outputs for planning workflows.",
+  "domain": "Public Facilities",
+  "tags": [
+    "Facility Planning",
+    "Demand Screening",
+    "Spatial Aggregation",
+    "Maps"
+  ],
+  "authors": [
+    "OpenGeoLab Curated Cases"
+  ],
+  "authorLine": "OpenGeoLab Curated Cases",
+  "timeLabel": "2026/06/16",
+  "runtimeImageId": "opengms-geoviz",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Primary local dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Bundled inputs used by the notebook without external downloads."
+    }
+  ],
+  "steps": [
+    "Open main.ipynb in the recommended runtime image.",
+    "Load the local data from the data/ directory and inspect schema or metadata.",
+    "Run the analysis cells to compute indicators or model diagnostics.",
+    "Review static plots and interactive HTML/map outputs written to outputs/.",
+    "Use the printed ranking or summary table as the case conclusion."
+  ],
+  "expectedResults": [
+    "A reproducible notebook with local data loading and no external data dependency.",
+    "At least one exploratory table and one geospatial or analytical visualization.",
+    "Outputs saved under outputs/ for inspection after running the notebook."
+  ]
+}

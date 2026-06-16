@@ -1,0 +1,42 @@
+{
+  "source": "opengeolab-curated-case",
+  "sourceId": "street-network-centrality-access",
+  "title": "Street Network Centrality and Access",
+  "summary": "Build a local street graph, compute centrality, and map job access within a travel-time cutoff.",
+  "description": "An OSMnx/NetworkX style workflow using bundled node and edge tables so it runs without live OpenStreetMap requests.",
+  "domain": "Urban Mobility",
+  "tags": [
+    "OSMnx",
+    "NetworkX",
+    "Accessibility",
+    "Centrality"
+  ],
+  "authors": [
+    "OpenGeoLab Curated Cases"
+  ],
+  "authorLine": "OpenGeoLab Curated Cases",
+  "timeLabel": "2026/06/16",
+  "runtimeImageId": "opengms-urban-mobility",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Primary local dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Bundled inputs used by the notebook without external downloads."
+    }
+  ],
+  "steps": [
+    "Open main.ipynb in the recommended runtime image.",
+    "Load the local data from the data/ directory and inspect schema or metadata.",
+    "Run the analysis cells to compute indicators or model diagnostics.",
+    "Review static plots and interactive HTML/map outputs written to outputs/.",
+    "Use the printed ranking or summary table as the case conclusion."
+  ],
+  "expectedResults": [
+    "A reproducible notebook with local data loading and no external data dependency.",
+    "At least one exploratory table and one geospatial or analytical visualization.",
+    "Outputs saved under outputs/ for inspection after running the notebook."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "source": "opengeolab-curated-case",
+  "sourceId": "health-access-spatial-clusters",
+  "title": "Health Access Spatial Clusters",
+  "summary": "Explore spatial clustering in a neighborhood health-access proxy and summarize high-priority clusters.",
+  "description": "A PySAL-based health geography case with local data, weights, autocorrelation, maps, and cluster interpretation.",
+  "domain": "Health Geography",
+  "tags": [
+    "Health Geography",
+    "Spatial Clusters",
+    "PySAL",
+    "Equity"
+  ],
+  "authors": [
+    "OpenGeoLab Curated Cases"
+  ],
+  "authorLine": "OpenGeoLab Curated Cases",
+  "timeLabel": "2026/06/16",
+  "runtimeImageId": "opengms-spatial-stats",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Primary local dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Bundled inputs used by the notebook without external downloads."
+    }
+  ],
+  "steps": [
+    "Open main.ipynb in the recommended runtime image.",
+    "Load the local data from the data/ directory and inspect schema or metadata.",
+    "Run the analysis cells to compute indicators or model diagnostics.",
+    "Review static plots and interactive HTML/map outputs written to outputs/.",
+    "Use the printed ranking or summary table as the case conclusion."
+  ],
+  "expectedResults": [
+    "A reproducible notebook with local data loading and no external data dependency.",
+    "At least one exploratory table and one geospatial or analytical visualization.",
+    "Outputs saved under outputs/ for inspection after running the notebook."
+  ]
+}

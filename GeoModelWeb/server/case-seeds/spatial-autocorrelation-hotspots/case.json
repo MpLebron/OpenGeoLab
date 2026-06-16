@@ -1,0 +1,42 @@
+{
+  "source": "opengeolab-curated-case",
+  "sourceId": "spatial-autocorrelation-hotspots",
+  "title": "Spatial Autocorrelation Hotspots",
+  "summary": "Compute spatial weights, Moran statistics, and lag maps for a neighborhood indicator.",
+  "description": "A PySAL case that demonstrates Queen contiguity weights, Moran scatterplots, and regression-ready spatial diagnostics.",
+  "domain": "Spatial Statistics",
+  "tags": [
+    "PySAL",
+    "Moran I",
+    "Spatial Weights",
+    "Hotspots"
+  ],
+  "authors": [
+    "OpenGeoLab Curated Cases"
+  ],
+  "authorLine": "OpenGeoLab Curated Cases",
+  "timeLabel": "2026/06/16",
+  "runtimeImageId": "opengms-spatial-stats",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Primary local dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Bundled inputs used by the notebook without external downloads."
+    }
+  ],
+  "steps": [
+    "Open main.ipynb in the recommended runtime image.",
+    "Load the local data from the data/ directory and inspect schema or metadata.",
+    "Run the analysis cells to compute indicators or model diagnostics.",
+    "Review static plots and interactive HTML/map outputs written to outputs/.",
+    "Use the printed ranking or summary table as the case conclusion."
+  ],
+  "expectedResults": [
+    "A reproducible notebook with local data loading and no external data dependency.",
+    "At least one exploratory table and one geospatial or analytical visualization.",
+    "Outputs saved under outputs/ for inspection after running the notebook."
+  ]
+}

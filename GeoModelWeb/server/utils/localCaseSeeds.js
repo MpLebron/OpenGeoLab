@@ -7,6 +7,7 @@ const LOCAL_CASE_SOURCE = 'opengeolab-local-case';
 const DEFAULT_WORKBENCH_CASE_OWNER = 'MpLebron';
 const NANJING_ROOFTOP_CASE_SLUG = 'nanjing-rooftop-pv';
 const URBAN_M2M_CASE_SLUG = 'urban-m2m-suzhou-expansion';
+const CURATED_CASE_SOURCE = 'opengeolab-curated-case';
 const CASE_SEED_ROOT = path.join(__dirname, '..', 'case-seeds');
 
 const NANJING_ROOFTOP_CASE = {
@@ -120,8 +121,62 @@ const URBAN_M2M_CASE = {
     ]
 };
 
+function normalizeManifestList(value) {
+    return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function loadCuratedCaseSeedSpecs() {
+    if (!fs.existsSync(CASE_SEED_ROOT)) return [];
+
+    return fs.readdirSync(CASE_SEED_ROOT, { withFileTypes: true })
+        .filter(entry => entry.isDirectory())
+        .map(entry => {
+            const slug = entry.name;
+            if (slug === NANJING_ROOFTOP_CASE_SLUG || slug === URBAN_M2M_CASE_SLUG) {
+                return null;
+            }
+
+            const seedDir = path.join(CASE_SEED_ROOT, slug);
+            const manifestPath = path.join(seedDir, 'case.json');
+            if (!fs.existsSync(manifestPath)) return null;
+
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            const coreNotebook = manifest.coreNotebook || 'main.ipynb';
+            const coverFileName = manifest.coverFileName || 'cover.svg';
+
+            return {
+                source: manifest.source || CURATED_CASE_SOURCE,
+                sourceId: manifest.sourceId || slug,
+                slug,
+                title: manifest.title || slug,
+                summary: manifest.summary || manifest.description || '',
+                description: manifest.description || manifest.summary || '',
+                domain: manifest.domain || 'Geospatial Analysis',
+                tags: normalizeManifestList(manifest.tags),
+                authors: normalizeManifestList(manifest.authors),
+                authorLine: manifest.authorLine || normalizeManifestList(manifest.authors).join(', '),
+                timeLabel: manifest.timeLabel || '',
+                runtimeImageId: manifest.runtimeImageId || 'opengms-geoviz',
+                coreNotebook,
+                coverFileName,
+                projectDir: path.join(seedDir, 'project'),
+                coverPath: path.join(seedDir, coverFileName),
+                projectDataBindings: normalizeManifestList(manifest.projectDataBindings),
+                steps: normalizeManifestList(manifest.steps),
+                datasets: normalizeManifestList(manifest.datasets),
+                expectedResults: normalizeManifestList(manifest.expectedResults)
+            };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
 function getLocalCaseSeedSpecs() {
-    return [NANJING_ROOFTOP_CASE, URBAN_M2M_CASE];
+    return [
+        NANJING_ROOFTOP_CASE,
+        URBAN_M2M_CASE,
+        ...loadCuratedCaseSeedSpecs()
+    ];
 }
 
 function resolveUserDataDir(userDataDir = process.env.USER_DATA_DIR || path.join(__dirname, '..', 'jupyter-data')) {
@@ -375,6 +430,7 @@ module.exports = {
     DEFAULT_WORKBENCH_CASE_OWNER,
     getLocalCaseSeedSpecs,
     LOCAL_CASE_SOURCE,
+    CURATED_CASE_SOURCE,
     NANJING_ROOFTOP_CASE_SLUG,
     URBAN_M2M_CASE_SLUG,
     resolveUserDataDir,
