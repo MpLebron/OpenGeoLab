@@ -73,6 +73,7 @@ import {
   getWorkspaceProjectTitle
 } from '../utils/workspaceProjectDisplay.js'
 import { confirmDialog, notify } from '../utils/systemFeedback.js'
+import { createApiClient } from '../utils/apiClient.js'
 
 const props = defineProps({
   embedded: {
@@ -102,7 +103,7 @@ const caseLibraryActions = [
 const getToken = () => localStorage.getItem('jupyter_token')
 const authAxios = () => {
   const token = getToken()
-  return axios.create({
+  return createApiClient({
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
 }

@@ -12,12 +12,22 @@ import { LLMSettings } from './LLMSettings';
 import { ChatHistory } from './ChatHistory';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import { FAVICON_BASE64 } from '../assets';
+import { buildOpenGeoLabApiBaseFromLocation } from '../services/gatewayPath';
 
 /**
  * 获取 API 基础 URL（与 agentApi.ts 保持一致）
  */
 function getApiBase(): string {
     if (typeof window !== 'undefined') {
+        const gatewayApiBase = buildOpenGeoLabApiBaseFromLocation({
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            includeApiSegment: false
+        });
+        if (gatewayApiBase) {
+            return gatewayApiBase;
+        }
+
         const hostname = window.location.hostname;
         return `http://${hostname}:3000`;
     }

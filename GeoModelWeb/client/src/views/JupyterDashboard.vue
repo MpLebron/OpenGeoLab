@@ -3,7 +3,7 @@
     <!-- 独立的顶部导航栏 -->
     <header class="jupyter-nav">
       <div class="nav-left">
-        <a href="/" class="back-home-link">← Back to OpenGeoLab</a>
+        <RouterLink to="/" class="back-home-link">← Back to OpenGeoLab</RouterLink>
       </div>
       <div class="nav-right">
         <div v-if="isLoggedIn" class="workspace-avatar" :title="user?.displayName || user?.username">
@@ -1113,6 +1113,7 @@ import {
 } from '../utils/dataLibraryDisplay.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { confirmDialog, notify, promptDialog } from '../utils/systemFeedback.js'
+import { createApiClient, getAuthBaseUrl } from '../utils/apiClient.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -2132,18 +2133,9 @@ const clearToken = () => localStorage.removeItem('jupyter_token')
 // 创建带认证的 axios 实例
 const authAxios = () => {
   const token = getToken()
-  return axios.create({
+  return createApiClient({
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
-}
-
-const getAuthBaseUrl = () => {
-  const envBaseUrl = import.meta.env.VITE_API_BASE_URL
-  if (envBaseUrl) {
-    return envBaseUrl.replace(/\/+$/, '')
-  }
-
-  return window.location.origin.replace(/\/+$/, '')
 }
 
 const startOAuthLogin = (provider) => {

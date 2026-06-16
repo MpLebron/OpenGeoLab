@@ -19,6 +19,17 @@ function normalizePublicOrigin(publicOrigin = '', req = null) {
     return 'http://localhost:3000';
 }
 
+function buildPublicUrl(publicOrigin = '', pathValue = '') {
+    const origin = normalizePublicOrigin(publicOrigin);
+    const url = new URL(origin);
+    const originPath = url.pathname === '/' ? '' : trimTrailingSlash(url.pathname);
+    const normalizedPath = `/${String(pathValue || '').replace(/^\/+/, '')}`;
+    url.pathname = `${originPath}${normalizedPath}`.replace(/\/{2,}/g, '/');
+    url.search = '';
+    url.hash = '';
+    return url;
+}
+
 function normalizePathSegment(value = '') {
     return String(value || '')
         .normalize('NFKD')
@@ -73,9 +84,8 @@ function buildJupyterLaunchUrl({
     token = '',
     geomodelToken = ''
 } = {}) {
-    const origin = normalizePublicOrigin(publicOrigin);
     const serverBasePath = buildJupyterBasePath(workspaceId, basePath);
-    const url = new URL(`${serverBasePath}lab`, `${origin}/`);
+    const url = buildPublicUrl(publicOrigin, `${serverBasePath}lab`);
     appendLaunchSearchParams(url, {
         token,
         geomodel_token: geomodelToken
@@ -172,6 +182,7 @@ function createJupyterGatewayRegistry() {
 const defaultJupyterGatewayRegistry = createJupyterGatewayRegistry();
 
 module.exports = {
+    buildPublicUrl,
     buildJupyterBasePath,
     buildJupyterLaunchUrl,
     buildJupyterServerId,

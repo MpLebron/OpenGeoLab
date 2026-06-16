@@ -226,6 +226,7 @@ import json from 'highlight.js/lib/languages/json'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import bash from 'highlight.js/lib/languages/bash'
+import { createApiClient } from '../utils/apiClient.js'
 
 hljs.registerLanguage('python', python)
 hljs.registerLanguage('javascript', javascript)
@@ -261,7 +262,7 @@ const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.json', '.geojson', '.xml', '.y
 const getToken = () => localStorage.getItem('jupyter_token')
 const authAxios = () => {
   const token = getToken()
-  return axios.create({
+  return createApiClient({
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
 }

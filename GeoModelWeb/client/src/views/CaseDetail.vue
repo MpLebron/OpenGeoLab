@@ -276,6 +276,7 @@ import {
 } from '../utils/filePreview.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { notify } from '../utils/systemFeedback.js'
+import { createApiClient } from '../utils/apiClient.js'
 
 hljs.registerLanguage('python', python)
 hljs.registerLanguage('javascript', javascript)
@@ -307,7 +308,7 @@ const forkMessage = ref('')
 const getToken = () => localStorage.getItem('jupyter_token')
 const authAxios = () => {
   const token = getToken()
-  return axios.create({
+  return createApiClient({
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
 }

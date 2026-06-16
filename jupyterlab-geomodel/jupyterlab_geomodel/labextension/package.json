@@ -73,7 +73,7 @@
     "extension": true,
     "outputDir": "jupyterlab_geomodel/labextension",
     "_build": {
-      "load": "static/remoteEntry.ed9206b543e48cff6fb6.js",
+      "load": "static/remoteEntry.099a4e9877a7b6e001ba.js",
       "extension": "./extension",
       "style": "./style"
     }

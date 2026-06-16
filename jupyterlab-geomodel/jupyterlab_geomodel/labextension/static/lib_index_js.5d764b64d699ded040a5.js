@@ -95,10 +95,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _ChatHistory__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./ChatHistory */ "./lib/components/ChatHistory.js");
 /* harmony import */ var _utils_markdownRenderer__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../utils/markdownRenderer */ "./lib/utils/markdownRenderer.js");
 /* harmony import */ var _assets__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../assets */ "./lib/assets.js");
+/* harmony import */ var _services_gatewayPath__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../services/gatewayPath */ "./lib/services/gatewayPath.js");
 /**
  * Agent Chat Panel
  * AI 助手聊天界面，放置在左侧边栏
  */
+
 
 
 
@@ -112,6 +114,14 @@ __webpack_require__.r(__webpack_exports__);
  */
 function getApiBase() {
     if (typeof window !== 'undefined') {
+        const gatewayApiBase = (0,_services_gatewayPath__WEBPACK_IMPORTED_MODULE_7__.buildOpenGeoLabApiBaseFromLocation)({
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            includeApiSegment: false
+        });
+        if (gatewayApiBase) {
+            return gatewayApiBase;
+        }
         const hostname = window.location.hostname;
         return `http://${hostname}:3000`;
     }
@@ -4309,10 +4319,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   testConnection: () => (/* binding */ testConnection),
 /* harmony export */   updateConversationTitle: () => (/* binding */ updateConversationTitle)
 /* harmony export */ });
+/* harmony import */ var _gatewayPath__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./gatewayPath */ "./lib/services/gatewayPath.js");
 /**
  * Agent API Service
  * 处理与后端 Agent 服务的通信
  */
+
 const API_BASE = '/api/agent';
 /**
  * 获取认证 token
@@ -4343,8 +4355,13 @@ function getAuthHeaders() {
  */
 function getApiBase() {
     if (typeof window !== 'undefined') {
-        if (window.location.pathname.startsWith('/jupyter/')) {
-            return window.location.origin.replace(/\/+$/, '');
+        const gatewayApiBase = (0,_gatewayPath__WEBPACK_IMPORTED_MODULE_0__.buildOpenGeoLabApiBaseFromLocation)({
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            includeApiSegment: false
+        });
+        if (gatewayApiBase) {
+            return gatewayApiBase;
         }
         // Direct-port local debugging fallback.
         const hostname = window.location.hostname;
@@ -4357,8 +4374,7 @@ function getApiBase() {
     return 'http://localhost:3000';
 }
 function extractWorkspaceIdFromPath(pathname = '') {
-    const match = pathname.match(/^\/jupyter\/([^/]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
+    return (0,_gatewayPath__WEBPACK_IMPORTED_MODULE_0__.extractWorkspaceIdFromGatewayPath)(pathname);
 }
 /**
  * 获取可用的 LLM Provider 列表
@@ -5100,6 +5116,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   materializeProjectData: () => (/* binding */ materializeProjectData),
 /* harmony export */   resolveProjectName: () => (/* binding */ resolveProjectName)
 /* harmony export */ });
+/* harmony import */ var _gatewayPath__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./gatewayPath */ "./lib/services/gatewayPath.js");
+
 // API Base URL - Dynamic detection
 const getApiBaseUrl = () => {
     if (typeof window !== 'undefined') {
@@ -5108,8 +5126,13 @@ const getApiBaseUrl = () => {
             // @ts-ignore
             return window.GEOMODEL_API_URL;
         }
-        if (window.location.pathname.startsWith('/jupyter/')) {
-            return `${window.location.origin.replace(/\/+$/, '')}/api`;
+        const gatewayApiBase = (0,_gatewayPath__WEBPACK_IMPORTED_MODULE_0__.buildOpenGeoLabApiBaseFromLocation)({
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            includeApiSegment: true
+        });
+        if (gatewayApiBase) {
+            return gatewayApiBase;
         }
         // Direct-port local debugging fallback.
         const hostname = window.location.hostname;
@@ -5161,8 +5184,7 @@ const getProjectName = () => {
     return params.get('project') || localStorage.getItem('geomodel_project') || '';
 };
 function extractWorkspaceIdFromPath(pathname = '') {
-    const match = pathname.match(/^\/jupyter\/([^/]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
+    return (0,_gatewayPath__WEBPACK_IMPORTED_MODULE_0__.extractWorkspaceIdFromGatewayPath)(pathname);
 }
 function parseProjectNameFromContainer(containerName) {
     if (!containerName)
@@ -5828,6 +5850,62 @@ async function fetchDataMethodDetail(methodName) {
 
 /***/ }),
 
+/***/ "./lib/services/gatewayPath.js":
+/*!*************************************!*\
+  !*** ./lib/services/gatewayPath.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   buildOpenGeoLabApiBaseFromLocation: () => (/* binding */ buildOpenGeoLabApiBaseFromLocation),
+/* harmony export */   extractWorkspaceIdFromGatewayPath: () => (/* binding */ extractWorkspaceIdFromGatewayPath),
+/* harmony export */   parseJupyterGatewayPath: () => (/* binding */ parseJupyterGatewayPath)
+/* harmony export */ });
+function normalizePrefix(prefix = '') {
+    const normalized = String(prefix || '').replace(/\/+$/, '');
+    return normalized === '/' ? '' : normalized;
+}
+function decodeWorkspaceId(value = '') {
+    try {
+        return decodeURIComponent(value);
+    }
+    catch (error) {
+        return value;
+    }
+}
+function parseJupyterGatewayPath(pathname = '') {
+    const match = String(pathname || '').match(/^(.*?)(?:\/jupyter\/([^/?#]+)(?:[/?#]|$))/);
+    if (!match) {
+        return null;
+    }
+    const prefix = normalizePrefix(match[1] || '');
+    const workspaceId = decodeWorkspaceId(match[2] || '');
+    if (!workspaceId) {
+        return null;
+    }
+    return {
+        prefix,
+        workspaceId,
+        jupyterBasePath: `${prefix}/jupyter/${encodeURIComponent(workspaceId)}`
+    };
+}
+function extractWorkspaceIdFromGatewayPath(pathname = '') {
+    var _a;
+    return ((_a = parseJupyterGatewayPath(pathname)) === null || _a === void 0 ? void 0 : _a.workspaceId) || '';
+}
+function buildOpenGeoLabApiBaseFromLocation({ origin = '', pathname = '', includeApiSegment = true } = {}) {
+    const gatewayPath = parseJupyterGatewayPath(pathname);
+    if (!gatewayPath) {
+        return '';
+    }
+    const base = `${String(origin || '').replace(/\/+$/, '')}${gatewayPath.prefix}`;
+    return includeApiSegment ? `${base}/api` : base;
+}
+
+
+/***/ }),
+
 /***/ "./lib/utils/codeGenerator.js":
 /*!************************************!*\
   !*** ./lib/utils/codeGenerator.js ***!
@@ -6357,4 +6435,4 @@ class GeoModelWidget extends _jupyterlab_apputils__WEBPACK_IMPORTED_MODULE_0__.R
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_index_js.4f9e05cb69e036e85f9d.js.map
+//# sourceMappingURL=lib_index_js.5d764b64d699ded040a5.js.map

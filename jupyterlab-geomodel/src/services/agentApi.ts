@@ -3,6 +3,11 @@
  * 处理与后端 Agent 服务的通信
  */
 
+import {
+    buildOpenGeoLabApiBaseFromLocation,
+    extractWorkspaceIdFromGatewayPath
+} from './gatewayPath';
+
 const API_BASE = '/api/agent';
 
 export interface LLMConfig {
@@ -117,8 +122,13 @@ function getAuthHeaders(): Record<string, string> {
  */
 function getApiBase(): string {
     if (typeof window !== 'undefined') {
-        if (window.location.pathname.startsWith('/jupyter/')) {
-            return window.location.origin.replace(/\/+$/, '');
+        const gatewayApiBase = buildOpenGeoLabApiBaseFromLocation({
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            includeApiSegment: false
+        });
+        if (gatewayApiBase) {
+            return gatewayApiBase;
         }
 
         // Direct-port local debugging fallback.
@@ -133,8 +143,7 @@ function getApiBase(): string {
 }
 
 function extractWorkspaceIdFromPath(pathname: string = ''): string {
-    const match = pathname.match(/^\/jupyter\/([^/]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
+    return extractWorkspaceIdFromGatewayPath(pathname);
 }
 
 /**

@@ -2,6 +2,10 @@
  * API Service - Communicate with OpenGeoLab backend
  */
 import { IModel, IDataMethod, IParameter, ICloudDataItem, IProjectDataBinding } from '../types';
+import {
+  buildOpenGeoLabApiBaseFromLocation,
+  extractWorkspaceIdFromGatewayPath
+} from './gatewayPath';
 
 // API Base URL - Dynamic detection
 const getApiBaseUrl = (): string => {
@@ -12,8 +16,13 @@ const getApiBaseUrl = (): string => {
       return window.GEOMODEL_API_URL;
     }
 
-    if (window.location.pathname.startsWith('/jupyter/')) {
-      return `${window.location.origin.replace(/\/+$/, '')}/api`;
+    const gatewayApiBase = buildOpenGeoLabApiBaseFromLocation({
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+      includeApiSegment: true
+    });
+    if (gatewayApiBase) {
+      return gatewayApiBase;
     }
 
     // Direct-port local debugging fallback.
@@ -75,8 +84,7 @@ export const getProjectName = (): string => {
 };
 
 function extractWorkspaceIdFromPath(pathname: string = ''): string {
-  const match = pathname.match(/^\/jupyter\/([^/]+)/);
-  return match ? decodeURIComponent(match[1]) : '';
+  return extractWorkspaceIdFromGatewayPath(pathname);
 }
 
 function parseProjectNameFromContainer(containerName: string | null): string {

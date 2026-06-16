@@ -3,9 +3,9 @@
     <!-- 顶部导航 -->
     <header class="project-nav">
       <div class="nav-left">
-        <a href="/" class="logo-link">
-          <img src="/logo.png" alt="OpenGeoLab" class="logo">
-        </a>
+        <RouterLink to="/" class="logo-link">
+          <img :src="withAppBasePath('logo.png')" alt="OpenGeoLab" class="logo">
+        </RouterLink>
         <router-link to="/jupyter" class="back-link">
           <span class="back-icon">←</span>
           <span>返回 Dashboard</span>
@@ -337,6 +337,7 @@ import {
 } from '../utils/jupyterLaunchUrl.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { notify } from '../utils/systemFeedback.js'
+import { createApiClient, withAppBasePath } from '../utils/apiClient.js'
 
 hljs.registerLanguage('python', python)
 hljs.registerLanguage('javascript', javascript)
@@ -648,7 +649,7 @@ const getToken = () => localStorage.getItem('jupyter_token')
 // 创建带认证的 axios 实例
 const authAxios = () => {
   const token = getToken()
-  return axios.create({
+  return createApiClient({
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
 }

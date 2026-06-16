@@ -63,6 +63,17 @@ const HOST_IP = process.env.HOST_IP || 'localhost';
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://${HOST_IP}:5173`;
 const BACKEND_URL = process.env.BACKEND_URL || `http://${HOST_IP}:${PORT}`;
 
+function getUrlOrigin(value = '') {
+    try {
+        return new URL(value).origin;
+    } catch (error) {
+        return value;
+    }
+}
+
+const FRONTEND_ORIGIN = getUrlOrigin(FRONTEND_URL);
+const BACKEND_ORIGIN = getUrlOrigin(BACKEND_URL);
+
 // 允许局域网访问
 app.use(cors({
     origin: [
@@ -72,6 +83,8 @@ app.use(cors({
         'http://127.0.0.1:8888',
         FRONTEND_URL,
         BACKEND_URL,
+        FRONTEND_ORIGIN,
+        BACKEND_ORIGIN,
         /^http:\/\/localhost:\d+$/,
         /^http:\/\/127\.0\.0\.1:\d+$/,
         /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // 允许所有 192.168.x.x 的局域网地址
@@ -1904,8 +1917,8 @@ async function startServer() {
         console.log(`DataMethod API: ${API_BASE_URL}`);
         console.log(`OGMS Model API: ${OGMS_PORTAL_URL}`);
         console.log(`MongoDB: ${databaseInfo.uri}/${databaseInfo.dbName}`);
-        console.log(`GitHub OAuth callback: http://localhost:${PORT}/api/auth/github/callback`);
-        console.log(`Google OAuth callback: http://localhost:${PORT}/api/auth/google/callback`);
+        console.log(`GitHub OAuth callback: ${BACKEND_URL}/api/auth/github/callback`);
+        console.log(`Google OAuth callback: ${BACKEND_URL}/api/auth/google/callback`);
         console.log(`Jupyter API: http://localhost:${PORT}/api/jupyter`);
     });
     server.on('upgrade', jupyterProxy.handleUpgrade);

@@ -20,15 +20,15 @@ const {
   resolveJupyterProxyTarget
 } = require('../middleware/jupyterProxy.js')
 
-test('normalizes public origin for single-origin production deployment', () => {
-  assert.equal(
-    normalizePublicOrigin('https://opengeolab.geomodeling.njnu.edu.cn/'),
-    'https://opengeolab.geomodeling.njnu.edu.cn'
+test('normalizes public origin for path-prefix production deployment', () => {
+    assert.equal(
+    normalizePublicOrigin('https://geomodeling.njnu.edu.cn/OpenGeoLab/'),
+    'https://geomodeling.njnu.edu.cn/OpenGeoLab'
   )
 
   assert.equal(
-    normalizePublicOrigin('', { protocol: 'https', get: name => name === 'host' ? 'opengeolab.geomodeling.njnu.edu.cn' : '' }),
-    'https://opengeolab.geomodeling.njnu.edu.cn'
+    normalizePublicOrigin('', { protocol: 'https', get: name => name === 'host' ? 'geomodeling.njnu.edu.cn' : '' }),
+    'https://geomodeling.njnu.edu.cn'
   )
 })
 
@@ -45,7 +45,7 @@ test('builds stable workspace ids from project UUIDs and Jupyter base paths with
 
 test('builds public Jupyter launch URLs through the gateway path', () => {
   const url = buildJupyterLaunchUrl({
-    publicOrigin: 'https://opengeolab.geomodeling.njnu.edu.cn/',
+    publicOrigin: 'https://geomodeling.njnu.edu.cn/OpenGeoLab/',
     workspaceId: '550e8400-e29b-41d4-a716-446655440000',
     token: 'abc123',
     geomodelToken: 'jwt456',
@@ -56,7 +56,7 @@ test('builds public Jupyter launch URLs through the gateway path', () => {
 
   assert.equal(
     url,
-    'https://opengeolab.geomodeling.njnu.edu.cn/jupyter/550e8400-e29b-41d4-a716-446655440000/lab?token=abc123&geomodel_token=jwt456'
+    'https://geomodeling.njnu.edu.cn/OpenGeoLab/jupyter/550e8400-e29b-41d4-a716-446655440000/lab?token=abc123&geomodel_token=jwt456'
   )
   assert.equal(url.includes(':8888'), false)
   assert.equal(url.includes(':3000'), false)

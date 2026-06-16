@@ -147,6 +147,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { notify } from '../utils/systemFeedback.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
+import { createApiClient } from '../utils/apiClient.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -168,7 +169,7 @@ const actionStatus = ref('')
 const getToken = () => localStorage.getItem('jupyter_token')
 const authAxios = () => {
   const token = getToken()
-  return axios.create({
+  return createApiClient({
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
 }

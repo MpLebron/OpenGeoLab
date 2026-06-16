@@ -3,7 +3,7 @@
     <nav v-if="!hideMainNav" class="top-nav">
       <div class="top-nav-shell">
         <router-link to="/" class="nav-brand">
-          <img src="/logo.png" alt="OpenGeoLab" class="logo">
+          <img :src="withAppBasePath('logo.png')" alt="OpenGeoLab" class="logo">
         </router-link>
 
         <div class="nav-items">
@@ -31,9 +31,9 @@
         </div>
 
         <div class="nav-right">
-          <a href="/jupyter" class="workspace-link">
+          <router-link to="/jupyter" class="workspace-link">
             OpenGeoLab Jupyter
-          </a>
+          </router-link>
           <button class="lang-switcher" @click="toggleLocale" :title="locale === 'en' ? '切换到中文' : 'Switch to English'">
             <span class="lang-icon">{{ locale === 'en' ? '中' : 'EN' }}</span>
           </button>
@@ -54,6 +54,7 @@ import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 import SystemFeedback from './components/SystemFeedback.vue'
 import SiteFooter from './components/SiteFooter.vue'
+import { withAppBasePath } from './utils/apiClient'
 
 const { locale } = useI18n()
 const route = useRoute()

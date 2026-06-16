@@ -97,6 +97,14 @@ Copy the relevant `.env.example` files before running the system locally or depl
 
 Common environment groups include OpenGMS credentials, Jupyter gateway settings, Docker runtime settings, API base URLs, and optional AI-agent configuration.
 
+The current production deployment is designed for the existing geomodeling gateway path:
+
+```text
+https://geomodeling.njnu.edu.cn/OpenGeoLab/
+```
+
+Local development still runs without that prefix; the `/OpenGeoLab/` path is applied only by the production Vite build and public Nginx gateway.
+
 ## Example Cases
 
 The repository includes case workspaces used to demonstrate the intended research workflow:
