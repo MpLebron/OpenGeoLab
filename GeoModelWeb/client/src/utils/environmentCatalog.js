@@ -9,6 +9,19 @@ export function normalizeEnvironmentCatalog(images = [], options = {}) {
       const available = Boolean(image.available)
       const buildable = Boolean(image.buildable)
       const platformProvided = image.platformProvided !== false
+      const status = image.status || (available ? 'installed' : 'missing')
+      const installedSize = image.installedSize || ''
+      const estimatedSize = image.estimatedSize || ''
+      const sizeLabel = available
+        ? (installedSize || image.size || estimatedSize)
+        : formatEstimatedSize(estimatedSize || image.size)
+      const availabilityLabel = getEnvironmentAvailabilityLabel({
+        ...image,
+        available,
+        buildable,
+        platformProvided,
+        status
+      })
 
       return {
         ...image,
@@ -19,8 +32,13 @@ export function normalizeEnvironmentCatalog(images = [], options = {}) {
         source: image.source || 'official',
         stack: image.stack || image.description || '',
         accelerator: image.accelerator || 'CPU',
-        size: image.size || image.installedSize || image.estimatedSize || '',
-        projects: image.projects || (platformProvided ? 'System runtime' : 'Unavailable'),
+        status,
+        installedSize,
+        estimatedSize,
+        size: sizeLabel,
+        sizeLabel,
+        availabilityLabel,
+        projects: image.projects || availabilityLabel,
         available,
         buildable,
         platformProvided,
@@ -30,9 +48,24 @@ export function normalizeEnvironmentCatalog(images = [], options = {}) {
 }
 
 export function canCreateProjectFromEnvironment(environment = {}) {
-  return Boolean((environment.id || environment.available) && environment.platformProvided !== false)
+  return Boolean(environment.available && environment.platformProvided !== false)
 }
 
 export function getEnvironmentActionLabel(environment = {}) {
-  return canCreateProjectFromEnvironment(environment) ? 'Use for New Project' : 'Unavailable'
+  if (canCreateProjectFromEnvironment(environment)) return 'Use for New Project'
+  if (environment.buildable && environment.platformProvided !== false) return 'Build required'
+  return 'Unavailable'
+}
+
+export function getEnvironmentAvailabilityLabel(environment = {}) {
+  if (environment.available) return 'Installed'
+  if (environment.buildable && environment.platformProvided !== false) return 'Build required'
+  return 'Unavailable'
+}
+
+function formatEstimatedSize(size = '') {
+  const value = String(size || '').trim()
+  if (!value) return ''
+  if (/^estimated\s+/i.test(value)) return value
+  return `Estimated ${value}`
 }

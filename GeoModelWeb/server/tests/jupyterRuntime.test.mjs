@@ -14,6 +14,7 @@ const {
   getRuntimeBuildSpec,
   getRuntimeCatalog,
   inspectRuntimeReadiness,
+  inspectRuntimeCatalogImage,
   formatDockerImageSize,
   buildDockerCommandEnv,
   buildOpenGmsCredentialEnv
@@ -68,12 +69,18 @@ test('builds canonical runtime metadata for project files', () => {
 test('runtime catalog exposes real buildable Docker image definitions', () => {
   const catalog = getRuntimeCatalog()
 
-  assert.ok(catalog.length >= 5)
+  assert.equal(catalog.length, 12)
   assert.ok(catalog.every(runtime => runtime.imageName))
   assert.ok(catalog.every(runtime => runtime.buildable))
   assert.ok(catalog.every(runtime => runtime.build?.dockerfile?.endsWith('Dockerfile')))
   assert.ok(catalog.some(runtime => runtime.id === 'opengms-pangeo-earth'))
   assert.ok(catalog.some(runtime => runtime.id === 'opengms-geoai-pytorch'))
+  assert.ok(catalog.some(runtime => runtime.id === 'opengms-spatial-stats'))
+  assert.ok(catalog.some(runtime => runtime.id === 'opengms-urban-mobility'))
+  assert.ok(catalog.some(runtime => runtime.id === 'opengms-streetview-cv'))
+  assert.ok(catalog.some(runtime => runtime.id === 'opengms-urban-energy'))
+  assert.ok(catalog.some(runtime => runtime.id === 'opengms-hydro-terrain'))
+  assert.ok(catalog.some(runtime => runtime.id === 'opengms-pointcloud-lidar'))
 })
 
 test('runtime build spec points at project Dockerfile and build context', () => {
@@ -193,6 +200,44 @@ test('reports runtime ready when Docker daemon and image are available', async (
 
   assert.equal(status.ok, true)
   assert.equal(status.code, 'ready')
+})
+
+test('catalog image inspection returns installed Docker metadata', async () => {
+  const runtime = getRuntimeCatalog().find(image => image.id === 'geomodel-jupyter')
+  const status = await inspectRuntimeCatalogImage(runtime, async (command) => {
+    assert.equal(
+      command,
+      `docker image inspect --format "{{json .}}" ${JUPYTER_IMAGES['geomodel-jupyter'].name}`
+    )
+    return JSON.stringify({
+      Id: 'sha256:abc123',
+      Created: '2026-06-16T11:33:33.433861785+08:00',
+      Size: 1368496974
+    })
+  })
+
+  assert.equal(status.available, true)
+  assert.equal(status.status, 'installed')
+  assert.equal(status.installedSize, '1.3 GB')
+  assert.equal(status.size, '1.3 GB')
+  assert.equal(status.imageId, 'sha256:abc123')
+  assert.equal(status.imageCreatedAt, '2026-06-16T11:33:33.433861785+08:00')
+  assert.equal(status.unavailableReason, '')
+})
+
+test('catalog image inspection reports missing images without hiding estimated size', async () => {
+  const runtime = getRuntimeCatalog().find(image => image.id === 'opengms-pangeo-earth')
+  const status = await inspectRuntimeCatalogImage(runtime, async () => {
+    throw new Error('No such image')
+  })
+
+  assert.equal(status.available, false)
+  assert.equal(status.status, 'missing')
+  assert.equal(status.installedSize, '')
+  assert.equal(status.size, runtime.estimatedSize)
+  assert.equal(status.imageId, '')
+  assert.equal(status.imageCreatedAt, '')
+  assert.equal(status.unavailableReason, 'image_missing')
 })
 
 test('removes Windows npipe Docker host when running on non-Windows platforms', () => {

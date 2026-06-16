@@ -19,5 +19,15 @@ cd GeoModelWeb/server
 node scripts/buildJupyterRuntimeImages.js --all
 ```
 
+The current catalog contains the default GeoModel Core image, five original
+specialized images, and six CPU-first domain images:
+
+- Spatial Statistics
+- Urban Mobility
+- Street-View CV
+- Urban Energy
+- Hydro Terrain
+- Point Cloud / LiDAR
+
 The catalog itself lives in `server/utils/jupyterRuntime.js`; image IDs stored
 in `.project.json` must match that catalog.

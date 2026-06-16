@@ -15,6 +15,9 @@ RUN mamba install -y -c conda-forge \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"
 
+ENV PROJ_DATA=/opt/conda/share/proj \
+    PROJ_LIB=/opt/conda/share/proj
+
 USER ${NB_UID}
 
 WORKDIR /home/jovyan/work

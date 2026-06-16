@@ -3,11 +3,13 @@ FROM opengms/geomodel-core:2026.05
 USER root
 
 RUN mamba install -y -c conda-forge \
-    pytorch-cpu \
-    torchgeo \
-    albumentations \
-    && pip install --no-cache-dir simsimd stringzilla \
+    pyflwdir \
+    flopy \
+    landlab \
     && mamba clean --all -f -y \
+    && pip install --no-cache-dir \
+      whitebox \
+      pysheds \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"
 

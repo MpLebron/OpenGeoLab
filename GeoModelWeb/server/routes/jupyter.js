@@ -15,7 +15,7 @@ const {
     DEFAULT_IMAGE,
     getRuntimeCatalog,
     buildDockerBuildCommand,
-    formatDockerImageSize,
+    inspectRuntimeCatalogImage,
     buildProjectRuntimeMeta,
     resolveProjectRuntime,
     checkDockerDaemon,
@@ -555,6 +555,11 @@ router.get('/images', async (req, res) => {
                 images: runtimeCatalog.map(config => ({
                     ...config,
                     available: false,
+                    status: 'missing',
+                    installedSize: '',
+                    size: config.estimatedSize || '',
+                    imageId: '',
+                    imageCreatedAt: '',
                     unavailableReason: 'docker_not_running'
                 })),
                 default: DEFAULT_IMAGE,
@@ -565,24 +570,7 @@ router.get('/images', async (req, res) => {
 
         // 检查每个镜像是否已存在
         const imagesWithStatus = await Promise.all(
-            runtimeCatalog.map(async (config) => {
-                let available = false;
-                let installedSize = '';
-                try {
-                    const imageSize = await runDockerCommand(`docker image inspect --format "{{.Size}}" ${config.imageName}`);
-                    available = true;
-                    installedSize = formatDockerImageSize(imageSize);
-                } catch (e) {
-                    available = false;
-                }
-                return {
-                    ...config,
-                    available,
-                    size: installedSize || config.estimatedSize || '',
-                    installedSize,
-                    unavailableReason: available ? '' : 'image_missing'
-                };
-            })
+            runtimeCatalog.map(config => inspectRuntimeCatalogImage(config, runDockerCommand))
         );
 
         res.json({

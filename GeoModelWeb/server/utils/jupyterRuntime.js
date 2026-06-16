@@ -298,6 +298,270 @@ const JUPYTER_IMAGES = {
             maintainer: 'OpenGMS R Spatial Runtime'
         },
         default: false
+    },
+    'opengms-spatial-stats': {
+        name: `opengms/spatial-stats:${RUNTIME_CATALOG_VERSION}`,
+        label: 'Spatial Statistics',
+        title: 'Spatial Statistics',
+        description: 'Spatial statistics and econometrics runtime for exploratory spatial data analysis, spatial weights, hotspot detection, and regression workflows.',
+        source: 'official',
+        category: 'spatial-analysis',
+        python: '3.13',
+        tags: ['Official', 'CPU', 'Statistics'],
+        stack: 'GeoModel Core · PySAL · ESDA · Spatial Regression · MGWR',
+        accelerator: 'CPU',
+        estimatedSize: '5-7 GB',
+        features: ['pysal', 'libpysal', 'esda', 'spreg', 'mgwr', 'statsmodels', 'scikit-learn'],
+        baseImage: `opengms/geomodel-core:${RUNTIME_CATALOG_VERSION}`,
+        build: {
+            context: 'docker',
+            dockerfile: 'docker/runtimes/spatial-stats/Dockerfile'
+        },
+        detail: {
+            version: `v${RUNTIME_CATALOG_VERSION}-spatial-stats`,
+            overview: 'A geospatial statistics notebook runtime for spatial weights, autocorrelation, hotspot/outlier analysis, spatial regression, and model diagnostics on vector datasets.',
+            runtimeStack: [
+                { label: 'Base', value: 'GeoModel Core' },
+                { label: 'Analysis', value: 'PySAL / ESDA' },
+                { label: 'Modeling', value: 'Spatial regression' },
+                { label: 'Compute', value: 'CPU' }
+            ],
+            libraries: [
+                ['pysal', 'latest'],
+                ['libpysal', 'latest'],
+                ['esda', 'latest'],
+                ['spreg', 'latest'],
+                ['mgwr', 'latest'],
+                ['statsmodels', 'latest'],
+                ['scikit-learn', 'latest']
+            ],
+            requirements: [
+                { label: 'Compute', value: '4+ vCPU recommended' },
+                { label: 'Memory', value: '8+ GB RAM' },
+                { label: 'Accelerator', value: 'Not required' }
+            ],
+            maintainer: 'OpenGMS Spatial Analysis Runtime'
+        },
+        default: false
+    },
+    'opengms-urban-mobility': {
+        name: `opengms/urban-mobility:${RUNTIME_CATALOG_VERSION}`,
+        label: 'Urban Mobility',
+        title: 'Urban Mobility',
+        description: 'Street-network, accessibility, urban morphology, and trajectory-analysis runtime for city-scale mobility workflows.',
+        source: 'official',
+        category: 'urban-analysis',
+        python: '3.13',
+        tags: ['Official', 'CPU', 'Urban'],
+        stack: 'GeoModel Core · OSMnx · NetworkX · Momepy · MovingPandas',
+        accelerator: 'CPU',
+        estimatedSize: '5-8 GB',
+        features: ['osmnx', 'networkx', 'momepy', 'movingpandas', 'contextily'],
+        baseImage: `opengms/geomodel-core:${RUNTIME_CATALOG_VERSION}`,
+        build: {
+            context: 'docker',
+            dockerfile: 'docker/runtimes/urban-mobility/Dockerfile'
+        },
+        detail: {
+            version: `v${RUNTIME_CATALOG_VERSION}-urban-mobility`,
+            overview: 'A city analytics runtime for downloading and analyzing street networks, urban amenities, morphology, accessibility, and movement trajectories.',
+            runtimeStack: [
+                { label: 'Base', value: 'GeoModel Core' },
+                { label: 'Networks', value: 'OSMnx / NetworkX' },
+                { label: 'Morphology', value: 'Momepy' },
+                { label: 'Trajectories', value: 'MovingPandas' }
+            ],
+            libraries: [
+                ['osmnx', 'latest'],
+                ['networkx', 'latest'],
+                ['momepy', 'latest'],
+                ['movingpandas', 'latest'],
+                ['contextily', 'latest']
+            ],
+            requirements: [
+                { label: 'Compute', value: '4+ vCPU recommended' },
+                { label: 'Memory', value: '8+ GB RAM' },
+                { label: 'Accelerator', value: 'Not required' }
+            ],
+            maintainer: 'OpenGMS Urban Analytics Runtime'
+        },
+        default: false
+    },
+    'opengms-streetview-cv': {
+        name: `opengms/streetview-cv:${RUNTIME_CATALOG_VERSION}`,
+        label: 'Street-View CV',
+        title: 'Street-View CV',
+        description: 'CPU-first computer-vision runtime for street-view imagery, urban scene analysis, image processing, and lightweight deep-learning inference.',
+        source: 'official',
+        category: 'computer-vision',
+        python: '3.13',
+        tags: ['Official', 'CPU', 'CV'],
+        stack: 'GeoModel Core · OpenCV · scikit-image · PyTorch CPU · Transformers',
+        accelerator: 'CPU',
+        estimatedSize: '7-10 GB',
+        features: ['opencv', 'scikit-image', 'pillow', 'imageio', 'pytorch-cpu', 'torchvision', 'timm', 'transformers'],
+        baseImage: `opengms/geomodel-core:${RUNTIME_CATALOG_VERSION}`,
+        build: {
+            context: 'docker',
+            dockerfile: 'docker/runtimes/streetview-cv/Dockerfile'
+        },
+        detail: {
+            version: `v${RUNTIME_CATALOG_VERSION}-streetview-cv`,
+            overview: 'A CPU-only image analytics runtime for street-view imagery, urban perception, feature extraction, segmentation experiments, and notebook-based computer vision workflows. It does not bundle model weights.',
+            runtimeStack: [
+                { label: 'Base', value: 'GeoModel Core' },
+                { label: 'Vision', value: 'OpenCV / scikit-image' },
+                { label: 'ML', value: 'PyTorch CPU' },
+                { label: 'Weights', value: 'Not bundled' }
+            ],
+            libraries: [
+                ['opencv', 'latest'],
+                ['scikit-image', 'latest'],
+                ['pillow', 'latest'],
+                ['imageio', 'latest'],
+                ['pytorch-cpu', 'latest'],
+                ['torchvision', 'latest'],
+                ['timm', 'latest'],
+                ['transformers', 'latest']
+            ],
+            requirements: [
+                { label: 'Compute', value: '8+ vCPU recommended' },
+                { label: 'Memory', value: '16+ GB RAM' },
+                { label: 'Accelerator', value: 'Not required' }
+            ],
+            maintainer: 'OpenGMS Computer Vision Runtime'
+        },
+        default: false
+    },
+    'opengms-urban-energy': {
+        name: `opengms/urban-energy:${RUNTIME_CATALOG_VERSION}`,
+        label: 'Urban Energy',
+        title: 'Urban Energy',
+        description: 'Urban energy and power-system analysis runtime for photovoltaic, power-flow, grid, and scenario modeling workflows.',
+        source: 'official',
+        category: 'energy-modeling',
+        python: '3.13',
+        tags: ['Official', 'CPU', 'Energy'],
+        stack: 'GeoModel Core · PyPSA · pandapower · pvlib · Linopy',
+        accelerator: 'CPU',
+        estimatedSize: '5-8 GB',
+        features: ['pypsa', 'pandapower', 'pvlib-python', 'linopy', 'highspy'],
+        baseImage: `opengms/geomodel-core:${RUNTIME_CATALOG_VERSION}`,
+        build: {
+            context: 'docker',
+            dockerfile: 'docker/runtimes/urban-energy/Dockerfile'
+        },
+        detail: {
+            version: `v${RUNTIME_CATALOG_VERSION}-urban-energy`,
+            overview: 'A city-scale energy analysis runtime for renewable generation, photovoltaic modeling, power-flow simulation, and optimization-backed energy scenarios.',
+            runtimeStack: [
+                { label: 'Base', value: 'GeoModel Core' },
+                { label: 'Energy Systems', value: 'PyPSA' },
+                { label: 'Power Flow', value: 'pandapower' },
+                { label: 'Solar', value: 'pvlib' }
+            ],
+            libraries: [
+                ['pypsa', 'latest'],
+                ['pandapower', 'latest'],
+                ['pvlib-python', 'latest'],
+                ['linopy', 'latest'],
+                ['highspy', 'latest']
+            ],
+            requirements: [
+                { label: 'Compute', value: '4+ vCPU recommended' },
+                { label: 'Memory', value: '8+ GB RAM' },
+                { label: 'Accelerator', value: 'Not required' }
+            ],
+            maintainer: 'OpenGMS Urban Energy Runtime'
+        },
+        default: false
+    },
+    'opengms-hydro-terrain': {
+        name: `opengms/hydro-terrain:${RUNTIME_CATALOG_VERSION}`,
+        label: 'Hydro Terrain',
+        title: 'Hydro Terrain',
+        description: 'Hydrology, terrain, watershed, flow-routing, and geomorphometry runtime for DEM-centered workflows.',
+        source: 'official',
+        category: 'hydrology',
+        python: '3.13',
+        tags: ['Official', 'CPU', 'Hydrology'],
+        stack: 'GeoModel Core · WhiteboxTools · pyflwdir · FloPy · Landlab',
+        accelerator: 'CPU',
+        estimatedSize: '5-8 GB',
+        features: ['whitebox', 'pysheds', 'pyflwdir', 'flopy', 'landlab'],
+        baseImage: `opengms/geomodel-core:${RUNTIME_CATALOG_VERSION}`,
+        build: {
+            context: 'docker',
+            dockerfile: 'docker/runtimes/hydro-terrain/Dockerfile'
+        },
+        detail: {
+            version: `v${RUNTIME_CATALOG_VERSION}-hydro-terrain`,
+            overview: 'A terrain and hydrology runtime for DEM conditioning, watershed delineation, flow direction, groundwater modeling, and landscape process experiments.',
+            runtimeStack: [
+                { label: 'Base', value: 'GeoModel Core' },
+                { label: 'Terrain', value: 'WhiteboxTools' },
+                { label: 'Flow Routing', value: 'pyflwdir / pysheds' },
+                { label: 'Hydrology', value: 'FloPy / Landlab' }
+            ],
+            libraries: [
+                ['whitebox', 'latest'],
+                ['pysheds', 'latest'],
+                ['pyflwdir', 'latest'],
+                ['flopy', 'latest'],
+                ['landlab', 'latest']
+            ],
+            requirements: [
+                { label: 'Compute', value: '4+ vCPU recommended' },
+                { label: 'Memory', value: '8+ GB RAM' },
+                { label: 'Accelerator', value: 'Not required' }
+            ],
+            maintainer: 'OpenGMS Hydrology Runtime'
+        },
+        default: false
+    },
+    'opengms-pointcloud-lidar': {
+        name: `opengms/pointcloud-lidar:${RUNTIME_CATALOG_VERSION}`,
+        label: 'Point Cloud / LiDAR',
+        title: 'Point Cloud / LiDAR',
+        description: 'Point-cloud and 3D geospatial runtime for LiDAR translation, filtering, visualization, and mesh analysis.',
+        source: 'official',
+        category: 'point-cloud',
+        python: '3.13',
+        tags: ['Official', 'CPU', 'LiDAR'],
+        stack: 'GeoModel Core · PDAL · laspy · PyVista · Trimesh',
+        accelerator: 'CPU',
+        estimatedSize: '5-8 GB',
+        features: ['pdal', 'python-pdal', 'laspy', 'lazrs', 'pyvista', 'trimesh'],
+        baseImage: `opengms/geomodel-core:${RUNTIME_CATALOG_VERSION}`,
+        build: {
+            context: 'docker',
+            dockerfile: 'docker/runtimes/pointcloud-lidar/Dockerfile'
+        },
+        detail: {
+            version: `v${RUNTIME_CATALOG_VERSION}-pointcloud-lidar`,
+            overview: 'A 3D geospatial notebook runtime for point-cloud translation, filtering, LAZ/LAS processing, exploratory visualization, and lightweight mesh workflows.',
+            runtimeStack: [
+                { label: 'Base', value: 'GeoModel Core' },
+                { label: 'Point Clouds', value: 'PDAL / laspy' },
+                { label: 'Compression', value: 'lazrs' },
+                { label: '3D Viz', value: 'PyVista / Trimesh' }
+            ],
+            libraries: [
+                ['pdal', 'latest'],
+                ['python-pdal', 'latest'],
+                ['laspy', 'latest'],
+                ['lazrs', 'latest'],
+                ['pyvista', 'latest'],
+                ['trimesh', 'latest']
+            ],
+            requirements: [
+                { label: 'Compute', value: '4+ vCPU recommended' },
+                { label: 'Memory', value: '8+ GB RAM' },
+                { label: 'Accelerator', value: 'Not required' }
+            ],
+            maintainer: 'OpenGMS Point Cloud Runtime'
+        },
+        default: false
     }
 };
 
@@ -385,6 +649,36 @@ function formatDockerImageSize(bytes) {
     if (gib >= 1) return `${gib.toFixed(1)} GB`;
     const mib = numericSize / (1024 * 1024);
     return `${Math.max(1, Math.round(mib))} MB`;
+}
+
+async function inspectRuntimeCatalogImage(runtimeConfig, runDockerCommand) {
+    try {
+        const rawInspect = await runDockerCommand(`docker image inspect --format "{{json .}}" ${runtimeConfig.imageName}`);
+        const inspect = JSON.parse(String(rawInspect || '{}').trim() || '{}');
+        const installedSize = formatDockerImageSize(inspect.Size);
+
+        return {
+            ...runtimeConfig,
+            available: true,
+            status: 'installed',
+            installedSize,
+            size: installedSize || runtimeConfig.estimatedSize || '',
+            imageId: inspect.Id || '',
+            imageCreatedAt: inspect.Created || '',
+            unavailableReason: ''
+        };
+    } catch (error) {
+        return {
+            ...runtimeConfig,
+            available: false,
+            status: 'missing',
+            installedSize: '',
+            size: runtimeConfig.estimatedSize || '',
+            imageId: '',
+            imageCreatedAt: '',
+            unavailableReason: 'image_missing'
+        };
+    }
 }
 
 function buildProjectRuntimeMeta(imageId = DEFAULT_IMAGE, catalog = JUPYTER_IMAGES) {
@@ -546,6 +840,7 @@ module.exports = {
     getRuntimeBuildSpec,
     buildDockerBuildCommand,
     formatDockerImageSize,
+    inspectRuntimeCatalogImage,
     buildProjectRuntimeMeta,
     resolveProjectRuntime,
     checkDockerDaemon,

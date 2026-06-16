@@ -767,7 +767,7 @@
               <article
                 v-for="env in filteredEnvironmentCatalog"
                 :key="env.id"
-                :class="['env-registry-card', { selected: selectedEnvId === env.id }]"
+                :class="['env-registry-card', { selected: selectedEnvId === env.id, unavailable: !env.available }]"
                 @click="openEnvironmentDrawer(env.id)"
               >
                 <div class="env-registry-card-header">
@@ -798,8 +798,10 @@
                   <span :class="['env-runtime-type', environmentAcceleratorClass(env)]">
                     {{ env.accelerator }}
                   </span>
-                  <span class="env-size">{{ env.size }}</span>
-                  <span class="env-projects">{{ env.projects }}</span>
+                  <span class="env-size">{{ env.sizeLabel || env.size }}</span>
+                  <span :class="['env-projects', { installed: env.available, missing: !env.available }]">
+                    {{ env.availabilityLabel }}
+                  </span>
                 </div>
               </article>
             </section>
@@ -815,7 +817,9 @@
                     <div class="environment-drawer-title-block">
                       <div class="environment-drawer-title-row">
                         <h3>{{ drawerEnvironment.name }}</h3>
-                        <span class="environment-verified-badge">Verified</span>
+                        <span :class="['environment-verified-badge', { missing: !drawerEnvironment.available }]">
+                          {{ drawerEnvironment.availabilityLabel }}
+                        </span>
                       </div>
                       <p class="environment-version-line">
                         <span>{{ drawerEnvironment.detail.version }}</span>
@@ -1271,7 +1275,13 @@ const environmentFilters = [
   { label: 'STAC', value: 'stac' },
   { label: 'GeoAI', value: 'geoai' },
   { label: 'Viz', value: 'visualization' },
-  { label: 'R', value: 'r' }
+  { label: 'R', value: 'r' },
+  { label: 'Stats', value: 'spatial-analysis' },
+  { label: 'Urban', value: 'urban-analysis' },
+  { label: 'CV', value: 'computer-vision' },
+  { label: 'Energy', value: 'energy-modeling' },
+  { label: 'Hydrology', value: 'hydrology' },
+  { label: 'LiDAR', value: 'lidar' }
 ]
 
 const environmentFallbackLibraries = [
@@ -1306,7 +1316,7 @@ const buildEnvironmentDetail = (env) => {
   ))
   return {
     version: profile.version || env.imageName || env.runtimeName || env.id,
-    updated: env.available ? 'Installed on this host' : 'Provided by OpenGeoLab',
+    updated: env.available ? 'Installed on this host' : 'Build required before launch',
     overview: profile.overview || env.description || `${env.name} is a predefined OpenGMS Jupyter runtime image.`,
     runtimeStack: profile.runtimeStack || environmentFallbackRuntimeStack(env),
     libraries,
@@ -1316,8 +1326,8 @@ const buildEnvironmentDetail = (env) => {
       { label: 'Memory', value: environmentAcceleratorClass(env) === 'gpu' ? '32 - 192 GB RAM' : '8 - 96 GB RAM' },
       { label: 'Accelerator', value: environmentAcceleratorClass(env) === 'gpu' ? 'NVIDIA A100 / L40S' : 'Not required' }
     ],
-    digest: env.imageName || env.runtimeName || env.id,
-    buildDate: profile.buildDate || 'Runtime catalog',
+    digest: env.imageId || env.imageName || env.runtimeName || env.id,
+    buildDate: env.imageCreatedAt || profile.buildDate || 'Runtime catalog',
     maintainer: profile.maintainer || 'OpenGeoLab Runtime Registry'
   }
 }
@@ -1338,8 +1348,8 @@ const environmentCatalog = computed(() => (
 ))
 
 const createProjectRuntimeOptions = computed(() => (
-  environmentCatalog.value.length
-    ? environmentCatalog.value
+  environmentCatalog.value.some(env => env.available)
+    ? environmentCatalog.value.filter(env => env.available)
     : [{
         id: selectedEnvId.value || 'geomodel-jupyter',
         name: 'GeoModel Core',
@@ -2204,11 +2214,13 @@ const loadEnvironments = async () => {
   try {
     const res = await authAxios().get('/api/jupyter/images')
     availableEnvironments.value = res.data.images || []
+    const preferredEnvironment = availableEnvironments.value.find(env => env.id === selectedEnvId.value)
     if (
       availableEnvironments.value.length > 0 &&
-      !availableEnvironments.value.some(env => env.id === selectedEnvId.value)
+      (!preferredEnvironment || !preferredEnvironment.available)
     ) {
-      selectedEnvId.value = availableEnvironments.value.find(env => env.default)?.id || availableEnvironments.value[0].id
+      const firstInstalledEnvironment = availableEnvironments.value.find(env => env.available)
+      selectedEnvId.value = firstInstalledEnvironment?.id || availableEnvironments.value[0].id
       userDefaultEnvId.value = selectedEnvId.value
       localStorage.setItem('default_jupyter_env', selectedEnvId.value)
     }
@@ -8648,6 +8660,15 @@ onMounted(async () => {
   box-shadow: inset 0 0 0 1px rgba(47, 108, 246, 0.25);
 }
 
+.jupyter-page .env-registry-card.unavailable {
+  border-color: #d5dae8;
+  background: rgba(245, 247, 252, 0.7);
+}
+
+.jupyter-page .env-registry-card.unavailable .env-stack-box {
+  background: rgba(242, 244, 250, 0.86);
+}
+
 .jupyter-page .env-registry-card-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 26px;
@@ -8784,6 +8805,14 @@ onMounted(async () => {
   text-align: right;
 }
 
+.jupyter-page .env-projects.installed {
+  color: #176642;
+}
+
+.jupyter-page .env-projects.missing {
+  color: #9a5b13;
+}
+
 .jupyter-page .env-empty-state {
   margin: 3.5rem 2rem;
 }
@@ -8861,6 +8890,16 @@ onMounted(async () => {
   border: 2px solid currentColor;
   border-radius: 50%;
   box-shadow: inset 0 0 0 2px #dce8ff;
+}
+
+.jupyter-page .environment-verified-badge.missing {
+  border-color: #ead3a8;
+  background: #fff2d9;
+  color: #8a5b12;
+}
+
+.jupyter-page .environment-verified-badge.missing::before {
+  box-shadow: inset 0 0 0 2px #fff2d9;
 }
 
 .jupyter-page .environment-version-line {
