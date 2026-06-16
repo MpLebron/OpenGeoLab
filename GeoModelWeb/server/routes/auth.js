@@ -56,7 +56,7 @@ router.get('/github', (req, res) => {
  */
 router.get('/github/callback', async (req, res) => {
     const { code } = req.query;
-    
+
     if (!code) {
         return redirectToLoginError(res, 'github_no_code');
     }
@@ -317,7 +317,7 @@ router.post('/opengms/login', async (req, res) => {
 
         res.json({
             token,
-            user,
+            user: buildUserResponse(user),
             tokenInfo: {
                 accessToken,
                 refreshToken,
@@ -343,21 +343,54 @@ router.post('/opengms/login', async (req, res) => {
  */
 router.get('/me', authenticateToken, async (req, res) => {
     const user = await getUserById(req.user.userId);
-    
+
     if (!user) {
         return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // 不返回敏感信息
-    res.json({
-        id: user.id,
-        username: user.username,
-        displayName: user.displayName,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-        lastLogin: user.lastLogin,
-        authSource: user.authSource
-    });
+    res.json(buildUserResponse(user));
+});
+
+router.get('/avatar/:userId', async (req, res) => {
+    const user = await getUserById(req.params.userId);
+
+    if (!user?.avatarUrl || !canProxyAvatarUrl(user.avatarUrl)) {
+        return res.status(404).json({ error: 'Avatar not found' });
+    }
+
+    try {
+        const avatarResponse = await axios.get(user.avatarUrl, {
+            responseType: 'stream',
+            timeout: 15000,
+            maxRedirects: 3,
+            httpsAgent
+        });
+
+        const contentType = avatarResponse.headers['content-type'];
+        if (contentType) {
+            res.setHeader('Content-Type', contentType);
+        }
+
+        const contentLength = avatarResponse.headers['content-length'];
+        if (contentLength) {
+            res.setHeader('Content-Length', contentLength);
+        }
+
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        avatarResponse.data.on('error', error => {
+            console.error('OpenGMS avatar stream error:', error.message);
+            if (!res.headersSent) {
+                res.status(502).end();
+            } else {
+                res.end();
+            }
+        });
+        avatarResponse.data.pipe(res);
+    } catch (error) {
+        console.error('OpenGMS avatar proxy error:', error.response?.status || error.message);
+        res.status(502).json({ error: 'Failed to load avatar' });
+    }
 });
 
 /**
@@ -434,6 +467,66 @@ function normalizeBaseUrl(value) {
     }
 
     return `http://${trimmed}`;
+}
+
+function normalizeUrlPrefix(value) {
+    return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function getAllowedAvatarProxyPrefixes(options = {}) {
+    return [
+        options.avatarBaseUrl ?? OPENGMS_AVATAR_BASE_URL,
+        options.userServerUrl ?? OPENGMS_USER_SERVER_URL
+    ]
+        .map(normalizeUrlPrefix)
+        .filter(Boolean);
+}
+
+function canProxyAvatarUrl(avatarUrl, options = {}) {
+    const source = String(avatarUrl || '').trim();
+    if (!source) {
+        return false;
+    }
+
+    let parsed;
+    try {
+        parsed = new URL(source);
+    } catch {
+        return false;
+    }
+
+    if (parsed.protocol !== 'http:') {
+        return false;
+    }
+
+    return getAllowedAvatarProxyPrefixes(options).some(prefix => (
+        source === prefix || source.startsWith(`${prefix}/`)
+    ));
+}
+
+function buildClientAvatarUrl(user, options = {}) {
+    const avatarUrl = user?.avatarUrl || null;
+    if (!avatarUrl) {
+        return null;
+    }
+
+    if (!canProxyAvatarUrl(avatarUrl, options)) {
+        return avatarUrl;
+    }
+
+    return `/api/auth/avatar/${encodeURIComponent(String(user.id))}`;
+}
+
+function buildUserResponse(user) {
+    return {
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        email: user.email,
+        avatarUrl: buildClientAvatarUrl(user),
+        lastLogin: user.lastLogin,
+        authSource: user.authSource
+    };
 }
 
 function isOAuthValueConfigured(value) {
@@ -533,5 +626,10 @@ function absolutizeOpenGmsAvatarUrl(avatarPath) {
 
 // 导出中间件供其他路由使用
 router.authenticateToken = authenticateToken;
+router._private = {
+    buildClientAvatarUrl,
+    canProxyAvatarUrl,
+    normalizeBaseUrl
+};
 
 module.exports = router;
