@@ -246,21 +246,32 @@
             :class="['header-right', { 'case-header-right': activeMenu === 'cases' }]"
           >
             <div v-if="activeMenu === 'cases'" class="case-header-tools">
-              <input
-                v-model="caseLibrarySearchQuery"
-                class="case-header-search"
-                type="text"
-                placeholder="Search by project, tag, scenario, or owner"
-              >
+              <label class="case-search-control">
+                <svg class="case-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="7"/>
+                  <path d="m20 20-3.5-3.5"/>
+                </svg>
+                <input
+                  v-model="caseLibrarySearchQuery"
+                  class="case-header-search"
+                  type="text"
+                  placeholder="Search by project, tag, scenario, or owner"
+                >
+                <span class="case-search-shortcut" aria-hidden="true">⌘ K</span>
+              </label>
               <div class="case-header-sort">
-                <span class="case-header-count">{{ caseLibraryResultCountLabel }}</span>
-                <label for="dashboard-case-sort">Sort</label>
-                <select id="dashboard-case-sort" v-model="caseLibrarySortBy">
-                  <option value="updated">Recently updated</option>
-                  <option value="files">Most files</option>
-                  <option value="size">Largest size</option>
-                  <option value="title">Title A-Z</option>
-                </select>
+                <label for="dashboard-case-sort">Sort by</label>
+                <span class="case-sort-select-wrap">
+                  <select id="dashboard-case-sort" v-model="caseLibrarySortBy">
+                    <option value="updated">Recently updated</option>
+                    <option value="files">Most files</option>
+                    <option value="size">Largest size</option>
+                    <option value="title">Title A-Z</option>
+                  </select>
+                  <svg class="case-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </span>
               </div>
             </div>
             <div v-else-if="showDashboardSearch" class="search-box">
@@ -3627,66 +3638,127 @@ onMounted(async () => {
 }
 
 .case-header-tools {
-  width: min(100%, 970px);
+  width: min(100%, 900px);
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) auto;
+  grid-template-columns: minmax(420px, 640px) auto;
   align-items: center;
-  gap: 1rem;
+  justify-content: end;
+  gap: 1.45rem;
+}
+
+.case-search-control {
+  width: 100%;
+  height: 48px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.72rem;
+  padding: 0 0.9rem 0 1.05rem;
+  border: 1px solid #dfe4ef;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.case-search-control:focus-within {
+  border-color: #b9c7dd;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.case-search-icon {
+  width: 21px;
+  height: 21px;
+  color: #94a0b4;
 }
 
 .case-header-search {
   width: 100%;
-  height: 42px;
-  padding: 0 0.9rem;
-  border: 1px solid #c8d0e3;
-  border-radius: 5px;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
   background: transparent;
-  color: #172037;
+  color: #172033;
   font-family: 'Manrope', sans-serif;
-  font-size: 0.86rem;
-  font-weight: 650;
+  font-size: 0.9rem;
+  font-weight: 700;
   outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
-.case-header-search:focus {
-  border-color: #7da0ea;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 0 0 3px rgba(47, 108, 246, 0.12);
+.case-header-search::placeholder {
+  color: #8f98aa;
+  font-weight: 700;
+}
+
+.case-search-shortcut {
+  min-width: 46px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e7f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #9aa3b5;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .case-header-sort {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.55rem;
-  min-width: 280px;
-}
-
-.case-header-count {
-  color: #4f5b73;
-  font-size: 0.8rem;
-  font-weight: 800;
-  white-space: nowrap;
+  gap: 1rem;
+  min-width: 310px;
 }
 
 .case-header-sort label {
-  color: #4f5b73;
-  font-size: 0.8rem;
+  color: #4d5a70;
+  font-size: 0.9rem;
   font-weight: 900;
+  white-space: nowrap;
+}
+
+.case-sort-select-wrap {
+  position: relative;
+  min-width: 258px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .case-header-sort select {
-  height: 42px;
-  padding: 0 0.75rem;
-  border: 1px solid #c8d0e3;
-  border-radius: 5px;
-  background: transparent;
-  color: #172037;
+  width: 100%;
+  height: 48px;
+  padding: 0 2.75rem 0 1.15rem;
+  border: 1px solid #dfe4ef;
+  border-radius: 12px;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.94);
+  color: #202a3f;
   font-family: 'Manrope', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 850;
   outline: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
+}
+
+.case-header-sort select:focus {
+  border-color: #b9c7dd;
+  box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.case-select-chevron {
+  position: absolute;
+  right: 1rem;
+  width: 18px;
+  height: 18px;
+  color: #8b95a8;
+  pointer-events: none;
 }
 
 .search-box {
