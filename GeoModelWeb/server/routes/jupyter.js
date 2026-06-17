@@ -1343,6 +1343,21 @@ function buildPublicProjectThumbnail(owner, projectName, projectPath) {
     };
 }
 
+function buildPrivateProjectThumbnail(projectName, projectPath) {
+    const thumbnail = findProjectThumbnail(projectPath);
+    if (!thumbnail) return null;
+
+    const encodedProjectName = encodeURIComponent(projectName);
+    const encodedPath = encodePublicWorkspaceFilePath(thumbnail.path);
+
+    return {
+        name: thumbnail.name,
+        path: thumbnail.path,
+        size: thumbnail.size,
+        downloadPath: `/api/jupyter/projects/${encodedProjectName}/files/${encodedPath}/download`
+    };
+}
+
 function encodePublicWorkspaceFilePath(relativePath = '') {
     return String(relativePath || '')
         .split('/')
@@ -1502,6 +1517,7 @@ router.get('/projects', (req, res) => {
                 const caseMeta = meta.isCase ? getCaseMeta(meta) : null;
                 const dataBindings = resolveProjectDataBindings(meta, dataList, { projectDir: projectPath });
                 const fileSummary = getProjectFileSummary(projectPath);
+                const thumbnail = buildPrivateProjectThumbnail(item.name, projectPath);
 
                 return {
                     projectId,
@@ -1514,6 +1530,7 @@ router.get('/projects', (req, res) => {
                     isCase: !!meta.isCase,
                     caseTitle: caseMeta?.title || '',
                     case: caseMeta,
+                    thumbnail,
                     dataBindingCount: dataBindings.length,
                     forkedFrom: meta.forkedFrom || null,  // { owner, projectName }
                     owner: username
@@ -1527,6 +1544,53 @@ router.get('/projects', (req, res) => {
         res.json({ projects: [] });
     }
 });
+
+function resolvePrivateProjectFile(username, projectName, filePath) {
+    const projectDir = path.join(USER_DATA_DIR, username, projectName);
+    if (!fs.existsSync(projectDir)) {
+        return { error: '项目不存在', status: 404 };
+    }
+
+    const resolvedProjectDir = path.resolve(projectDir);
+    const decodedPath = decodeURIComponent(normalizePublicWorkspaceFilePath(filePath));
+    const fullPath = path.resolve(projectDir, decodedPath);
+
+    if (fullPath !== resolvedProjectDir && !fullPath.startsWith(`${resolvedProjectDir}${path.sep}`)) {
+        return { error: '非法路径', status: 403 };
+    }
+
+    if (!fs.existsSync(fullPath)) {
+        return { error: '文件不存在', status: 404 };
+    }
+
+    return {
+        projectDir,
+        resolvedProjectDir,
+        decodedPath,
+        fullPath
+    };
+}
+
+function sendPrivateProjectFileDownload(req, res) {
+    const username = req.user.username;
+    const { projectName, filePath } = req.params;
+    const resolvedFile = resolvePrivateProjectFile(username, projectName, filePath);
+    if (resolvedFile.error) {
+        return res.status(resolvedFile.status).json({ error: resolvedFile.error });
+    }
+
+    try {
+        const { fullPath } = resolvedFile;
+        const stats = fs.statSync(fullPath);
+        if (stats.isDirectory()) {
+            return res.status(400).json({ error: '文件夹不支持下载' });
+        }
+        return res.download(fullPath, path.basename(fullPath));
+    } catch (error) {
+        console.error('Error downloading project file:', error);
+        return res.status(500).json({ error: '文件下载失败' });
+    }
+}
 
 /**
  * POST /api/jupyter/projects
@@ -1987,6 +2051,14 @@ router.get('/projects/:projectName/files/:filePath/content', (req, res) => {
         console.error('Error reading file:', error);
         res.status(500).json({ error: '读取文件失败' });
     }
+});
+
+/**
+ * GET /api/jupyter/projects/:projectName/files/*filePath/download
+ * 下载当前用户项目文件，支持 outputs 下的嵌套缩略图路径
+ */
+router.get('/projects/:projectName/files/*filePath/download', (req, res) => {
+    return sendPrivateProjectFileDownload(req, res);
 });
 
 /**

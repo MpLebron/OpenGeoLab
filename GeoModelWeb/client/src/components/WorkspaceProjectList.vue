@@ -45,10 +45,21 @@
         @dblclick="$emit('open', project)"
       >
         <button class="workspace-project-main" type="button" @click="$emit('open', project)">
-          <div :class="['project-mark', 'large', `variant-${projectMark(project).variant}`]">
+          <span
+            v-if="projectThumbnailSrc(project)"
+            class="project-thumbnail"
+            :title="projectThumbnailTitle(project)"
+          >
+            <img
+              :src="projectThumbnailSrc(project)"
+              :alt="projectThumbnailAlt(project)"
+              loading="lazy"
+            >
+          </span>
+          <span v-else :class="['project-mark', 'large', `variant-${projectMark(project).variant}`]">
             <span class="project-mark-kicker">{{ projectMark(project).kicker }}</span>
             <strong>{{ projectMark(project).label }}</strong>
-          </div>
+          </span>
 
           <div class="workspace-project-copy">
             <div class="workspace-project-title-row">
@@ -155,15 +166,18 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import {
   getWorkspaceProjectFileLabel,
   getWorkspaceProjectMark,
   getWorkspaceProjectRuntimeImage,
   getWorkspaceProjectSizeLabel,
   getWorkspaceProjectSummary,
+  getWorkspaceProjectThumbnailDownloadPath,
   getWorkspaceProjectTitle,
   getWorkspaceProjectVisibility
 } from '../utils/workspaceProjectDisplay.js'
+import { createApiClient } from '../utils/apiClient.js'
 
 defineEmits(['open', 'action', 'retry'])
 
@@ -189,6 +203,8 @@ const projectSizeLabel = getWorkspaceProjectSizeLabel
 const projectRuntimeImage = getWorkspaceProjectRuntimeImage
 const projectMark = getWorkspaceProjectMark
 const projectRuntimeBase = project => projectRuntimeImage(project) || '-'
+const thumbnailUrls = ref({})
+const thumbnailRequests = new Set()
 
 const actionIcon = (action) => action.icon || action.key
 const visibleActions = (project) => props.actions.filter(action => {
@@ -204,12 +220,67 @@ const actionTitle = (action, project) => {
   return action.title || action.key
 }
 
+const getToken = () => {
+  try {
+    return window.localStorage?.getItem('jupyter_token') || ''
+  } catch (error) {
+    return ''
+  }
+}
+
+const authAxios = () => {
+  const token = getToken()
+  return createApiClient({
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  })
+}
+
+const projectThumbnailSrc = (project = {}) => thumbnailUrls.value[projectKey(project, 0)] || ''
+const projectThumbnailTitle = (project = {}) => project.thumbnail?.name ? `Result thumbnail: ${project.thumbnail.name}` : 'No result thumbnail'
+const projectThumbnailAlt = (project = {}) => `${projectTitle(project)} result thumbnail`
+
+const loadThumbnailForProject = async (project, index = 0) => {
+  const downloadPath = getWorkspaceProjectThumbnailDownloadPath(project)
+  const key = projectKey(project, index)
+  if (!downloadPath || thumbnailUrls.value[key] || thumbnailRequests.has(key)) return
+
+  thumbnailRequests.add(key)
+  try {
+    const response = await authAxios().get(downloadPath, { responseType: 'blob' })
+    const objectUrl = URL.createObjectURL(response.data)
+    thumbnailUrls.value = {
+      ...thumbnailUrls.value,
+      [key]: objectUrl
+    }
+  } catch (error) {
+    console.warn('Failed to load workspace project thumbnail:', key, error?.message || error)
+  } finally {
+    thumbnailRequests.delete(key)
+  }
+}
+
+const loadVisibleThumbnails = () => {
+  props.items.forEach((project, index) => {
+    loadThumbnailForProject(project, index)
+  })
+}
+
 const formatDate = (value) => {
   if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '-'
   return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
 }
+
+watch(() => props.items, loadVisibleThumbnails, { deep: true })
+
+onMounted(loadVisibleThumbnails)
+
+onBeforeUnmount(() => {
+  for (const objectUrl of Object.values(thumbnailUrls.value)) {
+    URL.revokeObjectURL(objectUrl)
+  }
+})
 </script>
 
 <style scoped>
@@ -299,6 +370,23 @@ const formatDate = (value) => {
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+.project-thumbnail {
+  position: relative;
+  width: 128px;
+  height: 82px;
+  overflow: hidden;
+  border: 1px solid #cfd7ea;
+  border-radius: 5px;
+  background: #eef2f7;
+}
+
+.project-thumbnail img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .project-mark {
@@ -675,6 +763,7 @@ const formatDate = (value) => {
     grid-template-columns: 116px minmax(0, 1fr);
   }
 
+  .project-thumbnail,
   .project-mark {
     width: 116px;
     height: 76px;
