@@ -236,7 +236,13 @@
         <!-- 顶部标题栏 -->
         <header
           v-if="activeMenu !== 'environments'"
-          :class="['content-header', { 'cases-header': activeMenu === 'cases' }]"
+          :class="[
+            'content-header',
+            {
+              'cases-header': activeMenu === 'cases',
+              'myspace-header': activeMenu === 'myspace'
+            }
+          ]"
         >
           <div class="header-left">
             <h1 class="page-title">{{ dashboardPageTitle }}</h1>
@@ -246,7 +252,13 @@
           </div>
           <div
             v-if="showDashboardHeaderTools"
-            :class="['header-right', { 'case-header-right': activeMenu === 'cases' }]"
+            :class="[
+              'header-right',
+              {
+                'case-header-right': activeMenu === 'cases',
+                'myspace-header-right': activeMenu === 'myspace'
+              }
+            ]"
           >
             <div v-if="activeMenu === 'cases'" class="case-header-tools">
               <label class="case-search-control">
@@ -277,23 +289,37 @@
                 </span>
               </div>
             </div>
+            <div v-else-if="activeMenu === 'myspace'" class="myspace-header-tools">
+              <label class="case-search-control myspace-search-control">
+                <svg class="case-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="7"/>
+                  <path d="m20 20-3.5-3.5"/>
+                </svg>
+                <input
+                  v-model="searchQuery"
+                  class="case-header-search"
+                  type="text"
+                  placeholder="Search my projects..."
+                >
+                <span class="case-search-shortcut" aria-hidden="true">⌘ K</span>
+              </label>
+              <button
+                class="dashboard-action-btn primary myspace-create-inline"
+                type="button"
+                @click="openCreateProjectModal()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                <span>Create Project</span>
+              </button>
+            </div>
             <div v-else-if="showDashboardSearch" class="search-box">
               <span class="search-icon"></span>
               <input type="text" :placeholder="searchPlaceholder" v-model="searchQuery">
             </div>
             <button
-              v-if="activeMenu === 'myspace'"
-              class="dashboard-action-btn primary"
-              type="button"
-              @click="openCreateProjectModal()"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              <span>Create Project</span>
-            </button>
-            <button
-              v-else-if="activeMenu === 'mymodel'"
+              v-if="activeMenu === 'mymodel'"
               class="dashboard-action-btn primary"
               type="button"
               @click="openModelSelector"
@@ -318,7 +344,15 @@
         </header>
 
         <!-- 内容区域 -->
-        <div :class="['content-body', { 'cases-body': activeMenu === 'cases' }]">
+        <div
+          :class="[
+            'content-body',
+            {
+              'cases-body': activeMenu === 'cases',
+              'myspace-body': activeMenu === 'myspace'
+            }
+          ]"
+        >
 
           <!-- ========== Recent 面板 ========== -->
           <div v-if="activeMenu === 'recent'" class="recent-panel">
@@ -3634,19 +3668,27 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.header-right.case-header-right {
+.header-right.case-header-right,
+.header-right.myspace-header-right {
   flex: 1 1 auto;
   justify-content: flex-end;
   min-width: 0;
 }
 
-.case-header-tools {
+.case-header-tools,
+.myspace-header-tools {
   width: min(100%, 900px);
   display: grid;
   grid-template-columns: minmax(420px, 640px) auto;
   align-items: center;
   justify-content: end;
   gap: 1.45rem;
+}
+
+.myspace-header-tools {
+  width: min(100%, 760px);
+  grid-template-columns: minmax(360px, 560px) auto;
+  gap: 1rem;
 }
 
 .case-search-control {
@@ -3753,6 +3795,14 @@ onMounted(async () => {
 .case-header-sort select:focus {
   border-color: #b9c7dd;
   box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.myspace-header-tools .myspace-create-inline {
+  min-height: 48px;
+  padding: 0 1.1rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .case-select-chevron {
@@ -9426,13 +9476,15 @@ onMounted(async () => {
   line-height: 1.45;
 }
 
-.jupyter-page .content-header.cases-header {
+.jupyter-page .content-header.cases-header,
+.jupyter-page .content-header.myspace-header {
   margin-bottom: 0;
   padding-left: 1.35rem;
   padding-right: 1.35rem;
 }
 
-.jupyter-page .content-body.cases-body {
+.jupyter-page .content-body.cases-body,
+.jupyter-page .content-body.myspace-body {
   padding: 0 1.35rem 1.35rem;
 }
 
@@ -10058,7 +10110,8 @@ onMounted(async () => {
     justify-content: stretch;
   }
 
-  .jupyter-page .case-header-tools {
+  .jupyter-page .case-header-tools,
+  .jupyter-page .myspace-header-tools {
     width: 100%;
     grid-template-columns: 1fr;
   }
@@ -10465,6 +10518,14 @@ onMounted(async () => {
   background: #1f2937;
   box-shadow: none;
   transform: none;
+}
+
+.jupyter-page .myspace-header-tools .myspace-create-inline {
+  min-height: 48px;
+  padding: 0 1.1rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .jupyter-page .project-activity-card {

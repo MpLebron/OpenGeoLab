@@ -17,11 +17,31 @@
       <span v-if="emptyHint">{{ emptyHint }}</span>
     </div>
 
-    <div v-else class="workspace-project-list">
+    <div
+      v-else
+      :class="[
+        'workspace-project-list',
+        { 'with-owner': showOwner, 'without-created': !showCreated }
+      ]"
+    >
+      <div class="workspace-table-header" aria-hidden="true">
+        <span>Project</span>
+        <span>Files</span>
+        <span>Size</span>
+        <span>Based on</span>
+        <span v-if="showOwner">Owner</span>
+        <span v-if="showCreated">Created</span>
+        <span>Updated</span>
+        <span>Actions</span>
+      </div>
+
       <article
         v-for="(project, index) in items"
         :key="projectKey(project, index)"
-        class="workspace-project-row"
+        :class="[
+          'workspace-project-row',
+          { 'with-owner': showOwner, 'without-created': !showCreated }
+        ]"
         @dblclick="$emit('open', project)"
       >
         <button class="workspace-project-main" type="button" @click="$emit('open', project)">
@@ -50,31 +70,43 @@
               </div>
             </div>
             <p class="workspace-project-summary">{{ projectSummary(project) }}</p>
-            <div class="workspace-project-meta-line" :title="projectArtifacts(project)">
-              <span>{{ projectFileLabel(project) }}</span>
-              <span class="workspace-meta-separator">•</span>
-              <span>{{ projectSizeLabel(project) }}</span>
-              <template v-if="projectRuntimeImage(project)">
-                <span class="workspace-meta-separator">•</span>
-                <span class="workspace-meta-runtime">Based on {{ projectRuntimeImage(project) }}</span>
-              </template>
-            </div>
           </div>
         </button>
 
-        <div class="workspace-project-metrics">
-          <div v-if="showOwner" class="workspace-metric">
-            <span>Owner</span>
-            <strong>@{{ project.owner || 'unknown' }}</strong>
-          </div>
-          <div v-if="showCreated" class="workspace-metric">
-            <span>Created</span>
-            <strong>{{ formatDate(project.createdAt || project.createdTime) }}</strong>
-          </div>
-          <div class="workspace-metric">
-            <span>Updated</span>
-            <strong>{{ formatDate(project.modifiedAt || project.updatedAt) }}</strong>
-          </div>
+        <div class="workspace-data-column files">
+          <span>Files</span>
+          <strong class="workspace-file-count">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/>
+              <path d="M14 2v5h5"/>
+            </svg>
+            <span>{{ projectFileLabel(project) }}</span>
+          </strong>
+        </div>
+
+        <div class="workspace-data-column">
+          <span>Size</span>
+          <strong>{{ projectSizeLabel(project) }}</strong>
+        </div>
+
+        <div class="workspace-data-column runtime">
+          <span>Based on</span>
+          <strong :title="projectRuntimeBase(project)">{{ projectRuntimeBase(project) }}</strong>
+        </div>
+
+        <div v-if="showOwner" class="workspace-data-column">
+          <span>Owner</span>
+          <strong>@{{ project.owner || 'unknown' }}</strong>
+        </div>
+
+        <div v-if="showCreated" class="workspace-data-column">
+          <span>Created</span>
+          <strong>{{ formatDate(project.createdAt || project.createdTime) }}</strong>
+        </div>
+
+        <div class="workspace-data-column">
+          <span>Updated</span>
+          <strong>{{ formatDate(project.modifiedAt || project.updatedAt) }}</strong>
         </div>
 
         <div class="workspace-actions">
@@ -124,7 +156,6 @@
 
 <script setup>
 import {
-  getWorkspaceProjectArtifacts,
   getWorkspaceProjectFileLabel,
   getWorkspaceProjectMark,
   getWorkspaceProjectRuntimeImage,
@@ -156,8 +187,8 @@ const projectVisibility = getWorkspaceProjectVisibility
 const projectFileLabel = getWorkspaceProjectFileLabel
 const projectSizeLabel = getWorkspaceProjectSizeLabel
 const projectRuntimeImage = getWorkspaceProjectRuntimeImage
-const projectArtifacts = getWorkspaceProjectArtifacts
 const projectMark = getWorkspaceProjectMark
+const projectRuntimeBase = project => projectRuntimeImage(project) || '-'
 
 const actionIcon = (action) => action.icon || action.key
 const visibleActions = (project) => props.actions.filter(action => {
@@ -187,17 +218,63 @@ const formatDate = (value) => {
 }
 
 .workspace-project-list {
+  --workspace-grid-columns:
+    minmax(520px, 1fr)
+    96px
+    112px
+    minmax(170px, 0.24fr)
+    108px
+    108px
+    218px;
+
   display: grid;
-  gap: 1rem;
+  gap: 0.48rem;
+}
+
+.workspace-project-list.with-owner {
+  --workspace-grid-columns:
+    minmax(480px, 1fr)
+    96px
+    112px
+    minmax(160px, 0.22fr)
+    128px
+    108px
+    108px
+    218px;
+}
+
+.workspace-project-list.without-created {
+  --workspace-grid-columns:
+    minmax(560px, 1fr)
+    96px
+    112px
+    minmax(180px, 0.24fr)
+    108px
+    218px;
+}
+
+.workspace-table-header,
+.workspace-project-row {
+  display: grid;
+  grid-template-columns: var(--workspace-grid-columns);
+  align-items: center;
+  column-gap: 1.25rem;
+}
+
+.workspace-table-header {
+  min-height: 58px;
+  padding: 0 1.35rem;
+  border-bottom: 1px solid #dfe4ef;
+  color: #707b91;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
 }
 
 .workspace-project-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.24fr) max-content;
-  align-items: center;
-  gap: 1.15rem;
-  min-height: 116px;
-  padding: 1.05rem 1.3rem;
+  min-height: 124px;
+  padding: 0.92rem 1.35rem;
   border: 1px solid #cfd4e5;
   border-radius: 5px;
   background: transparent;
@@ -214,9 +291,9 @@ const formatDate = (value) => {
 .workspace-project-main {
   min-width: 0;
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 128px minmax(0, 1fr);
   align-items: center;
-  gap: 1rem;
+  gap: 0.95rem;
   border: none;
   padding: 0;
   background: transparent;
@@ -229,9 +306,9 @@ const formatDate = (value) => {
   align-content: center;
   justify-items: center;
   gap: 0.34rem;
-  width: 72px;
-  height: 72px;
-  min-height: 72px;
+  width: 128px;
+  height: 82px;
+  min-height: 82px;
   padding: 0.55rem 0.45rem;
   border: 1px solid #cfd7ea;
   border-radius: 5px;
@@ -254,7 +331,7 @@ const formatDate = (value) => {
 
 .project-mark-kicker {
   color: #8b95a8;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -264,12 +341,14 @@ const formatDate = (value) => {
   color: #171d31;
   font-family: var(--font-display);
   font-size: 1rem;
-  font-weight: 650;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
 .workspace-project-copy {
   min-width: 0;
+  display: grid;
+  gap: 0.44rem;
 }
 
 .workspace-project-title-row {
@@ -286,7 +365,7 @@ const formatDate = (value) => {
   color: #171d31;
   font-family: var(--font-display);
   font-size: 1rem;
-  font-weight: 650;
+  font-weight: 900;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -346,108 +425,88 @@ const formatDate = (value) => {
 }
 
 .workspace-project-summary {
-  margin: 0.45rem 0 0;
+  display: -webkit-box;
+  margin: 0;
   overflow: hidden;
   color: #4f5668;
-  font-size: 0.92rem;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-project-meta-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.36rem;
-  margin-top: 0.58rem;
-  color: #172033;
   font-size: 0.86rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.35;
+  line-height: 1.38;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.workspace-project-meta-line span {
+.workspace-data-column {
   min-width: 0;
-}
-
-.workspace-meta-separator {
-  color: #7f8aa3;
-  font-weight: 700;
-}
-
-.workspace-meta-runtime {
-  overflow: hidden;
-  max-width: 100%;
-  color: #29344d;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-project-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(96px, 1fr));
-  gap: 0.4rem;
-  align-items: center;
-  min-width: 0;
-  border-left: 1px solid #d9dce8;
-  padding-left: 1.1rem;
+  gap: 0.26rem;
+  align-content: center;
 }
 
-.workspace-metric {
-  min-width: 0;
-  padding: 0 0.5rem;
-}
-
-.workspace-metric span {
-  display: block;
-  margin-bottom: 0.25rem;
+.workspace-data-column > span {
+  display: none;
   color: #8b95a8;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.workspace-metric strong {
-  display: block;
+.workspace-data-column strong {
   min-width: 0;
-  max-width: 100%;
   overflow: hidden;
   color: #171d31;
-  font-family: var(--font-sans);
   font-size: 0.82rem;
-  font-weight: 650;
+  font-weight: 850;
   font-variant-numeric: tabular-nums;
-  line-height: 1.3;
+  line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.workspace-file-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.workspace-file-count svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: #3f4658;
+}
+
+.workspace-data-column.runtime strong {
+  color: #29344d;
+  line-height: 1.4;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .workspace-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.34rem;
-  padding-left: 0.45rem;
-  border-left: none;
+  gap: 0.5rem;
 }
 
 .action-icon-btn {
   position: relative;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #4f586d;
+  border: 1px solid #dfe5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #3f4658;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.035);
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .action-icon-btn::before,
@@ -502,12 +561,13 @@ const formatDate = (value) => {
 }
 
 .action-icon-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
 }
 
 .action-icon-btn:hover {
-  background: #e6ebfb;
+  border-color: #c6d0e1;
+  background: #f8fafc;
   color: #171d31;
 }
 
@@ -517,11 +577,13 @@ const formatDate = (value) => {
 }
 
 .action-icon-btn:disabled:hover {
-  background: transparent;
+  border-color: #dfe5ee;
+  background: #ffffff;
   color: #4f586d;
 }
 
 .action-icon-btn.danger:hover {
+  border-color: #fecaca;
   background: #fee2e2;
   color: #b91c1c;
 }
@@ -580,22 +642,29 @@ const formatDate = (value) => {
 }
 
 @media (max-width: 1200px) {
-  .workspace-project-row {
-    grid-template-columns: 1fr;
+  .workspace-table-header {
+    display: none;
   }
 
-  .workspace-project-metrics {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-left: none;
-    padding-left: 0;
-    padding-top: 0.9rem;
+  .workspace-project-row {
+    grid-template-columns: 1fr;
+    row-gap: 0.8rem;
+  }
+
+  .workspace-data-column {
+    grid-template-columns: 96px minmax(0, 1fr);
+    align-items: center;
+    min-height: 28px;
+    padding-top: 0.25rem;
     border-top: 1px solid #d9dce8;
+  }
+
+  .workspace-data-column > span {
+    display: block;
   }
 
   .workspace-actions {
     justify-content: flex-start;
-    padding-left: 0;
     padding-top: 0.9rem;
     border-top: 1px solid #d9dce8;
   }
@@ -603,12 +672,13 @@ const formatDate = (value) => {
 
 @media (max-width: 700px) {
   .workspace-project-main {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 116px minmax(0, 1fr);
   }
 
   .project-mark {
-    min-height: 64px;
-    padding: 0.65rem;
+    width: 116px;
+    height: 76px;
+    min-height: 76px;
   }
 
   .workspace-project-title-row {
@@ -616,8 +686,8 @@ const formatDate = (value) => {
     flex-direction: column;
   }
 
-  .workspace-project-metrics {
-    grid-template-columns: 1fr;
+  .workspace-data-column {
+    grid-template-columns: 88px minmax(0, 1fr);
   }
 }
 </style>
