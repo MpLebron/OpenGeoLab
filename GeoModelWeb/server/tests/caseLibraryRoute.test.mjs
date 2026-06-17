@@ -10,6 +10,14 @@ test('case library route lists all public runnable projects, not only published 
   const routeMatch = source.match(/router\.get\('\/cases'[\s\S]*?\n}\);/)
 
   assert.ok(routeMatch, 'GET /cases route should exist')
-  assert.match(routeMatch[0], /listPublicProjectSummaries\(\)/)
+  assert.match(routeMatch[0], /await\s+listPublicProjectSummaries\(\)/)
   assert.doesNotMatch(routeMatch[0], /caseOnly:\s*true/)
+})
+
+test('case library summaries attach owner profile data for avatars', () => {
+  const source = fs.readFileSync(routePath, 'utf8')
+
+  assert.match(source, /getUserByUsername/)
+  assert.match(source, /ownerProfile/)
+  assert.match(source, /buildOwnerAvatarUrl/)
 })

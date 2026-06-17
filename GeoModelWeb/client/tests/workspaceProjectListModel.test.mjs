@@ -15,6 +15,7 @@ import {
   getWorkspaceProjectSearchText,
   getWorkspaceProjectSizeLabel,
   getWorkspaceProjectSummary,
+  getWorkspaceProjectOwnerAvatarUrl,
   getWorkspaceProjectOwnerInitials,
   getWorkspaceProjectOwnerLabel,
   getWorkspaceProjectTags,
@@ -58,6 +59,10 @@ test('normalizes private workspace project display fields', () => {
 test('normalizes public case library records without inventing a different entity type', () => {
   const item = {
     owner: 'Zhoums396',
+    ownerProfile: {
+      username: 'Zhoums396',
+      avatarUrl: '/api/auth/avatar/owner-1'
+    },
     projectName: 'Roof',
     notebookCount: 2,
     fileCount: 14,
@@ -93,6 +98,7 @@ test('normalizes public case library records without inventing a different entit
   assert.deepEqual(getWorkspaceProjectTags(item), ['Remote Sensing', 'Notebook'])
   assert.equal(getWorkspaceProjectOwnerLabel(item), 'Zhoums396')
   assert.equal(getWorkspaceProjectOwnerInitials(item), 'ZH')
+  assert.equal(getWorkspaceProjectOwnerAvatarUrl(item), '/api/auth/avatar/owner-1')
   assert.equal(getWorkspaceProjectThumbnailDownloadPath(item), '/api/jupyter/cases/Zhoums396/Roof/files/outputs%2Fmap.png/download')
   assert.equal(getWorkspaceProjectMark(item).label, 'CASE')
   assert.match(getWorkspaceProjectSearchText(item), /roof extraction workflow/i)

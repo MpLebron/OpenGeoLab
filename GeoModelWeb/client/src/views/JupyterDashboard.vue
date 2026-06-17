@@ -243,9 +243,27 @@
           </div>
           <div
             v-if="showDashboardHeaderTools"
-            class="header-right"
+            :class="['header-right', { 'case-header-right': activeMenu === 'cases' }]"
           >
-            <div v-if="showDashboardSearch" class="search-box">
+            <div v-if="activeMenu === 'cases'" class="case-header-tools">
+              <input
+                v-model="caseLibrarySearchQuery"
+                class="case-header-search"
+                type="text"
+                placeholder="Search by project, tag, scenario, or owner"
+              >
+              <div class="case-header-sort">
+                <span class="case-header-count">{{ caseLibraryResultCountLabel }}</span>
+                <label for="dashboard-case-sort">Sort</label>
+                <select id="dashboard-case-sort" v-model="caseLibrarySortBy">
+                  <option value="updated">Recently updated</option>
+                  <option value="files">Most files</option>
+                  <option value="size">Largest size</option>
+                  <option value="title">Title A-Z</option>
+                </select>
+              </div>
+            </div>
+            <div v-else-if="showDashboardSearch" class="search-box">
               <span class="search-icon"></span>
               <input type="text" :placeholder="searchPlaceholder" v-model="searchQuery">
             </div>
@@ -398,7 +416,12 @@
 
           <!-- ========== Case Library 面板 ========== -->
           <div v-else-if="activeMenu === 'cases'" class="cases-panel">
-            <CaseLibrary embedded />
+            <CaseLibrary
+              embedded
+              v-model:search-query="caseLibrarySearchQuery"
+              v-model:sort-by="caseLibrarySortBy"
+              @result-count-change="caseLibraryResultCount = $event"
+            />
           </div>
 
           <!-- ========== My Model 面板 ========== -->
@@ -1154,6 +1177,9 @@ const activeMenu = ref(
 const LIBRARY_SELECTOR_PAGE_SIZE = 12
 const myspaceTab = ref('projects') // projects, data
 const searchQuery = ref('')
+const caseLibrarySearchQuery = ref('')
+const caseLibrarySortBy = ref('updated')
+const caseLibraryResultCount = ref(0)
 const showCreateProjectModal = ref(false)
 const createProjectTarget = ref(CREATE_PROJECT_TARGETS.project)
 const openMenuProject = ref(null)
@@ -1575,8 +1601,13 @@ const showDashboardSearch = computed(() => (
 ))
 
 const showDashboardHeaderTools = computed(() => (
-  showDashboardSearch.value || activeMenu.value === 'myspace' || activeMenu.value === 'mymodel'
+  showDashboardSearch.value || activeMenu.value === 'cases' || activeMenu.value === 'myspace' || activeMenu.value === 'mymodel'
 ))
+
+const caseLibraryResultCountLabel = computed(() => {
+  const count = caseLibraryResultCount.value
+  return `${count} case${count === 1 ? '' : 's'}`
+})
 
 // 计算属性
 const isLoggedIn = computed(() => !!user.value)
@@ -3587,6 +3618,75 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.header-right.case-header-right {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.case-header-tools {
+  width: min(100%, 970px);
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.case-header-search {
+  width: 100%;
+  height: 42px;
+  padding: 0 0.9rem;
+  border: 1px solid #c8d0e3;
+  border-radius: 5px;
+  background: transparent;
+  color: #172037;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 650;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.case-header-search:focus {
+  border-color: #7da0ea;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 3px rgba(47, 108, 246, 0.12);
+}
+
+.case-header-sort {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  min-width: 280px;
+}
+
+.case-header-count {
+  color: #4f5b73;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.case-header-sort label {
+  color: #4f5b73;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.case-header-sort select {
+  height: 42px;
+  padding: 0 0.75rem;
+  border: 1px solid #c8d0e3;
+  border-radius: 5px;
+  background: transparent;
+  color: #172037;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  outline: none;
 }
 
 .search-box {
@@ -9871,6 +9971,16 @@ onMounted(async () => {
 
   .jupyter-page .header-right {
     justify-content: stretch;
+  }
+
+  .jupyter-page .case-header-tools {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .jupyter-page .case-header-sort {
+    min-width: 0;
+    justify-content: space-between;
   }
 }
 

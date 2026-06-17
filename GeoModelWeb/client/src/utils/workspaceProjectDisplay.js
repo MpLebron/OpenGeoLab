@@ -87,7 +87,7 @@ export function getWorkspaceProjectTags(project = {}, limit = 4) {
 }
 
 export function getWorkspaceProjectOwnerLabel(project = {}) {
-  return String(project.owner || project.createdBy || 'unknown').trim() || 'unknown'
+  return String(project.ownerProfile?.username || project.owner || project.createdBy || 'unknown').trim() || 'unknown'
 }
 
 export function getWorkspaceProjectOwnerInitials(project = {}) {
@@ -109,6 +109,15 @@ export function getWorkspaceProjectThumbnailDownloadPath(project = {}) {
     project.thumbnail?.downloadPath ||
     project.thumbnailUrl ||
     project.thumbnail?.url ||
+    ''
+  ).trim()
+}
+
+export function getWorkspaceProjectOwnerAvatarUrl(project = {}) {
+  return String(
+    project.ownerProfile?.avatarUrl ||
+    project.ownerAvatarUrl ||
+    project.avatarUrl ||
     ''
   ).trim()
 }

@@ -22,26 +22,25 @@
             Browse public runnable projects, curated cases, datasets, and notebooks shared by the community.
           </p>
         </div>
-      </section>
-
-      <section class="toolbar-panel" aria-label="Case search and sorting">
-        <div class="toolbar-left">
-          <input
-            v-model="searchQuery"
-            class="search-input"
-            type="text"
-            placeholder="Search by project, tag, scenario, or owner"
-          >
-        </div>
-        <div class="toolbar-right">
-          <span class="case-count-label">{{ resultCountLabel }}</span>
-          <label class="sort-label" for="sortBy">Sort</label>
-          <select id="sortBy" v-model="sortBy" class="sort-select">
-            <option value="updated">Recently updated</option>
-            <option value="files">Most files</option>
-            <option value="size">Largest size</option>
-            <option value="title">Title A-Z</option>
-          </select>
+        <div class="hero-controls" aria-label="Case search and sorting">
+          <div class="toolbar-left">
+            <input
+              v-model="searchQueryModel"
+              class="search-input"
+              type="text"
+              placeholder="Search by project, tag, scenario, or owner"
+            >
+          </div>
+          <div class="toolbar-right">
+            <span class="case-count-label">{{ resultCountLabel }}</span>
+            <label class="sort-label" for="case-library-sort">Sort</label>
+            <select id="case-library-sort" v-model="sortByModel" class="sort-select">
+              <option value="updated">Recently updated</option>
+              <option value="files">Most files</option>
+              <option value="size">Largest size</option>
+              <option value="title">Title A-Z</option>
+            </select>
+          </div>
         </div>
       </section>
 
@@ -57,14 +56,13 @@
         </div>
 
         <div v-else-if="!filteredCases.length" class="case-list-state">
-          <p>{{ searchQuery.trim() ? 'No matching cases' : 'No cases found yet' }}</p>
+          <p>{{ searchQueryModel.trim() ? 'No matching cases' : 'No cases found yet' }}</p>
           <span>Cases appear after a project is published to the Case Library.</span>
         </div>
 
         <div v-else class="case-table">
           <div class="case-table-header" aria-hidden="true">
             <span>Case</span>
-            <span>Tags</span>
             <span>Files</span>
             <span>Size</span>
             <span>Runtime</span>
@@ -98,19 +96,17 @@
                   <span v-if="item.isCase" class="case-status-badge">Case</span>
                 </span>
                 <span class="case-summary">{{ caseSummary(item) }}</span>
+                <span v-if="caseTags(item).length" class="case-inline-tags">
+                  <span
+                    v-for="tag in caseTags(item)"
+                    :key="`${caseKey(item)}-${tag}`"
+                    class="case-tag"
+                  >
+                    {{ tag }}
+                  </span>
+                </span>
               </span>
             </button>
-
-            <div class="case-tags-column">
-              <span
-                v-for="tag in caseTags(item)"
-                :key="`${caseKey(item)}-${tag}`"
-                class="case-tag"
-              >
-                {{ tag }}
-              </span>
-              <span v-if="!caseTags(item).length" class="case-muted">No tags</span>
-            </div>
 
             <div class="case-data-column">
               <span>Files</span>
@@ -130,7 +126,16 @@
             <div class="case-data-column owner">
               <span>Owner</span>
               <strong>
-                <span class="owner-avatar" aria-hidden="true">{{ ownerInitials(item) }}</span>
+                <span class="owner-avatar" aria-hidden="true">
+                  <img
+                    v-if="ownerAvatarSrc(item)"
+                    :src="ownerAvatarSrc(item)"
+                    :alt="`${ownerLabel(item)} avatar`"
+                    loading="lazy"
+                    @error="markOwnerAvatarFailed(item)"
+                  >
+                  <span v-else>{{ ownerInitials(item) }}</span>
+                </span>
                 <span class="owner-name">@{{ ownerLabel(item) }}</span>
               </strong>
             </div>
@@ -193,6 +198,7 @@ import PaginationControl from '../components/PaginationControl.vue'
 import {
   buildWorkspaceProjectRoutePath,
   formatWorkspaceProjectSize,
+  getWorkspaceProjectOwnerAvatarUrl,
   getWorkspaceProjectOwnerInitials,
   getWorkspaceProjectOwnerLabel,
   getWorkspaceProjectRuntimeImage,
@@ -204,26 +210,53 @@ import {
   getWorkspaceProjectTitle
 } from '../utils/workspaceProjectDisplay.js'
 import { confirmDialog, notify } from '../utils/systemFeedback.js'
-import { createApiClient } from '../utils/apiClient.js'
+import { createApiClient, resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const props = defineProps({
   embedded: {
     type: Boolean,
     default: false
+  },
+  searchQuery: {
+    type: String,
+    default: ''
+  },
+  sortBy: {
+    type: String,
+    default: 'updated'
   }
 })
+
+const emit = defineEmits(['update:searchQuery', 'update:sortBy', 'result-count-change'])
 
 const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const cases = ref([])
 const currentUsername = ref('')
-const searchQuery = ref('')
-const sortBy = ref('updated')
+const localSearchQuery = ref(props.searchQuery)
+const localSortBy = ref(props.sortBy || 'updated')
 const currentPage = ref(1)
 const pageSize = 10
 const thumbnailUrls = ref({})
 const thumbnailRequests = new Set()
+const avatarFailures = ref({})
+
+const searchQueryModel = computed({
+  get: () => localSearchQuery.value,
+  set: value => {
+    localSearchQuery.value = value
+    emit('update:searchQuery', value)
+  }
+})
+
+const sortByModel = computed({
+  get: () => localSortBy.value,
+  set: value => {
+    localSortBy.value = value
+    emit('update:sortBy', value)
+  }
+})
 
 const getToken = () => {
   try {
@@ -262,7 +295,7 @@ const loadCurrentUser = async () => {
 }
 
 const sortedCases = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
+  const query = searchQueryModel.value.trim().toLowerCase()
 
   let result = cases.value.filter(item => {
     if (!query) return true
@@ -270,11 +303,11 @@ const sortedCases = computed(() => {
   })
 
   result = [...result]
-  if (sortBy.value === 'files') {
+  if (sortByModel.value === 'files') {
     result.sort((a, b) => (b.fileCount || 0) - (a.fileCount || 0))
-  } else if (sortBy.value === 'size') {
+  } else if (sortByModel.value === 'size') {
     result.sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0))
-  } else if (sortBy.value === 'title') {
+  } else if (sortByModel.value === 'title') {
     result.sort((a, b) => getWorkspaceProjectTitle(a).localeCompare(getWorkspaceProjectTitle(b)))
   } else {
     result.sort((a, b) => new Date(b.modifiedAt || 0) - new Date(a.modifiedAt || 0))
@@ -329,6 +362,18 @@ const caseUpdated = (item = {}) => {
 const caseThumbnailTitle = (item = {}) => item.thumbnail?.name ? `Result thumbnail: ${item.thumbnail.name}` : 'No result thumbnail'
 const caseThumbnailAlt = (item = {}) => `${caseTitle(item)} result thumbnail`
 const caseThumbnailSrc = (item = {}) => thumbnailUrls.value[caseKey(item)] || ''
+const ownerAvatarSrc = (item = {}) => {
+  const key = caseKey(item)
+  if (avatarFailures.value[key]) return ''
+  return resolvePublicResourceUrl(getWorkspaceProjectOwnerAvatarUrl(item))
+}
+
+const markOwnerAvatarFailed = (item = {}) => {
+  avatarFailures.value = {
+    ...avatarFailures.value,
+    [caseKey(item)]: true
+  }
+}
 
 const canForkCase = (item = {}) => !currentUsername.value || item.owner !== currentUsername.value
 
@@ -392,7 +437,21 @@ const loadVisibleThumbnails = () => {
   }
 }
 
-watch([searchQuery, sortBy], () => {
+watch(() => props.searchQuery, value => {
+  const nextValue = value || ''
+  if (nextValue !== localSearchQuery.value) {
+    localSearchQuery.value = nextValue
+  }
+})
+
+watch(() => props.sortBy, value => {
+  const nextValue = value || 'updated'
+  if (nextValue !== localSortBy.value) {
+    localSortBy.value = nextValue
+  }
+})
+
+watch([searchQueryModel, sortByModel], () => {
   currentPage.value = 1
 })
 
@@ -403,6 +462,10 @@ watch(totalPages, (value) => {
 watch(visibleCases, () => {
   loadVisibleThumbnails()
 })
+
+watch(() => filteredCases.value.length, value => {
+  emit('result-count-change', value)
+}, { immediate: true })
 
 onMounted(() => {
   Promise.all([
@@ -475,9 +538,10 @@ onBeforeUnmount(() => {
   border-radius: 0;
   background: transparent;
   padding: 0 0 1rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(520px, 0.82fr);
+  align-items: start;
+  gap: 1.25rem;
   margin-bottom: 0;
 }
 
@@ -510,22 +574,12 @@ onBeforeUnmount(() => {
   line-height: 1.45;
 }
 
-.toolbar-panel {
+.hero-controls {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto;
+  grid-template-columns: minmax(280px, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 0;
-  margin-bottom: 1rem;
-  border: none;
-  border-bottom: 1px solid #d9dce8;
-  border-radius: 0;
-  background: transparent;
-}
-
-.case-library-page.embedded .toolbar-panel {
-  padding: 0 0 1rem;
-  margin-bottom: 1rem;
+  padding-top: 0.12rem;
 }
 
 .toolbar-left {
@@ -534,7 +588,7 @@ onBeforeUnmount(() => {
 
 .search-input {
   width: 100%;
-  max-width: 520px;
+  max-width: none;
   height: 42px;
   padding: 0 0.9rem;
   border: 1px solid #c8d0e3;
@@ -600,8 +654,7 @@ onBeforeUnmount(() => {
 .case-row {
   display: grid;
   grid-template-columns:
-    minmax(340px, 1fr)
-    minmax(150px, 0.28fr)
+    minmax(520px, 1fr)
     76px
     90px
     minmax(128px, 0.18fr)
@@ -685,7 +738,7 @@ onBeforeUnmount(() => {
 .case-copy {
   min-width: 0;
   display: grid;
-  gap: 0.42rem;
+  gap: 0.44rem;
 }
 
 .case-title-line {
@@ -734,12 +787,13 @@ onBeforeUnmount(() => {
   -webkit-line-clamp: 2;
 }
 
-.case-tags-column {
+.case-inline-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.34rem;
   min-width: 0;
+  min-height: 22px;
 }
 
 .case-tag {
@@ -758,12 +812,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.case-muted {
-  color: #8b95a8;
-  font-size: 0.78rem;
-  font-weight: 700;
 }
 
 .case-data-column {
@@ -817,6 +865,20 @@ onBeforeUnmount(() => {
   font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+.owner-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.owner-avatar span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .owner-name {
@@ -981,14 +1043,14 @@ onBeforeUnmount(() => {
 
 @media (max-width: 900px) {
   .library-hero {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .hero-left h2 {
     font-size: 24px;
   }
 
-  .toolbar-panel {
+  .hero-controls {
     grid-template-columns: 1fr;
   }
 
@@ -1018,7 +1080,6 @@ onBeforeUnmount(() => {
     height: 76px;
   }
 
-  .case-tags-column,
   .case-actions {
     justify-content: flex-start;
   }

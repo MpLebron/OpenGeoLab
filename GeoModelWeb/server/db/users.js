@@ -112,6 +112,35 @@ async function getUserById(userId) {
     return mapUserDoc(doc);
 }
 
+async function getUserByUsername(username) {
+    const normalized = normalizeLower(username);
+    if (!normalized) {
+        return null;
+    }
+
+    const db = getDatabase();
+    const users = db.collection('users');
+    const doc = await users.findOne(
+        { usernameLower: normalized },
+        {
+            projection: {
+                username: 1,
+                email: 1,
+                displayName: 1,
+                avatarUrl: 1,
+                authSource: 1,
+                status: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                lastLoginAt: 1,
+                lastLoginIp: 1
+            }
+        }
+    );
+
+    return mapUserDoc(doc);
+}
+
 async function upsertOAuthUser({
     provider,
     externalUserId,
@@ -256,5 +285,6 @@ async function upsertOAuthUser({
 
 module.exports = {
     getUserById,
+    getUserByUsername,
     upsertOAuthUser
 };

@@ -11,6 +11,7 @@ const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
 const router = express.Router();
+const { getUserByUsername } = require('../db/users');
 const {
     DEFAULT_IMAGE,
     getRuntimeCatalog,
@@ -1334,6 +1335,49 @@ function buildPublicProjectThumbnail(owner, projectName, projectPath) {
     };
 }
 
+function normalizeBaseUrl(value = '') {
+    return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function isOpenGmsAvatarUrl(avatarUrl) {
+    const source = String(avatarUrl || '').trim();
+    if (!source) return false;
+
+    const allowedPrefixes = [
+        normalizeBaseUrl(process.env.OPENGMS_AVATAR_BASE_URL),
+        normalizeBaseUrl(process.env.OPENGMS_USER_SERVER_URL)
+    ].filter(Boolean);
+
+    return allowedPrefixes.some(prefix => source === prefix || source.startsWith(`${prefix}/`));
+}
+
+function buildOwnerAvatarUrl(user) {
+    const avatarUrl = String(user?.avatarUrl || '').trim();
+    if (!avatarUrl) return null;
+
+    if (/^https:\/\//i.test(avatarUrl) && !isOpenGmsAvatarUrl(avatarUrl)) {
+        return avatarUrl;
+    }
+
+    return `/api/auth/avatar/${encodeURIComponent(String(user.id))}`;
+}
+
+function buildOwnerProfile(username, user) {
+    if (!user) {
+        return {
+            username,
+            displayName: username,
+            avatarUrl: null
+        };
+    }
+
+    return {
+        username: user.username || username,
+        displayName: user.displayName || user.username || username,
+        avatarUrl: buildOwnerAvatarUrl(user)
+    };
+}
+
 function buildPublicProjectSummary(username, projectName, projectPath, { caseOnly = false } = {}) {
     const meta = getProjectMeta(projectPath);
     if (!meta.isPublic) return null;
@@ -1351,6 +1395,7 @@ function buildPublicProjectSummary(username, projectName, projectPath, { caseOnl
         title: caseMeta?.title || meta.name || projectName,
         description: meta.description || caseMeta?.summary || '',
         owner: username,
+        ownerProfile: buildOwnerProfile(username, null),
         ...fileSummary,
         ...getRuntimeFields(meta),
         isPublic: true,
@@ -1363,7 +1408,27 @@ function buildPublicProjectSummary(username, projectName, projectPath, { caseOnl
     };
 }
 
-function listPublicProjectSummaries({ caseOnly = false } = {}) {
+async function attachOwnerProfiles(projects) {
+    const owners = Array.from(new Set(projects.map(project => project.owner).filter(Boolean)));
+    const profiles = new Map();
+
+    await Promise.all(owners.map(async owner => {
+        try {
+            const user = await getUserByUsername(owner);
+            profiles.set(owner, buildOwnerProfile(owner, user));
+        } catch (error) {
+            console.warn('Failed to resolve case owner profile:', owner, error?.message || error);
+            profiles.set(owner, buildOwnerProfile(owner, null));
+        }
+    }));
+
+    return projects.map(project => ({
+        ...project,
+        ownerProfile: profiles.get(project.owner) || project.ownerProfile || buildOwnerProfile(project.owner, null)
+    }));
+}
+
+async function listPublicProjectSummaries({ caseOnly = false } = {}) {
     const publicProjects = [];
     if (!fs.existsSync(USER_DATA_DIR)) {
         return publicProjects;
@@ -1390,7 +1455,8 @@ function listPublicProjectSummaries({ caseOnly = false } = {}) {
         }
     }
 
-    return publicProjects.sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt));
+    const withProfiles = await attachOwnerProfiles(publicProjects);
+    return withProfiles.sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt));
 }
 
 /**
@@ -2767,9 +2833,9 @@ router.post('/upload-data', upload.single('file'), async (req, res) => {
  * Compatibility endpoint for legacy Shared Space links.
  * The canonical public project surface is Case Library.
  */
-router.get('/shared-projects', (req, res) => {
+router.get('/shared-projects', async (req, res) => {
     try {
-        res.json({ projects: listPublicProjectSummaries() });
+        res.json({ projects: await listPublicProjectSummaries() });
     } catch (error) {
         console.error('Error fetching shared projects:', error);
         res.status(500).json({ error: '获取共享项目失败' });
@@ -3177,9 +3243,9 @@ router.put('/projects/:projectName/case', (req, res) => {
  * GET /api/jupyter/cases
  * List public runnable case projects for the unified Case Library
  */
-router.get('/cases', (req, res) => {
+router.get('/cases', async (req, res) => {
     try {
-        return res.json({ cases: listPublicProjectSummaries() });
+        return res.json({ cases: await listPublicProjectSummaries() });
     } catch (error) {
         console.error('Error fetching cases:', error);
         return res.status(500).json({ error: 'Failed to fetch cases' });
