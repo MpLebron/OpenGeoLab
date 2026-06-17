@@ -15,6 +15,10 @@ import {
   getWorkspaceProjectSearchText,
   getWorkspaceProjectSizeLabel,
   getWorkspaceProjectSummary,
+  getWorkspaceProjectOwnerInitials,
+  getWorkspaceProjectOwnerLabel,
+  getWorkspaceProjectTags,
+  getWorkspaceProjectThumbnailDownloadPath,
   getWorkspaceProjectTitle,
   getWorkspaceProjectVisibility
 } from '../src/utils/workspaceProjectDisplay.js'
@@ -68,6 +72,9 @@ test('normalizes public case library records without inventing a different entit
       summary: 'Reusable notebook project for roof feature extraction.',
       scenario: 'Urban analytics',
       tags: ['Remote Sensing', 'Notebook']
+    },
+    thumbnail: {
+      downloadPath: '/api/jupyter/cases/Zhoums396/Roof/files/outputs%2Fmap.png/download'
     }
   }
 
@@ -83,10 +90,27 @@ test('normalizes public case library records without inventing a different entit
   assert.equal(getWorkspaceProjectSizeLabel(item), '7.0 MB')
   assert.equal(getWorkspaceProjectRuntimeImage(item), 'opengms/geoviz-notebook:2026.05')
   assert.equal(getWorkspaceProjectRuntimeLabel(item), 'geoviz-notebook:2026.05')
+  assert.deepEqual(getWorkspaceProjectTags(item), ['Remote Sensing', 'Notebook'])
+  assert.equal(getWorkspaceProjectOwnerLabel(item), 'Zhoums396')
+  assert.equal(getWorkspaceProjectOwnerInitials(item), 'ZH')
+  assert.equal(getWorkspaceProjectThumbnailDownloadPath(item), '/api/jupyter/cases/Zhoums396/Roof/files/outputs%2Fmap.png/download')
   assert.equal(getWorkspaceProjectMark(item).label, 'CASE')
   assert.match(getWorkspaceProjectSearchText(item), /roof extraction workflow/i)
   assert.match(getWorkspaceProjectSearchText(item), /zhoums396/i)
   assert.match(getWorkspaceProjectSearchText(item), /remote sensing/i)
+})
+
+test('accepts flattened runtime image and label fields from public API records', () => {
+  const item = {
+    runtimeImage: 'opengms/pangeo-earth:2026.05',
+    runtimeLabel: 'pangeo-earth',
+    fileCount: 3,
+    sizeBytes: 2048
+  }
+
+  assert.equal(getWorkspaceProjectRuntimeImage(item), 'opengms/pangeo-earth:2026.05')
+  assert.equal(getWorkspaceProjectRuntimeLabel(item), 'pangeo-earth')
+  assert.equal(getWorkspaceProjectArtifacts(item), '3 files • 2.0 KB • Based on opengms/pangeo-earth:2026.05')
 })
 
 test('formats project size in compact binary units', () => {

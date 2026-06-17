@@ -30,6 +30,7 @@ const {
 } = require('../utils/dockerContainerState');
 const { normalizeOpenGmsModelFavorite } = require('../utils/openGmsModelLinks');
 const { summarizeProjectFiles } = require('../utils/projectFileSummary');
+const { findProjectThumbnail } = require('../utils/projectThumbnail');
 const {
     buildJupyterBasePath,
     buildJupyterLaunchUrl,
@@ -1317,6 +1318,22 @@ function getProjectFileSummary(projectPath) {
     return summarizeProjectFiles(projectPath);
 }
 
+function buildPublicProjectThumbnail(owner, projectName, projectPath) {
+    const thumbnail = findProjectThumbnail(projectPath);
+    if (!thumbnail) return null;
+
+    const encodedOwner = encodeURIComponent(owner);
+    const encodedProjectName = encodeURIComponent(projectName);
+    const encodedPath = encodeURIComponent(thumbnail.path);
+
+    return {
+        name: thumbnail.name,
+        path: thumbnail.path,
+        size: thumbnail.size,
+        downloadPath: `/api/jupyter/cases/${encodedOwner}/${encodedProjectName}/files/${encodedPath}/download`
+    };
+}
+
 function buildPublicProjectSummary(username, projectName, projectPath, { caseOnly = false } = {}) {
     const meta = getProjectMeta(projectPath);
     if (!meta.isPublic) return null;
@@ -1324,6 +1341,7 @@ function buildPublicProjectSummary(username, projectName, projectPath, { caseOnl
 
     const caseMeta = meta.isCase ? getCaseMeta(meta) : null;
     const fileSummary = getProjectFileSummary(projectPath);
+    const thumbnail = buildPublicProjectThumbnail(username, projectName, projectPath);
     const projectId = ensureProjectWorkspaceId(projectPath, meta);
 
     return {
@@ -1339,6 +1357,7 @@ function buildPublicProjectSummary(username, projectName, projectPath, { caseOnl
         isCase: !!meta.isCase,
         caseTitle: caseMeta?.title || '',
         case: caseMeta,
+        thumbnail,
         dataBindingCount: Array.isArray(meta.dataBindings) ? meta.dataBindings.length : 0,
         publicationType: meta.isCase ? 'case' : 'public-project'
     };
@@ -2805,6 +2824,7 @@ function buildPublicWorkspaceProject(owner, projectName, projectDir, meta) {
     const fileTree = listSharedProjectTree(projectDir);
     const files = flattenSharedProjectTree(fileTree);
     const fileSummary = getProjectFileSummary(projectDir);
+    const thumbnail = buildPublicProjectThumbnail(owner, projectName, projectDir);
 
     return {
         name: projectName,
@@ -2820,6 +2840,7 @@ function buildPublicWorkspaceProject(owner, projectName, projectDir, meta) {
         isCase: !!meta.isCase,
         caseTitle: caseMeta?.title || '',
         case: caseMeta,
+        thumbnail,
         forkedFrom: meta.forkedFrom || null,
         sourceCase: meta.sourceCase || null,
         publicationType: meta.isCase ? 'case' : 'public-project'

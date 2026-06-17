@@ -56,6 +56,7 @@ export function getWorkspaceProjectRuntimeImage(project = {}) {
   return String(
     project.runtime?.imageName ||
     project.runtime?.imageId ||
+    project.runtimeImage ||
     project.runtimeImageId ||
     project.imageId ||
     project.environmentId ||
@@ -64,9 +65,52 @@ export function getWorkspaceProjectRuntimeImage(project = {}) {
 }
 
 export function getWorkspaceProjectRuntimeLabel(project = {}) {
+  const explicit = String(project.runtime?.label || project.runtimeLabel || '').trim()
+  if (explicit) return explicit
+
   const image = getWorkspaceProjectRuntimeImage(project)
   if (!image) return '-'
   return image.replace(/^opengms\//, '')
+}
+
+export function getWorkspaceProjectTags(project = {}, limit = 4) {
+  const rawTags = [
+    ...(Array.isArray(project.case?.tags) ? project.case.tags : []),
+    ...(Array.isArray(project.tags) ? project.tags : [])
+  ]
+
+  return Array.from(new Set(
+    rawTags
+      .map(tag => String(tag || '').trim())
+      .filter(Boolean)
+  )).slice(0, limit)
+}
+
+export function getWorkspaceProjectOwnerLabel(project = {}) {
+  return String(project.owner || project.createdBy || 'unknown').trim() || 'unknown'
+}
+
+export function getWorkspaceProjectOwnerInitials(project = {}) {
+  const owner = getWorkspaceProjectOwnerLabel(project)
+  const tokens = owner
+    .replace(/@.*/, '')
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean)
+
+  if (!tokens.length) return 'U'
+  const initials = tokens.length === 1
+    ? tokens[0].slice(0, 2)
+    : `${tokens[0][0]}${tokens[tokens.length - 1][0]}`
+  return initials.toUpperCase()
+}
+
+export function getWorkspaceProjectThumbnailDownloadPath(project = {}) {
+  return String(
+    project.thumbnail?.downloadPath ||
+    project.thumbnailUrl ||
+    project.thumbnail?.url ||
+    ''
+  ).trim()
 }
 
 export function getWorkspaceProjectFileLabel(project = {}) {
@@ -113,7 +157,6 @@ export function getWorkspaceProjectSearchText(project = {}) {
     project.case?.title,
     project.case?.summary,
     project.case?.scenario,
-    ...(Array.isArray(project.case?.tags) ? project.case.tags : []),
-    ...(Array.isArray(project.tags) ? project.tags : [])
+    ...getWorkspaceProjectTags(project, 20)
   ].filter(Boolean).join(' ').toLowerCase()
 }
