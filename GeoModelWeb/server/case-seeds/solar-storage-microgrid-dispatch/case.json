@@ -1,0 +1,51 @@
+{
+  "source": "opengeolab-mature-workflow-case",
+  "sourceId": "solar-storage-microgrid-dispatch",
+  "title": "Solar Storage Microgrid Dispatch",
+  "summary": "An urban-energy notebook for PV, battery dispatch, tariff exposure, peak shaving, and resilience comparison.",
+  "description": "This case adapts mature PyPSA/PV/storage planning patterns to a compact local microgrid dataset and solves dispatch scenarios offline.",
+  "domain": "Urban Energy Systems",
+  "tags": [
+    "PyPSA Pattern",
+    "PV",
+    "Battery Storage",
+    "Optimization",
+    "Microgrid"
+  ],
+  "authors": [
+    "OpenGeoLab Mature Case Curation"
+  ],
+  "authorLine": "OpenGeoLab Mature Case Curation",
+  "timeLabel": "2026/06/17",
+  "runtimeImageId": "opengms-urban-energy",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Bundled offline analysis dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Project-local inputs generated for a reproducible mature workflow."
+    }
+  ],
+  "steps": [
+    "Load a week-long demand, PV, temperature, tariff, and critical-load dataset.",
+    "Diagnose load shape, solar coincidence, ramps, and price exposure.",
+    "Build a baseline grid-import cost and emissions inventory.",
+    "Formulate a storage dispatch optimization with state-of-charge constraints.",
+    "Solve multiple PV and battery scenarios with scipy/HiGHS-style linear programming.",
+    "Compare cost, peak import, PV curtailment, and resilience metrics.",
+    "Allocate benefits across districts using peak-share and critical-load weights.",
+    "Export dispatch schedules, scenario tables, and visual diagnostics."
+  ],
+  "expectedResults": [
+    "Scenario dispatch schedules.",
+    "Cost, emission, peak, and resilience comparison table.",
+    "District benefit allocation under outputs/."
+  ],
+  "references": [
+    "PyPSA overview: https://pypsa.org/",
+    "PyPSA optimal power flow docs: https://docs.pypsa.org/",
+    "pvlib Python project: https://pvlib-python.readthedocs.io/"
+  ]
+}

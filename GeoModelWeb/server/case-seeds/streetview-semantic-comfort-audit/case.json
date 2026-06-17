@@ -1,0 +1,52 @@
+{
+  "source": "opengeolab-mature-workflow-case",
+  "sourceId": "streetview-semantic-comfort-audit",
+  "title": "Streetview Semantic Comfort Audit",
+  "summary": "A CV-style streetscape notebook for segmentation, feature extraction, clustering, heat-stress modeling, and intervention ranking.",
+  "description": "This case adapts mature image-processing and urban visual analytics workflows to bundled street-view images so the CV runtime can execute offline.",
+  "domain": "Streetview CV and Urban Comfort",
+  "tags": [
+    "OpenCV",
+    "scikit-image",
+    "Streetview",
+    "Segmentation",
+    "Urban Comfort"
+  ],
+  "authors": [
+    "OpenGeoLab Mature Case Curation"
+  ],
+  "authorLine": "OpenGeoLab Mature Case Curation",
+  "timeLabel": "2026/06/17",
+  "runtimeImageId": "opengms-streetview-cv",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Bundled offline analysis dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Project-local inputs generated for a reproducible mature workflow."
+    }
+  ],
+  "steps": [
+    "Load a local street-view image set with location and comfort observations.",
+    "Inspect image inventory, metadata, and sample montage.",
+    "Segment sky, vegetation, road, and built facade using color-space and morphology rules.",
+    "Measure green-view, sky-view, enclosure, edge density, and facade texture indicators.",
+    "Validate indicator distributions and flag segmentation outliers.",
+    "Cluster scenes into streetscape typologies with standardized image metrics.",
+    "Model observed heat stress from image-derived indicators.",
+    "Rank corridors and simulate a greening intervention for low-comfort scenes.",
+    "Export segmentation panels, metric tables, clusters, and intervention rankings."
+  ],
+  "expectedResults": [
+    "Scene segmentation panels.",
+    "Image metrics and cluster assignments.",
+    "Heat-stress model diagnostics and corridor intervention ranking."
+  ],
+  "references": [
+    "scikit-image watershed segmentation example: https://scikit-image.org/docs/0.25.x/auto_examples/segmentation/plot_watershed.html",
+    "OpenCV documentation: https://docs.opencv.org/",
+    "TorchGeo overview: https://docs.torchgeo.org/"
+  ]
+}

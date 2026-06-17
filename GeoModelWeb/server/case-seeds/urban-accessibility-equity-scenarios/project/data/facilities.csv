@@ -1,0 +1,9 @@
+facility_id,type,node,capacity
+F1,clinic,5,1100
+F2,clinic,22,1400
+F3,school,14,1800
+F4,school,53,1600
+F5,park,9,2200
+F6,park,66,2600
+F7,clinic,39,1250
+F8,park,45,2100

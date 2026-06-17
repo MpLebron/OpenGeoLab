@@ -1,0 +1,52 @@
+{
+  "source": "opengeolab-mature-workflow-case",
+  "sourceId": "climate-extreme-risk-atlas",
+  "title": "Climate Extreme Risk Atlas",
+  "summary": "A Pangeo-style climate notebook for heatwave, rainfall, trend, EOF, and compound-risk mapping.",
+  "description": "This case follows mature xarray/Pangeo climate-analysis patterns with bundled NetCDF data, percentile extremes, trend maps, EOF decomposition, and risk-ranking outputs.",
+  "domain": "Climate Risk Analytics",
+  "tags": [
+    "Xarray",
+    "Pangeo",
+    "Climate Extremes",
+    "Risk Atlas",
+    "PCA"
+  ],
+  "authors": [
+    "OpenGeoLab Mature Case Curation"
+  ],
+  "authorLine": "OpenGeoLab Mature Case Curation",
+  "timeLabel": "2026/06/17",
+  "runtimeImageId": "opengms-pangeo-earth",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Bundled offline analysis dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Project-local inputs generated for a reproducible mature workflow."
+    }
+  ],
+  "steps": [
+    "Load a multi-year gridded climate panel and inspect variables, dimensions, and missingness.",
+    "Map urban fraction, elevation, and annual heat exposure to understand the analysis domain.",
+    "Compute seasonal climatology and daily percentile thresholds for heatwave detection.",
+    "Estimate annual heatwave days and extreme precipitation days for every grid cell.",
+    "Compare urban and rural time series to quantify the urban heat island signal.",
+    "Fit per-cell linear trends for heat and precipitation extremes.",
+    "Run an EOF/PCA decomposition to summarize dominant space-time risk patterns.",
+    "Build a population-weighted compound risk index and rank hotspot cells.",
+    "Write maps, tables, and a machine-readable risk atlas under outputs/."
+  ],
+  "expectedResults": [
+    "Executed notebook with heatwave, rainfall, trend, EOF, and compound-risk outputs.",
+    "CSV hotspot ranking plus PNG maps saved to outputs/.",
+    "No external data downloads during runtime."
+  ],
+  "references": [
+    "Project Pythia Cookbook Gallery: https://cookbooks.projectpythia.org/",
+    "CMIP6 Cookbook: https://projectpythia.org/cmip6-cookbook/",
+    "Xarray documentation: https://docs.xarray.dev/"
+  ]
+}

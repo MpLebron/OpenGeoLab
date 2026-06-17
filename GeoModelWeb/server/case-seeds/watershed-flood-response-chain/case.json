@@ -1,0 +1,52 @@
+{
+  "source": "opengeolab-mature-workflow-case",
+  "sourceId": "watershed-flood-response-chain",
+  "title": "Watershed Flood Response Chain",
+  "summary": "A hydrology notebook that chains DEM derivatives, flow accumulation, watershed delineation, susceptibility mapping, and runoff scenarios.",
+  "description": "This case follows mature WhiteboxTools/pysheds-style watershed analysis patterns but uses a bundled DEM and transparent Python calculations for offline execution.",
+  "domain": "Hydrology and Terrain Analysis",
+  "tags": [
+    "DEM",
+    "Hydrology",
+    "Flood Risk",
+    "Watershed",
+    "Raster"
+  ],
+  "authors": [
+    "OpenGeoLab Mature Case Curation"
+  ],
+  "authorLine": "OpenGeoLab Mature Case Curation",
+  "timeLabel": "2026/06/17",
+  "runtimeImageId": "opengms-hydro-terrain",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Bundled offline analysis dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Project-local inputs generated for a reproducible mature workflow."
+    }
+  ],
+  "steps": [
+    "Load a DEM, storm hyetograph, and outlet table from local files.",
+    "Derive slope, aspect, and shaded relief to inspect terrain controls.",
+    "Run a D8-style flow-routing chain to compute flow direction and accumulation.",
+    "Extract a stream network and distance-to-stream surface.",
+    "Delineate an outlet-contributing area using reverse flow traversal.",
+    "Compute topographic wetness and flood susceptibility indices.",
+    "Combine terrain susceptibility with curve-number runoff from a design storm.",
+    "Compare baseline and restoration scenarios for peak runoff response.",
+    "Export risk maps, stream rasters, hydrographs, and tabular indicators."
+  ],
+  "expectedResults": [
+    "DEM derivative and stream-network maps.",
+    "Watershed and susceptibility rasters.",
+    "Runoff scenario hydrograph and CSV exports."
+  ],
+  "references": [
+    "WhiteboxTools Python frontend: https://github.com/opengeos/whitebox-python",
+    "Whitebox watershed/LiDAR overview: https://geog-312.gishub.org/book/geospatial/whitebox.html",
+    "Pysheds project: https://github.com/mdbartos/pysheds"
+  ]
+}

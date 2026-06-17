@@ -1,0 +1,5 @@
+district,peak_share,critical_load
+Campus,0.22,0.4
+Hospital,0.28,0.85
+Residential,0.34,0.35
+Transit hub,0.16,0.65

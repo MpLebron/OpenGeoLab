@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#1e3a8a"/>
+      <stop offset="0.55" stop-color="#0891b2"/>
+      <stop offset="1" stop-color="#65a30d"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="400" fill="url(#g)"/>
+  <path d="M0 300 C110 250 200 340 320 275 C430 220 510 275 720 205 L720 400 L0 400 Z" fill="rgba(255,255,255,0.22)"/>
+  <path d="M0 330 C160 290 260 360 410 305 C520 265 590 300 720 260 L720 400 L0 400 Z" fill="rgba(255,255,255,0.25)"/>
+  <circle cx="600" cy="92" r="58" fill="rgba(255,255,255,0.22)"/>
+  <text x="48" y="86" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="700" fill="#fff">Streetview Semantic Comfort Audit</text>
+  <text x="48" y="128" font-family="Inter,Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.86)">Complex OpenGeoLab notebook case</text>
+</svg>

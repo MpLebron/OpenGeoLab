@@ -1,0 +1,52 @@
+{
+  "source": "opengeolab-mature-workflow-case",
+  "sourceId": "urban-accessibility-equity-scenarios",
+  "title": "Urban Accessibility Equity Scenarios",
+  "summary": "A multi-step network accessibility case with equity metrics and facility siting scenarios.",
+  "description": "This case adapts mature OSMnx/NetworkX accessibility workflows to a bundled offline street network, then adds equity screening and scenario optimization.",
+  "domain": "Urban Mobility and Equity",
+  "tags": [
+    "NetworkX",
+    "OSMnx Pattern",
+    "Accessibility",
+    "Equity",
+    "Facility Location"
+  ],
+  "authors": [
+    "OpenGeoLab Mature Case Curation"
+  ],
+  "authorLine": "OpenGeoLab Mature Case Curation",
+  "timeLabel": "2026/06/17",
+  "runtimeImageId": "opengms-urban-mobility",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Bundled offline analysis dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Project-local inputs generated for a reproducible mature workflow."
+    }
+  ],
+  "steps": [
+    "Load local street nodes, weighted edges, neighborhoods, existing facilities, and candidate sites.",
+    "Build a directed walking graph and audit graph connectivity and travel-time assumptions.",
+    "Snap neighborhood demand to network nodes and compute vulnerability-weighted demand.",
+    "Calculate shortest walking time from every neighborhood to each facility class.",
+    "Map baseline access gaps and summarize who is outside a 12 minute service threshold.",
+    "Run a greedy scenario optimizer that adds candidate facilities to maximize vulnerable-population coverage.",
+    "Compare baseline and scenario access by district and social group.",
+    "Run a walking-speed sensitivity test for slower pedestrian groups.",
+    "Export accessibility tables, maps, and scenario rankings to outputs/."
+  ],
+  "expectedResults": [
+    "Baseline and scenario accessibility maps.",
+    "Greedy facility siting ranking.",
+    "Equity and sensitivity tables saved under outputs/."
+  ],
+  "references": [
+    "OSMnx examples gallery: https://github.com/gboeing/osmnx-examples",
+    "NetworkX geospatial example: https://networkx.org/documentation/stable/auto_examples/geospatial/plot_osmnx.html",
+    "OSMnx documentation: https://osmnx.readthedocs.io/"
+  ]
+}

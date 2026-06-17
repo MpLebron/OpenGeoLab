@@ -1,0 +1,52 @@
+{
+  "source": "opengeolab-mature-workflow-case",
+  "sourceId": "spatial-econometric-housing-diagnostics",
+  "title": "Spatial Econometric Housing Diagnostics",
+  "summary": "A full PySAL workflow for spatial weights, Moran diagnostics, OLS, spatial lag/error models, and hotspot mapping.",
+  "description": "This mature spatial statistics case packages a local housing dataset and walks through the diagnostics expected in a spatial econometrics notebook.",
+  "domain": "Spatial Econometrics",
+  "tags": [
+    "PySAL",
+    "Spatial Regression",
+    "Moran I",
+    "GeoPandas",
+    "Housing"
+  ],
+  "authors": [
+    "OpenGeoLab Mature Case Curation"
+  ],
+  "authorLine": "OpenGeoLab Mature Case Curation",
+  "timeLabel": "2026/06/17",
+  "runtimeImageId": "opengms-spatial-stats",
+  "coreNotebook": "main.ipynb",
+  "coverFileName": "cover.svg",
+  "datasets": [
+    {
+      "name": "Bundled offline analysis dataset",
+      "path": "data/",
+      "type": "Local files",
+      "description": "Project-local inputs generated for a reproducible mature workflow."
+    }
+  ],
+  "steps": [
+    "Load a polygon housing market dataset and inspect variable distributions.",
+    "Construct queen-contiguity spatial weights and inspect neighbor structure.",
+    "Run exploratory maps and correlation checks for price drivers.",
+    "Compute global Moran statistics for price and OLS residuals.",
+    "Fit a baseline OLS model and inspect residual spatial clustering.",
+    "Fit spatial lag and spatial error models using PySAL spreg.",
+    "Compare model diagnostics and coefficient interpretation.",
+    "Map local Moran clusters and residual outliers for planning review.",
+    "Export diagnostics, model comparison tables, and hotspot maps."
+  ],
+  "expectedResults": [
+    "Model comparison table for OLS, spatial lag, and spatial error models.",
+    "Residual and local-cluster maps.",
+    "CSV diagnostics saved to outputs/."
+  ],
+  "references": [
+    "PySAL spatial autocorrelation notebook: https://pysal.org/notebooks/explore/esda/Spatial_Autocorrelation_for_Areal_Unit_Data.html",
+    "PySAL spatial model specifications: https://pysal.org/spreg/notebooks/7_spatial_models.html",
+    "GeoPandas examples gallery: https://geopandas.org/en/stable/gallery/index.html"
+  ]
+}
