@@ -1211,7 +1211,7 @@ function resolveSharedProjectFile(owner, projectName, filePath) {
     }
 
     const resolvedProjectDir = path.resolve(projectDir);
-    const decodedPath = decodeURIComponent(filePath);
+    const decodedPath = decodeURIComponent(normalizePublicWorkspaceFilePath(filePath));
     const fullPath = path.resolve(projectDir, decodedPath);
 
     if (fullPath !== resolvedProjectDir && !fullPath.startsWith(`${resolvedProjectDir}${path.sep}`)) {
@@ -1229,6 +1229,14 @@ function resolveSharedProjectFile(owner, projectName, filePath) {
         decodedPath,
         fullPath
     };
+}
+
+function normalizePublicWorkspaceFilePath(filePath) {
+    if (Array.isArray(filePath)) {
+        return filePath.join('/');
+    }
+
+    return String(filePath || '');
 }
 
 function renderNotebookPreviewHtml(filePath) {
@@ -1325,7 +1333,7 @@ function buildPublicProjectThumbnail(owner, projectName, projectPath) {
 
     const encodedOwner = encodeURIComponent(owner);
     const encodedProjectName = encodeURIComponent(projectName);
-    const encodedPath = encodeURIComponent(thumbnail.path);
+    const encodedPath = encodePublicWorkspaceFilePath(thumbnail.path);
 
     return {
         name: thumbnail.name,
@@ -1333,6 +1341,14 @@ function buildPublicProjectThumbnail(owner, projectName, projectPath) {
         size: thumbnail.size,
         downloadPath: `/api/jupyter/cases/${encodedOwner}/${encodedProjectName}/files/${encodedPath}/download`
     };
+}
+
+function encodePublicWorkspaceFilePath(relativePath = '') {
+    return String(relativePath || '')
+        .split('/')
+        .filter(Boolean)
+        .map(segment => encodeURIComponent(segment))
+        .join('/');
 }
 
 function normalizeBaseUrl(value = '') {
@@ -3018,26 +3034,26 @@ function sendPublicWorkspaceFileDownload(req, res) {
 }
 
 /**
- * GET /api/jupyter/shared-projects/:owner/:projectName/files/:filePath/content
+ * GET /api/jupyter/shared-projects/:owner/:projectName/files/*filePath/content
  * 获取公开项目文件内容（用于预览）
  */
-router.get('/shared-projects/:owner/:projectName/files/:filePath/content', (req, res) => {
+router.get('/shared-projects/:owner/:projectName/files/*filePath/content', (req, res) => {
     return sendPublicWorkspaceFileContent(req, res);
 });
 
 /**
- * GET /api/jupyter/shared-projects/:owner/:projectName/files/:filePath/preview
+ * GET /api/jupyter/shared-projects/:owner/:projectName/files/*filePath/preview
  * 获取共享项目文件的专业预览内容
  */
-router.get('/shared-projects/:owner/:projectName/files/:filePath/preview', async (req, res) => {
+router.get('/shared-projects/:owner/:projectName/files/*filePath/preview', async (req, res) => {
     return sendPublicWorkspaceNotebookPreview(req, res);
 });
 
 /**
- * GET /api/jupyter/shared-projects/:owner/:projectName/files/:filePath/download
+ * GET /api/jupyter/shared-projects/:owner/:projectName/files/*filePath/download
  * 下载共享项目文件
  */
-router.get('/shared-projects/:owner/:projectName/files/:filePath/download', (req, res) => {
+router.get('/shared-projects/:owner/:projectName/files/*filePath/download', (req, res) => {
     return sendPublicWorkspaceFileDownload(req, res);
 });
 
@@ -3253,26 +3269,26 @@ router.get('/cases', async (req, res) => {
 });
 
 /**
- * GET /api/jupyter/cases/:owner/:projectName/files/:filePath/content
+ * GET /api/jupyter/cases/:owner/:projectName/files/*filePath/content
  * Read public case text/code artifacts.
  */
-router.get('/cases/:owner/:projectName/files/:filePath/content', (req, res) => {
+router.get('/cases/:owner/:projectName/files/*filePath/content', (req, res) => {
     return sendPublicWorkspaceFileContent(req, res);
 });
 
 /**
- * GET /api/jupyter/cases/:owner/:projectName/files/:filePath/preview
+ * GET /api/jupyter/cases/:owner/:projectName/files/*filePath/preview
  * Render public case notebook artifacts.
  */
-router.get('/cases/:owner/:projectName/files/:filePath/preview', async (req, res) => {
+router.get('/cases/:owner/:projectName/files/*filePath/preview', async (req, res) => {
     return sendPublicWorkspaceNotebookPreview(req, res);
 });
 
 /**
- * GET /api/jupyter/cases/:owner/:projectName/files/:filePath/download
+ * GET /api/jupyter/cases/:owner/:projectName/files/*filePath/download
  * Download public case artifacts.
  */
-router.get('/cases/:owner/:projectName/files/:filePath/download', (req, res) => {
+router.get('/cases/:owner/:projectName/files/*filePath/download', (req, res) => {
     return sendPublicWorkspaceFileDownload(req, res);
 });
 

@@ -43,6 +43,11 @@ function scoreThumbnailCandidate(candidate) {
     return score;
 }
 
+function isOutputThumbnailCandidate(candidate) {
+    const relativePath = String(candidate?.path || '').replace(/\\/g, '/');
+    return /(^|\/)outputs?\//i.test(relativePath);
+}
+
 function collectThumbnailCandidates(projectPath, relativeDir = '') {
     const currentDir = relativeDir ? path.join(projectPath, relativeDir) : projectPath;
     if (!fs.existsSync(currentDir)) return [];
@@ -81,7 +86,8 @@ function collectThumbnailCandidates(projectPath, relativeDir = '') {
 }
 
 function findProjectThumbnail(projectPath) {
-    const candidates = collectThumbnailCandidates(projectPath);
+    const candidates = collectThumbnailCandidates(projectPath)
+        .filter(isOutputThumbnailCandidate);
     if (!candidates.length) return null;
 
     return candidates
@@ -100,5 +106,6 @@ module.exports = {
     THUMBNAIL_EXTENSIONS,
     collectThumbnailCandidates,
     findProjectThumbnail,
+    isOutputThumbnailCandidate,
     scoreThumbnailCandidate
 };

@@ -21,3 +21,11 @@ test('case library summaries attach owner profile data for avatars', () => {
   assert.match(source, /ownerProfile/)
   assert.match(source, /buildOwnerAvatarUrl/)
 })
+
+test('public case file routes support output file paths with nested directories', () => {
+  const source = fs.readFileSync(routePath, 'utf8')
+
+  assert.match(source, /encodePublicWorkspaceFilePath\(thumbnail\.path\)/)
+  assert.match(source, /files\/\*filePath\/download/)
+  assert.match(source, /normalizePublicWorkspaceFilePath/)
+})
