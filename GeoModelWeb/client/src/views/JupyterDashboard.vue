@@ -234,7 +234,10 @@
       <!-- 右侧主内容区 -->
       <main class="main-content">
         <!-- 顶部标题栏 -->
-        <header v-if="activeMenu !== 'environments'" class="content-header">
+        <header
+          v-if="activeMenu !== 'environments'"
+          :class="['content-header', { 'cases-header': activeMenu === 'cases' }]"
+        >
           <div class="header-left">
             <h1 class="page-title">{{ dashboardPageTitle }}</h1>
             <p v-if="dashboardPageSubtitle" class="page-subtitle">
@@ -315,7 +318,7 @@
         </header>
 
         <!-- 内容区域 -->
-        <div class="content-body">
+        <div :class="['content-body', { 'cases-body': activeMenu === 'cases' }]">
 
           <!-- ========== Recent 面板 ========== -->
           <div v-if="activeMenu === 'recent'" class="recent-panel">
@@ -9421,6 +9424,16 @@ onMounted(async () => {
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.45;
+}
+
+.jupyter-page .content-header.cases-header {
+  margin-bottom: 0;
+  padding-left: 1.35rem;
+  padding-right: 1.35rem;
+}
+
+.jupyter-page .content-body.cases-body {
+  padding: 0 1.35rem 1.35rem;
 }
 
 .jupyter-page .header-right {

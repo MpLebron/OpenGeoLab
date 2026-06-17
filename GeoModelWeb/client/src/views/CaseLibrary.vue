@@ -76,7 +76,7 @@
             <span>Case</span>
             <span>Files</span>
             <span>Size</span>
-            <span>Runtime</span>
+            <span>Based on</span>
             <span>Owner</span>
             <span>Updated</span>
             <span></span>
@@ -121,7 +121,13 @@
 
             <div class="case-data-column">
               <span>Files</span>
-              <strong>{{ Number(item.fileCount || 0) }}</strong>
+              <strong class="case-file-count">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/>
+                  <path d="M14 2v5h5"/>
+                </svg>
+                <span>{{ caseFileCountLabel(item) }}</span>
+              </strong>
             </div>
 
             <div class="case-data-column">
@@ -130,8 +136,8 @@
             </div>
 
             <div class="case-data-column runtime">
-              <span>Runtime</span>
-              <strong :title="caseRuntimeFull(item)">{{ caseRuntime(item) }}</strong>
+              <span>Based on</span>
+              <strong :title="caseRuntimeFull(item)">{{ caseRuntimeFull(item) }}</strong>
             </div>
 
             <div class="case-data-column owner">
@@ -169,19 +175,6 @@
                   <path d="M2.5 12C3.8 8 7.6 5 12 5s8.2 3 9.5 7c-1.3 4-5.1 7-9.5 7s-8.2-3-9.5-7z"/>
                 </svg>
               </button>
-              <button
-                v-if="canForkCase(item)"
-                type="button"
-                class="case-action-btn"
-                aria-label="Fork case"
-                data-tooltip="Fork to My Space"
-                @click.stop="forkCaseProject(item)"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-                  <path d="M7 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM17 15a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 9v3a4 4 0 0 0 4 4h4"/>
-                  <path d="M17 5v10"/>
-                </svg>
-              </button>
             </div>
           </article>
         </div>
@@ -207,7 +200,6 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PaginationControl from '../components/PaginationControl.vue'
 import {
-  buildWorkspaceProjectRoutePath,
   formatWorkspaceProjectSize,
   getWorkspaceProjectOwnerAvatarUrl,
   getWorkspaceProjectOwnerInitials,
@@ -220,7 +212,6 @@ import {
   getWorkspaceProjectThumbnailDownloadPath,
   getWorkspaceProjectTitle
 } from '../utils/workspaceProjectDisplay.js'
-import { confirmDialog, notify } from '../utils/systemFeedback.js'
 import { createApiClient, resolvePublicResourceUrl } from '../utils/apiClient.js'
 
 const props = defineProps({
@@ -244,7 +235,6 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const cases = ref([])
-const currentUsername = ref('')
 const localSearchQuery = ref(props.searchQuery)
 const localSortBy = ref(props.sortBy || 'updated')
 const currentPage = ref(1)
@@ -293,15 +283,6 @@ const loadCases = async () => {
     error.value = 'Failed to load projects: ' + (e.response?.data?.error || e.message)
   } finally {
     loading.value = false
-  }
-}
-
-const loadCurrentUser = async () => {
-  try {
-    const res = await authAxios().get('/api/auth/me')
-    currentUsername.value = res.data?.username || ''
-  } catch (e) {
-    currentUsername.value = ''
   }
 }
 
@@ -358,9 +339,12 @@ const caseSummary = getWorkspaceProjectSummary
 const caseTags = item => getWorkspaceProjectTags(item, 4)
 const ownerLabel = getWorkspaceProjectOwnerLabel
 const ownerInitials = getWorkspaceProjectOwnerInitials
-const caseRuntime = item => getWorkspaceProjectRuntimeLabel(item)
-const caseRuntimeFull = item => getWorkspaceProjectRuntimeImage(item) || '-'
+const caseRuntimeFull = item => getWorkspaceProjectRuntimeImage(item) || getWorkspaceProjectRuntimeLabel(item) || '-'
 const caseSize = item => formatWorkspaceProjectSize(item.sizeBytes)
+const caseFileCountLabel = (item = {}) => {
+  const count = Number(item.fileCount || 0)
+  return `${count} file${count === 1 ? '' : 's'}`
+}
 const caseMarkLabel = item => (item.isCase ? 'CASE' : 'WS')
 const caseUpdated = (item = {}) => {
   const value = item.modifiedAt || item.updatedAt || item.createdAt
@@ -386,34 +370,8 @@ const markOwnerAvatarFailed = (item = {}) => {
   }
 }
 
-const canForkCase = (item = {}) => !currentUsername.value || item.owner !== currentUsername.value
-
 const openCase = (item) => {
   router.push(`/jupyter/cases/${encodeURIComponent(item.owner)}/${encodeURIComponent(item.projectName)}`)
-}
-
-const forkCaseProject = async (project) => {
-  const title = getWorkspaceProjectTitle(project)
-  const confirmed = await confirmDialog({
-    title: 'Fork case',
-    message: `Create a private copy of "${title}" in My Space?`,
-    confirmText: 'Fork to My Space'
-  })
-  if (!confirmed) return
-
-  try {
-    const res = await authAxios().post(
-      `/api/jupyter/fork/${encodeURIComponent(project.owner)}/${encodeURIComponent(project.projectName)}`
-    )
-    const forkedProject = res.data?.project
-    if (forkedProject?.name) {
-      router.push(buildWorkspaceProjectRoutePath(forkedProject))
-      return
-    }
-    router.push('/jupyter')
-  } catch (e) {
-    notify(e.response?.data?.error || e.message || 'Failed to fork project.', 'error', { duration: 6000 })
-  }
 }
 
 const goBack = () => {
@@ -479,10 +437,7 @@ watch(() => filteredCases.value.length, value => {
 }, { immediate: true })
 
 onMounted(() => {
-  Promise.all([
-    loadCurrentUser(),
-    loadCases()
-  ]).then(loadVisibleThumbnails)
+  loadCases().then(loadVisibleThumbnails)
 })
 
 onBeforeUnmount(() => {
@@ -713,42 +668,45 @@ onBeforeUnmount(() => {
 
 .case-directory {
   display: grid;
-  gap: 0.9rem;
+  gap: 0.45rem;
 }
 
 .case-table {
+  --case-grid-columns:
+    minmax(560px, 1fr)
+    96px
+    112px
+    minmax(170px, 0.24fr)
+    minmax(150px, 0.2fr)
+    108px
+    96px;
+
   display: grid;
-  gap: 0.55rem;
+  gap: 0.48rem;
 }
 
 .case-table-header,
 .case-row {
   display: grid;
-  grid-template-columns:
-    minmax(520px, 1fr)
-    76px
-    90px
-    minmax(128px, 0.18fr)
-    minmax(150px, 0.2fr)
-    94px
-    72px;
+  grid-template-columns: var(--case-grid-columns);
   align-items: center;
-  column-gap: 0.85rem;
+  column-gap: 1.25rem;
 }
 
 .case-table-header {
-  min-height: 34px;
-  padding: 0 1rem;
-  color: #7a8498;
-  font-size: 0.68rem;
+  min-height: 58px;
+  padding: 0 1.35rem;
+  border-bottom: 1px solid #dfe4ef;
+  color: #707b91;
+  font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.085em;
   text-transform: uppercase;
 }
 
 .case-row {
   min-height: 124px;
-  padding: 0.92rem 1rem;
+  padding: 0.92rem 1.35rem;
   border: 1px solid #cfd4e5;
   border-radius: 5px;
   background: transparent;
@@ -912,8 +870,25 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.case-file-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.case-file-count svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: #3f4658;
+}
+
 .case-data-column.runtime strong {
   color: #29344d;
+  line-height: 1.4;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .case-data-column.owner strong {
@@ -962,31 +937,33 @@ onBeforeUnmount(() => {
 .case-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.35rem;
+  justify-content: center;
 }
 
 .case-action-btn {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 64px;
+  height: 64px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #4f586d;
+  border: 1px solid #dfe5ee;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #31394a;
   cursor: pointer;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .case-action-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 22px;
+  height: 22px;
 }
 
 .case-action-btn:hover {
-  background: #e6ebfb;
+  border-color: #c6d0e1;
+  background: #f8fafc;
   color: #171d31;
 }
 
