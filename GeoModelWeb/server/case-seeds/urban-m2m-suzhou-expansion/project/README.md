@@ -2,7 +2,9 @@
 
 This OpenGeoLab case reproduces a Suzhou urban expansion experiment using the OpenGMS UrbanM2M model.
 
-Open `main.ipynb` and run the cells in order. The notebook follows a normal modeling workflow: load the study area, inspect historical urban land rasters, prepare UrbanM2M parameters, keep the model invocation visible, and analyze the included 2013 simulation result.
+Open `main.ipynb` and run the cells in order. The notebook is written as a small validation experiment: inspect the study area and observed 2010-2013 urban change, prepare UrbanM2M parameters, submit a fresh OpenGMS task, download the returned simulation and probability rasters, and validate those live outputs against observed 2013 urban land.
+
+The main workflow intentionally does not read bundled simulation rasters. If the live task returns no downloadable output, the notebook stops instead of substituting an archived result.
 
 ## Data
 
@@ -12,8 +14,7 @@ Open `main.ipynb` and run the cells in order. The notebook follows a normal mode
 - `data/Suzhou-Masked/year/land_2010.tif`: observed urban land in 2010.
 - `data/Suzhou-Masked/year/land_2013.tif`: observed urban land in 2013.
 - `data/Suzhou-Masked/vars0/`: spatial driving variables for slope, town distance, and county distance.
-- `data/Result/sim_2013.tif`: cached simulated urban land result.
-- `data/Result/prob_2013.tif`: cached transition probability result.
-- `data/Result/sim_dir.zip` and `data/Result/prob_dir.zip`: archived OpenGMS result packages.
+- `outputs/live-urban-m2m/<run-id>/downloads/`: files downloaded from the current OpenGMS UrbanM2M task.
+- `outputs/live-urban-m2m/<run-id>/validation_summary.json`: validation metrics derived from the live model output.
 
-The notebook uses the cached result for reproducible analysis. The PyGeoModel invocation cell is retained for runtimes configured to submit live OpenGMS model tasks.
+The runtime must be able to invoke OpenGMS model services. On OpenGeoLab this is normally handled by the Jupyter runtime environment through `OGMS_TOKEN`.

@@ -15,8 +15,8 @@ const NANJING_ROOFTOP_CASE = {
     sourceId: NANJING_ROOFTOP_CASE_SLUG,
     slug: NANJING_ROOFTOP_CASE_SLUG,
     title: 'Nanjing Rooftop Photovoltaic Potential Assessment',
-    summary: 'Reproduce a PyGeoModel workflow for building-level rooftop photovoltaic potential and carbon reduction in Xuanwu District, Nanjing.',
-    description: 'A high-fidelity OpenGeoLab reproduction of the PyGeoModel-Case notebook for assessing rooftop photovoltaic generation potential in Xuanwu District, Nanjing.',
+    summary: 'Run a live PyGeoModel/OpenGMS rooftop PV experiment for building-level photovoltaic potential and carbon reduction in Xuanwu District, Nanjing.',
+    description: 'A research-question-driven OpenGeoLab case that inspects a rooftop inventory, invokes the live OpenGMS rooftop photovoltaic model, and analyzes the downloaded task output.',
     domain: 'Urban Renewable Energy',
     tags: ['PyGeoModel', 'OpenGMS', 'Solar Energy', 'Rooftop PV', 'Nanjing', 'Geospatial Modeling'],
     authors: ['OpenGeoLab Team'],
@@ -30,9 +30,10 @@ const NANJING_ROOFTOP_CASE = {
     projectDataBindings: [],
     steps: [
         'Open main.ipynb in the Interactive GeoViz runtime.',
-        'Load and visualize the Xuanwu rooftop vector data.',
-        'Use PyGeoModel to request a model recommendation and run the rooftop photovoltaic model.',
-        'Read the included model result shapefile and summarize photovoltaic potential.'
+        'Load and inspect the Xuanwu rooftop vector inventory as the model input.',
+        'Verify the PyGeoModel rooftop photovoltaic model metadata and parameters.',
+        'Submit a fresh OpenGMS rooftop PV task and download the returned output files.',
+        'Analyze the live model output shapefile to summarize PV generation, carbon reduction, and the spatial heatmap.'
     ],
     datasets: [
         {
@@ -48,17 +49,17 @@ const NANJING_ROOFTOP_CASE = {
             description: 'Zipped rooftop vector data used as the PyGeoModel model input.'
         },
         {
-            name: 'Rooftop PV model result',
-            path: 'data/result/roof_results_with_power_generation.shp',
-            type: 'Shapefile',
-            description: 'Model output shapefile with rooftop power generation attributes.'
+            name: 'Live rooftop PV task output',
+            path: 'outputs/live-rooftop-pv/<run-id>/downloads',
+            type: 'Generated OpenGMS output',
+            description: 'Downloaded files returned by the current PyGeoModel/OpenGMS rooftop PV task.'
         }
     ],
     expectedResults: [
         'A Folium map previews the Xuanwu rooftop polygons.',
         'A Plotly histogram summarizes rooftop area distribution.',
-        'PyGeoModel suggests and invokes the rooftop photovoltaic assessment model.',
-        'A heatmap and printed statistics summarize rooftop PV potential and CO2 reduction.'
+        'A live model output shapefile is downloaded and recorded with the OpenGMS task metadata.',
+        'A heatmap and printed statistics summarize rooftop PV potential and CO2 reduction from the live model output.'
     ]
 };
 
@@ -67,8 +68,8 @@ const URBAN_M2M_CASE = {
     sourceId: URBAN_M2M_CASE_SLUG,
     slug: URBAN_M2M_CASE_SLUG,
     title: 'Suzhou Urban Expansion Simulation with UrbanM2M',
-    summary: 'Reproduce a Suzhou urban expansion simulation workflow with the OpenGMS UrbanM2M model, cached 2013 raster outputs, and validation analysis.',
-    description: 'A high-fidelity OpenGeoLab reproduction of an UrbanM2M experiment for simulating and validating urban expansion in Suzhou from 2010 to 2013.',
+    summary: 'Run a live OpenGMS UrbanM2M experiment to simulate and validate Suzhou urban expansion from 2010 to 2013.',
+    description: 'A research-question-driven OpenGeoLab case that inspects Suzhou historical rasters, invokes the live UrbanM2M model, and validates downloaded simulation outputs against observed 2013 urban land.',
     domain: 'Urban Expansion',
     tags: ['Urban Expansion', 'UrbanM2M', 'OpenGMS', 'PyGeoModel', 'Land Use', 'Raster Simulation', 'Suzhou'],
     authors: ['Zhoums396', 'OpenGeoLab'],
@@ -84,8 +85,8 @@ const URBAN_M2M_CASE = {
         'Open main.ipynb in the Interactive GeoViz runtime.',
         'Load the Suzhou study area and inspect historical urban land rasters.',
         'Configure the UrbanM2M OpenGMS model parameters with explicit local input paths.',
-        'Read the included 2013 simulation and probability rasters.',
-        'Compare the simulated result with observed 2013 urban land and summarize accuracy.'
+        'Submit a fresh OpenGMS UrbanM2M task and download the returned simulation and probability rasters.',
+        'Compare the live UrbanM2M outputs with observed 2013 urban land and summarize accuracy.'
     ],
     datasets: [
         {
@@ -101,22 +102,16 @@ const URBAN_M2M_CASE = {
             description: 'Observed urban land rasters from 2000 to 2017 clipped to the study region.'
         },
         {
-            name: 'UrbanM2M 2013 simulation result',
-            path: 'data/Result/sim_2013.tif',
-            type: 'GeoTIFF',
-            description: 'Cached simulated 2013 urban land raster from the UrbanM2M model.'
-        },
-        {
-            name: 'UrbanM2M 2013 transition probability',
-            path: 'data/Result/prob_2013.tif',
-            type: 'GeoTIFF',
-            description: 'Cached 2013 urban transition probability raster from the UrbanM2M model.'
+            name: 'Live UrbanM2M task outputs',
+            path: 'outputs/live-urban-m2m/<run-id>/downloads',
+            type: 'Generated OpenGMS output',
+            description: 'Downloaded simulation and probability files returned by the current UrbanM2M task.'
         }
     ],
     expectedResults: [
         'Maps compare Suzhou observed urban land in 2010 and 2013.',
         'The notebook records the UrbanM2M PyGeoModel parameters and model identifier.',
-        'Simulation maps show 2013 urban expansion and transition probability.',
+        'Simulation maps show 2013 urban expansion and transition probability from live UrbanM2M outputs.',
         'Validation statistics report Precision, Recall, and F1-score for the effective model area.'
     ]
 };

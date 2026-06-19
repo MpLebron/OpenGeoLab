@@ -22,8 +22,8 @@ OpenGeoLab manuscript submitted to *Computers & Geosciences*.
 
 | Manuscript case | Repository path | Main purpose |
 | --- | --- | --- |
-| UrbanM2M-based urban expansion simulation in Suzhou | `GeoModelWeb/server/case-seeds/urban-m2m-suzhou-expansion/project/main.ipynb` | Demonstrates raster-based service invocation, cached result loading, and notebook-side map analysis. |
-| Rooftop photovoltaic potential assessment in Nanjing | `GeoModelWeb/server/case-seeds/nanjing-rooftop-pv/project/main.ipynb` | Demonstrates vector data preparation, model invocation structure, and building-level result analysis. |
+| UrbanM2M-based urban expansion simulation in Suzhou | `GeoModelWeb/server/case-seeds/urban-m2m-suzhou-expansion/project/main.ipynb` | Demonstrates raster-based live service invocation, downloaded output discovery, and validation against observed urban land. |
+| Rooftop photovoltaic potential assessment in Nanjing | `GeoModelWeb/server/case-seeds/nanjing-rooftop-pv/project/main.ipynb` | Demonstrates vector data preparation, live model invocation, downloaded shapefile discovery, and building-level result analysis. |
 
 ## Data and Service Availability
 

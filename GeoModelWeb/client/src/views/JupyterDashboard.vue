@@ -388,36 +388,16 @@
                 <div class="empty-icon-box"></div>
                 <p>No matching projects found</p>
               </div>
-              <div v-else class="project-activity-list">
-                <article
-                  v-for="(project, index) in filteredRecentProjects.slice(0, 4)"
-                  :key="project.name"
-                  class="project-activity-card"
-                  @click="goToProject(project)"
-                >
-                  <div :class="['project-mark', `variant-${projectVisualVariant(project, index)}`]">
-                    <span class="project-mark-kicker">{{ projectMarkKicker(project) }}</span>
-                    <strong>{{ projectMarkLabel(project) }}</strong>
-                  </div>
-                  <div class="project-activity-body">
-                    <div class="project-activity-header">
-                      <h4 class="project-activity-title">{{ project.name }}</h4>
-                      <div class="project-chip-row">
-                        <span :class="['project-meaning-badge', projectVisibilityClass(project)]">{{ projectVisibilityLabel(project) }}</span>
-                        <span v-if="project.isCase" class="project-meaning-badge case">Case</span>
-                      </div>
-                    </div>
-                    <p class="project-activity-desc">{{ projectSummary(project) }}</p>
-                    <div class="project-activity-meta">
-                      <span>{{ project.fileCount }} Files</span>
-                      <span>{{ formatSize(Number(project.sizeBytes || 0)) }}</span>
-                      <span v-if="projectRuntimeImage(project)">Image {{ projectRuntimeImage(project) }}</span>
-                      <span>{{ formatRelativeTime(project.modifiedAt) }}</span>
-                    </div>
-                  </div>
-                  <button :class="['project-open-btn', index === 0 ? 'primary' : 'ghost']" @click.stop="goToProject(project)">Open in Jupyter</button>
-                </article>
-              </div>
+              <WorkspaceProjectList
+                v-else
+                :items="recentProjectRows"
+                :actions="recentProjectActions"
+                :show-created="false"
+                empty-title="No Recent Projects"
+                empty-hint="Recently updated projects appear here."
+                @open="goToProject"
+                @action="handleRecentProjectAction"
+              />
             </section>
 
             <div class="recent-bottom-grid">
@@ -452,13 +432,24 @@
           <div v-else-if="activeMenu === 'myspace'" class="myspace-panel">
             <section class="myspace-directory-shell">
               <WorkspaceProjectList
-                :items="filteredProjects"
+                :items="paginatedMySpaceProjects"
                 :actions="mySpaceProjectActions"
                 :empty-title="projects.length === 0 ? 'No projects yet' : 'No matching projects found'"
                 :empty-hint="projects.length === 0 ? 'Create a project to initialize notebooks, methods, and reproducible runs.' : 'Try a different keyword or clear the search field.'"
                 @open="goToProject"
                 @action="handleMySpaceProjectAction"
               />
+              <footer v-if="filteredProjects.length" class="myspace-pagination-footer">
+                <span>{{ myspacePageRangeLabel }}</span>
+                <PaginationControl
+                  v-if="myspaceTotalPages > 1"
+                  :current-page="myspacePage"
+                  :total-pages="myspaceTotalPages"
+                  previous-label="Previous projects page"
+                  next-label="Next projects page"
+                  @change="myspacePage = $event"
+                />
+              </footer>
             </section>
           </div>
 
@@ -1156,6 +1147,7 @@ import EarthLoginScene from '../components/EarthLoginScene.vue'
 import LibrarySelectorDialog from '../components/LibrarySelectorDialog.vue'
 import ResultModal from '../components/ResultModal.vue'
 import RunModal from '../components/RunModal.vue'
+import PaginationControl from '../components/PaginationControl.vue'
 import WorkspaceProjectList from '../components/WorkspaceProjectList.vue'
 import { getJupyterLaunchErrorMessage } from '../utils/jupyterLaunchErrors.js'
 import {
@@ -1228,6 +1220,8 @@ const searchQuery = ref('')
 const caseLibrarySearchQuery = ref('')
 const caseLibrarySortBy = ref('updated')
 const caseLibraryResultCount = ref(0)
+const myspacePage = ref(1)
+const myspacePageSize = 10
 const showCreateProjectModal = ref(false)
 const createProjectTarget = ref(CREATE_PROJECT_TARGETS.project)
 const openMenuProject = ref(null)
@@ -1247,6 +1241,10 @@ const mySpaceProjectActions = [
     icon: 'case'
   },
   { key: 'delete', title: 'Delete project', icon: 'delete', danger: true }
+]
+
+const recentProjectActions = [
+  { key: 'open', title: 'Open project', icon: 'open' }
 ]
 
 // My Data 相关状态
@@ -1607,6 +1605,9 @@ watch(searchQuery, () => {
   if (activeMenu.value === 'mydata') {
     myDataPage.value = 1
   }
+  if (activeMenu.value === 'myspace') {
+    myspacePage.value = 1
+  }
 })
 
 // 页面标题映射
@@ -1699,6 +1700,27 @@ const filteredProjects = computed(() => {
   return projects.value.filter(p => p.name.toLowerCase().includes(query))
 })
 
+const myspaceTotalPages = computed(() => Math.max(1, Math.ceil(filteredProjects.value.length / myspacePageSize)))
+
+const paginatedMySpaceProjects = computed(() => {
+  const start = (myspacePage.value - 1) * myspacePageSize
+  return filteredProjects.value.slice(start, start + myspacePageSize)
+})
+
+const myspacePageRangeLabel = computed(() => {
+  const total = filteredProjects.value.length
+  if (!total) return 'No projects'
+  const start = (myspacePage.value - 1) * myspacePageSize + 1
+  const end = Math.min(start + myspacePageSize - 1, total)
+  return `Showing ${start}-${end} of ${total}`
+})
+
+watch(myspaceTotalPages, (value) => {
+  if (myspacePage.value > value) {
+    myspacePage.value = value
+  }
+})
+
 // 过滤后的最近项目
 const filteredRecentProjects = computed(() => {
   const sorted = [...projects.value]
@@ -1708,6 +1730,8 @@ const filteredRecentProjects = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return sorted.filter(p => p.name.toLowerCase().includes(query))
 })
+
+const recentProjectRows = computed(() => filteredRecentProjects.value.slice(0, 4))
 
 const workspaceResources = computed(() => {
   const items = []
@@ -2009,6 +2033,10 @@ const handleMySpaceProjectAction = ({ action, project }) => {
   if (action === 'delete') return deleteProject(project)
 }
 
+const handleRecentProjectAction = ({ action, project }) => {
+  if (action === 'open') return goToProject(project)
+}
+
 // 切换项目公开/私有状态
 const toggleProjectVisibility = async (project) => {
   const newVisibility = !project.isPublic
@@ -2123,97 +2151,6 @@ const submitCasePublish = async () => {
   } finally {
     casePublishSubmitting.value = false
   }
-}
-
-// 格式化日期时间
-const formatDateTime = (date) => {
-  if (!date) return '-'
-  const d = new Date(date)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  const hour = String(d.getHours()).padStart(2, '0')
-  const minute = String(d.getMinutes()).padStart(2, '0')
-  return `${year}/${month}/${day} ${hour}:${minute}`
-}
-
-// 格式化相对时间
-const formatRelativeTime = (date) => {
-  if (!date) return 'Unknown'
-  const now = new Date()
-  const d = new Date(date)
-  const diffMs = now - d
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
-
-  if (diffDay > 30) {
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${d.getFullYear()}/${month}/${day}`
-  } else if (diffDay > 0) {
-    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`
-  } else if (diffHour > 0) {
-    return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`
-  } else if (diffMin > 0) {
-    return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`
-  } else {
-    return 'Just now'
-  }
-}
-
-const projectVisibilityLabel = (project) => (project?.isPublic ? 'Public' : 'Private')
-
-const projectVisibilityClass = (project) => (project?.isPublic ? 'public' : 'private')
-
-const projectSummary = (project) => {
-  const summary = String(project?.description || project?.case?.summary || '').trim()
-  if (summary) {
-    return summary
-  }
-
-  const fileCount = Number(project?.fileCount || 0)
-  return `Project workspace with ${fileCount} file${fileCount === 1 ? '' : 's'} and ${formatSize(Number(project?.sizeBytes || 0))}.`
-}
-
-const projectRuntimeImage = (project) => {
-  return String(
-    project?.runtime?.imageName ||
-    project?.runtime?.imageId ||
-    project?.runtimeImageId ||
-    project?.imageId ||
-    project?.environmentId ||
-    ''
-  ).trim()
-}
-
-const projectArtifactSummary = (project) => {
-  const fileCount = Number(project?.fileCount || 0)
-  const parts = [
-    `${fileCount} file${fileCount === 1 ? '' : 's'}`,
-    formatSize(Number(project?.sizeBytes || 0))
-  ]
-  const runtimeImage = projectRuntimeImage(project)
-  if (runtimeImage) parts.push(`Based on ${runtimeImage}`)
-  return parts.join(' · ')
-}
-
-const projectMarkLabel = (project) => {
-  if (project?.markLabel) return project.markLabel
-  if (project?.isCase) return 'CASE'
-  return 'WS'
-}
-
-const projectMarkKicker = (project) => {
-  if (project?.isCase) return 'Published'
-  return project?.isPublic ? 'Shared' : 'Private'
-}
-
-const projectVisualVariant = (project, index = 0) => {
-  if (project?.isCase) return 'case'
-  if (project?.isPublic) return 'shared'
-  return ['private', 'analysis', 'private'][index % 3]
 }
 
 // 获取存储的 token
@@ -9573,6 +9510,28 @@ onMounted(async () => {
   display: grid;
   gap: 0.85rem;
   padding: 0;
+}
+
+.jupyter-page .myspace-pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0 0;
+  color: #4f5668;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.jupyter-page .myspace-pagination-footer .pagination-control {
+  margin-top: 0;
+}
+
+@media (max-width: 700px) {
+  .jupyter-page .myspace-pagination-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .jupyter-page .mydatamethod-panel .resource-list {
