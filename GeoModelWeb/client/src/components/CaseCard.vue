@@ -3,7 +3,16 @@
     <RouterLink class="case-main-link" :to="detailTo" :aria-label="caseItem.title">
       <div class="case-cover">
         <img
-          v-if="caseItem.coverImageUrl && !imageFailed"
+          v-if="caseCoverUrl && !imageFailed"
+          class="case-cover-backdrop"
+          :src="coverImageSrc"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+        >
+        <img
+          v-if="caseCoverUrl && !imageFailed"
+          class="case-cover-image"
           :src="coverImageSrc"
           :alt="caseItem.title"
           loading="lazy"
@@ -16,15 +25,29 @@
 
       <div class="case-body">
         <div class="case-meta-line">
-          <span class="case-domain">{{ caseItem.domain || fallbackDomain }}</span>
-          <time v-if="caseItem.timeLabel" :datetime="normalizedDate">{{ caseItem.timeLabel }}</time>
+          <span class="case-domain">{{ caseDomain }}</span>
+          <time v-if="caseTimeLabel" :datetime="normalizedDate">{{ caseTimeLabel }}</time>
         </div>
 
         <h3 :title="caseItem.title">{{ caseItem.title }}</h3>
         <p class="case-summary">{{ caseItem.summary || fallbackSummary }}</p>
 
-        <div class="case-tags" v-if="visibleTags.length">
-          <span v-for="tag in visibleTags" :key="tag" :title="tag">{{ tag }}</span>
+        <div class="case-footer">
+          <div class="case-tags" v-if="visibleTags.length" :title="allTags.join(', ')">
+            <span v-for="tag in visibleTags" :key="tag" :title="tag">{{ tag }}</span>
+            <span v-if="hiddenTagCount" class="tag-overflow" :title="allTags.join(', ')">...</span>
+          </div>
+
+          <div class="case-owner" :title="ownerName">
+            <img
+              v-if="ownerAvatarSrc"
+              :src="ownerAvatarSrc"
+              :alt="ownerName"
+              loading="lazy"
+              @error="avatarFailed = true"
+            >
+            <span class="owner-name">{{ ownerName }}</span>
+          </div>
         </div>
       </div>
     </RouterLink>
@@ -34,6 +57,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { resolvePublicResourceUrl } from '../utils/apiClient.js'
+import { buildGithubStyleIdenticonDataUri } from '../utils/generatedAvatar.js'
 
 const props = defineProps({
   caseItem: {
@@ -51,52 +75,119 @@ const props = defineProps({
 })
 
 const imageFailed = ref(false)
+const avatarFailed = ref(false)
+
+const allTags = computed(() => {
+  const tags = Array.isArray(props.caseItem.case?.tags)
+    ? props.caseItem.case.tags
+    : props.caseItem.tags
+  return Array.isArray(tags)
+    ? tags.filter(Boolean)
+    : []
+})
+
+const visibleTags = computed(() => allTags.value.slice(0, 2))
+
+const hiddenTagCount = computed(() => Math.max(0, allTags.value.length - visibleTags.value.length))
+
+const caseCoverUrl = computed(() => (
+  props.caseItem.coverImageUrl ||
+  props.caseItem.thumbnail?.downloadPath ||
+  ''
+))
+
+const coverImageSrc = computed(() => resolvePublicResourceUrl(caseCoverUrl.value))
+
+const ownerProfile = computed(() => props.caseItem.ownerProfile || {})
+
+const ownerName = computed(() => (
+  ownerProfile.value.displayName ||
+  ownerProfile.value.username ||
+  props.caseItem.owner ||
+  props.caseItem.authorLine ||
+  'OpenGeoLab'
+))
+
+const ownerAvatarUrl = computed(() => ownerProfile.value.avatarUrl || '')
+
+const ownerIdentity = computed(() => (
+  ownerProfile.value.username ||
+  props.caseItem.owner ||
+  ownerName.value ||
+  'OpenGeoLab'
+))
+
+const ownerAvatarSrc = computed(() => {
+  if (ownerAvatarUrl.value && !avatarFailed.value) {
+    return resolvePublicResourceUrl(ownerAvatarUrl.value)
+  }
+
+  return buildGithubStyleIdenticonDataUri(ownerIdentity.value)
+})
+
+const caseDomain = computed(() => (
+  props.caseItem.domain ||
+  props.caseItem.case?.scenario ||
+  props.caseItem.runtime?.label ||
+  props.fallbackDomain
+))
+
+const caseTimeLabel = computed(() => {
+  if (props.caseItem.timeLabel) return props.caseItem.timeLabel
+  const value = props.caseItem.modifiedAt || props.caseItem.updatedAt || props.caseItem.publishedAt
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-US')
+})
+
+const detailTo = computed(() => ({
+  name: 'CasesDetail',
+  params: { projectId: props.caseItem.projectId || props.caseItem.id || props.caseItem.slug }
+}))
+
+const normalizedDate = computed(() => {
+  return props.caseItem.modifiedAt || props.caseItem.updatedAt || props.caseItem.publishedAt || ''
+})
 
 watch(
-  () => props.caseItem.coverImageUrl,
+  () => caseCoverUrl.value,
   () => {
     imageFailed.value = false
   }
 )
 
-const visibleTags = computed(() => {
-  return Array.isArray(props.caseItem.tags)
-    ? props.caseItem.tags.filter(Boolean).slice(0, 4)
-    : []
-})
-
-const coverImageSrc = computed(() => resolvePublicResourceUrl(props.caseItem.coverImageUrl))
-
-const detailTo = computed(() => ({
-  name: 'CasesDetail',
-  params: { slug: props.caseItem.slug || props.caseItem.id }
-}))
-
-const normalizedDate = computed(() => {
-  return props.caseItem.publishedAt || props.caseItem.updatedAt || ''
-})
+watch(
+  () => ownerAvatarUrl.value,
+  () => {
+    avatarFailed.value = false
+  }
+)
 </script>
 
 <style scoped>
 .case-card {
+  height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border: 1px solid #dbe4ee;
+  border-radius: 7px;
   background: var(--surface-card);
-  box-shadow: none;
-  transition: background-color 0.16s ease, border-color 0.16s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 .case-card:hover {
-  border-color: #a8b3c2;
-  background: #fbfcfe;
+  border-color: #b7c4d2;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.075);
+  transform: translateY(-1px);
 }
 
 .case-main-link {
   flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
   color: inherit;
@@ -110,16 +201,56 @@ const normalizedDate = computed(() => {
 
 .case-cover {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2 / 1;
+  display: grid;
+  place-items: center;
+  padding: 0.6rem 0.72rem;
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
-  background: #eef2f7;
+  background: #f4f7fb;
 }
 
-.case-cover img {
+.case-cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(248, 251, 253, 0.78));
+}
+
+.case-cover::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  height: 1px;
+  background: rgba(216, 226, 238, 0.82);
+}
+
+.case-cover-backdrop {
+  position: absolute;
+  inset: -12%;
+  z-index: 0;
+  width: 124%;
+  height: 124%;
+  display: block;
+  object-fit: cover;
+  opacity: 0.24;
+  filter: blur(12px) saturate(0.9);
+}
+
+.case-cover-image {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
+  border-radius: 3px;
+  filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.06));
 }
 
 .case-cover-fallback {
@@ -127,7 +258,8 @@ const normalizedDate = computed(() => {
   height: 100%;
   display: grid;
   place-items: center;
-  background: #eef2f7;
+  border-radius: 4px;
+  background: #eef3f8;
 }
 
 .case-cover-fallback span {
@@ -160,7 +292,8 @@ const normalizedDate = computed(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: 0.95rem 1rem 0.98rem;
+  background: #ffffff;
 }
 
 .case-meta-line {
@@ -188,9 +321,9 @@ const normalizedDate = computed(() => {
 }
 
 .case-body h3 {
-  margin: 0.65rem 0 0;
+  margin: 0.55rem 0 0;
   font-family: 'Manrope', 'Inter', sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.12rem;
   line-height: 1.28;
   color: var(--text-primary);
   min-width: 0;
@@ -200,36 +333,88 @@ const normalizedDate = computed(() => {
 }
 
 .case-summary {
-  margin: 0.75rem 0 0;
+  margin: 0.62rem 0 0;
   color: var(--text-secondary);
   font-size: 0.9rem;
-  line-height: 1.58;
+  line-height: 1.52;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+.case-footer {
+  margin-top: auto;
+  padding-top: 0.92rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.72rem;
+  min-width: 0;
+}
+
 .case-tags {
-  margin-top: 0.8rem;
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.45rem;
+  align-items: center;
+  gap: 0.36rem;
   min-width: 0;
   overflow: hidden;
 }
 
 .case-tags span {
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 8.5rem;
-  padding: 0.34rem 0.58rem;
+  max-width: 6.9rem;
+  padding: 0.22rem 0.42rem;
   border-radius: 3px;
-  border: 1px solid var(--border-color);
-  background: #f8fafc;
-  color: var(--text-secondary);
-  font-size: 0.76rem;
+  border: 1px solid #dae4ef;
+  background: #fbfdff;
+  color: #536276;
+  font-size: 0.68rem;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-tags .tag-overflow {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  padding-inline: 0;
+  text-align: center;
+  color: #64748b;
+}
+
+.case-owner {
+  min-width: 0;
+  max-width: 7.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.38rem;
+  color: #64748b;
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.case-owner img {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 50%;
+  border: 1px solid #d7e1ec;
+  background: #e8f0f6;
+}
+
+.case-owner img {
+  display: block;
+  object-fit: cover;
+}
+
+.owner-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

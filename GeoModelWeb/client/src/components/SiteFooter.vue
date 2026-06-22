@@ -2,13 +2,14 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import vgeTeamWechatQr from '../assets/contact/vgeteam-wechat-qr.png'
 
-const mapMyVisitorsWidgetId = (import.meta.env.VITE_MAPMYVISITORS_WIDGET_ID || '').trim()
+const defaultMapMyVisitorsWidgetId = 'd7dn4tC_MVSe_ADYyvMarvZnb79V5iMKYm-Fxi9119A'
+const mapMyVisitorsWidgetId = (import.meta.env.VITE_MAPMYVISITORS_WIDGET_ID || defaultMapMyVisitorsWidgetId).trim()
 const hasMapMyVisitorsWidget = mapMyVisitorsWidgetId.length > 0
 const mapMyVisitorsMount = ref(null)
 const showVgeWechatQr = ref(false)
 const mapMyVisitorsQuery = `d=${encodeURIComponent(mapMyVisitorsWidgetId)}&cl=ffffff`
 const mapMyVisitorsScriptSrc = hasMapMyVisitorsWidget
-  ? `https://mapmyvisitors.com/map.js?${mapMyVisitorsQuery}&w=a&x=y`
+  ? `https://mapmyvisitors.com/map.js?${mapMyVisitorsQuery}&w=a`
   : ''
 const mapMyVisitorsPixelSrc = hasMapMyVisitorsWidget
   ? `https://mapmyvisitors.com/map.png?${mapMyVisitorsQuery}`
@@ -90,7 +91,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="hasMapMyVisitorsWidget" class="footer-column visitor-column">
-        <h3>Visitor Count</h3>
+        <h3>Visitors</h3>
         <div class="visitor-widget-shell">
           <div
             ref="mapMyVisitorsMount"
@@ -99,7 +100,6 @@ onBeforeUnmount(() => {
           ></div>
           <img class="mapmyvisitors-pixel" :src="mapMyVisitorsPixelSrc" alt="" width="1" height="1">
         </div>
-        <span class="visitor-note">Real-time visitor locations powered by MapMyVisitors.</span>
       </div>
 
       <div class="footer-bottom">
@@ -124,8 +124,8 @@ onBeforeUnmount(() => {
 .footer-shell {
   display: grid;
   grid-template-columns:
-    minmax(180px, 1.15fr) minmax(160px, 1fr) minmax(150px, 0.9fr) minmax(220px, 1.18fr) minmax(210px, 1.05fr);
-  gap: clamp(1rem, 3.4vw, 4.2rem);
+    minmax(170px, 1.1fr) minmax(150px, 0.95fr) minmax(140px, 0.85fr) minmax(210px, 1.08fr) minmax(210px, 1fr);
+  gap: clamp(0.85rem, 2.25vw, 2.9rem);
   max-width: var(--max-shell-width);
   margin: 0 auto;
   padding: 3.35rem 0 2.15rem;
@@ -231,24 +231,20 @@ onBeforeUnmount(() => {
 }
 
 .visitor-column {
-  min-width: 240px;
+  min-width: 210px;
 }
 
 .visitor-widget-shell {
   position: relative;
   width: 100%;
-  max-width: 300px;
-  min-height: 152px;
-  padding: 0.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.04);
+  max-width: 260px;
+  min-height: 138px;
   overflow: hidden;
 }
 
 .mapmyvisitors-widget-mount {
   width: 100%;
-  min-height: 138px;
+  min-height: 132px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,13 +256,6 @@ onBeforeUnmount(() => {
   height: 1px;
   opacity: 0;
   pointer-events: none;
-}
-
-.visitor-note {
-  max-width: 300px;
-  color: rgba(255, 255, 255, 0.58) !important;
-  font-size: 0.8rem !important;
-  line-height: 1.45 !important;
 }
 
 .visitor-column :deep(#mapmyvisitors-widget),
@@ -335,7 +324,7 @@ onBeforeUnmount(() => {
   }
 
   .visitor-widget-shell,
-  .visitor-note {
+  .mapmyvisitors-widget-mount {
     max-width: 100%;
   }
 }

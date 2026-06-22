@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { CASE_LIBRARY_DIR, getCaseDirectory, getCaseProjectDirectory } = require('../config/cases');
 const { buildProjectRuntimeMeta } = require('./jupyterRuntime');
 
@@ -9,6 +10,13 @@ const NANJING_ROOFTOP_CASE_SLUG = 'nanjing-rooftop-pv';
 const URBAN_M2M_CASE_SLUG = 'urban-m2m-suzhou-expansion';
 const CURATED_CASE_SOURCE = 'opengeolab-curated-case';
 const CASE_SEED_ROOT = path.join(__dirname, '..', 'case-seeds');
+const DEFAULT_CASE_SEED_VISIBILITY_FILE = path.join(
+    __dirname,
+    '..',
+    'case-quality-audits',
+    'case_seed_visibility_overrides.json'
+);
+let caseSeedVisibilityOverridesCache = null;
 
 const NANJING_ROOFTOP_CASE = {
     source: LOCAL_CASE_SOURCE,
@@ -184,6 +192,68 @@ function cloneJson(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeVisibilityOverride(entry = {}) {
+    if (!entry || typeof entry !== 'object') return null;
+    return {
+        isPublic: entry.isPublic !== false,
+        reason: entry.reason || '',
+        reviewBatch: entry.reviewBatch || '',
+        decision: entry.decision || '',
+        reviewedAt: entry.reviewedAt || ''
+    };
+}
+
+function loadCaseSeedVisibilityOverrides() {
+    if (caseSeedVisibilityOverridesCache) return caseSeedVisibilityOverridesCache;
+
+    const overridePath = process.env.OPENGEOLAB_CASE_SEED_VISIBILITY_FILE || DEFAULT_CASE_SEED_VISIBILITY_FILE;
+    const overrides = new Map();
+
+    if (fs.existsSync(overridePath)) {
+        try {
+            const payload = JSON.parse(fs.readFileSync(overridePath, 'utf8'));
+            const source = payload.overrides || payload.hidden || payload;
+
+            if (Array.isArray(source)) {
+                for (const entry of source) {
+                    const key = entry.slug || entry.sourceId || entry.key;
+                    const override = normalizeVisibilityOverride(entry);
+                    if (key && override) overrides.set(String(key), override);
+                }
+            } else if (source && typeof source === 'object') {
+                for (const [key, value] of Object.entries(source)) {
+                    const override = normalizeVisibilityOverride(value);
+                    if (override) overrides.set(String(key), override);
+                }
+            }
+        } catch (error) {
+            console.warn(`[Local Cases] Failed to read case seed visibility overrides: ${error.message}`);
+        }
+    }
+
+    caseSeedVisibilityOverridesCache = overrides;
+    return overrides;
+}
+
+function getCaseSeedVisibilityOverride(seed = {}) {
+    const overrides = loadCaseSeedVisibilityOverrides();
+    if (!overrides.size) return null;
+
+    const source = seed.source || LOCAL_CASE_SOURCE;
+    const keys = [
+        seed.slug,
+        seed.sourceId,
+        `${source}:${seed.slug}`,
+        `${source}:${seed.sourceId}`
+    ].filter(Boolean).map(String);
+
+    for (const key of keys) {
+        if (overrides.has(key)) return overrides.get(key);
+    }
+
+    return null;
+}
+
 function getIsoDate(value) {
     const date = value instanceof Date ? value : new Date(value || Date.now());
     return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
@@ -217,14 +287,40 @@ function buildWorkbenchCaseBinding(binding, syncedAt) {
     };
 }
 
+function formatUuidFromBytes(bytes) {
+    const hex = Array.from(bytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
+function buildStableCaseProjectId(seed, owner = DEFAULT_WORKBENCH_CASE_OWNER) {
+    const source = seed.source || LOCAL_CASE_SOURCE;
+    const sourceId = seed.sourceId || seed.slug;
+    const digest = crypto
+        .createHash('sha1')
+        .update(`opengeolab-case:${owner}:${source}:${sourceId}`)
+        .digest()
+        .subarray(0, 16);
+
+    digest[6] = (digest[6] & 0x0f) | 0x50;
+    digest[8] = (digest[8] & 0x3f) | 0x80;
+    return formatUuidFromBytes(digest);
+}
+
 function buildWorkbenchCaseProjectMeta(seed, { owner = DEFAULT_WORKBENCH_CASE_OWNER, syncedAt = new Date() } = {}) {
     const timestamp = getIsoDate(syncedAt);
     const runtimeMeta = buildProjectRuntimeMeta(seed.runtimeImageId);
+    const visibilityOverride = getCaseSeedVisibilityOverride(seed);
+    const isPublic = visibilityOverride
+        ? visibilityOverride.isPublic
+        : seed.isPublic !== false;
 
     return {
+        projectId: buildStableCaseProjectId(seed, owner),
         name: seed.slug,
         description: seed.description || seed.summary || '',
-        isPublic: true,
+        isPublic,
         isCase: true,
         createdAt: timestamp,
         createdBy: owner,
@@ -249,7 +345,17 @@ function buildWorkbenchCaseProjectMeta(seed, { owner = DEFAULT_WORKBENCH_CASE_OW
             sourceId: seed.sourceId,
             slug: seed.slug,
             syncedAt: timestamp
-        }
+        },
+        ...(visibilityOverride ? {
+            qualityAudit: {
+                visibility: isPublic ? 'public' : 'hidden',
+                reviewBatch: visibilityOverride.reviewBatch,
+                reason: visibilityOverride.reason,
+                decision: visibilityOverride.decision,
+                reviewedAt: visibilityOverride.reviewedAt,
+                reversible: true
+            }
+        } : {})
     };
 }
 

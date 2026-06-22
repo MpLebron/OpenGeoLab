@@ -10,7 +10,8 @@ function getViteEnv() {
 }
 
 export function getApiBaseUrl() {
-  return normalizeApiBaseUrl(getViteEnv().VITE_API_BASE_URL || '')
+  const env = getViteEnv()
+  return normalizeApiBaseUrl(env.VITE_API_BASE_URL || env.BASE_URL || '')
 }
 
 export function configureApiClient() {

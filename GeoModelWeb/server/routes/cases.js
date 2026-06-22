@@ -1,231 +1,260 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
-const authRoutes = require('./auth');
-const { getCaseProjectDirectory } = require('../config/cases');
-const { createCaseProjectMeta } = require('../utils/caseProjectMeta');
+const { execFile } = require('child_process');
 const {
-    getCaseByIdentifier,
-    getCaseDocumentByIdentifier,
-    listCases
-} = require('../db/casesRepository');
+    buildPublicCaseDetail,
+    findPublicCaseByProjectId,
+    getPreviewInfo,
+    listPublicCaseSummaries,
+    renderNotebookPreviewHtml,
+    resolvePublicCaseFile
+} = require('../utils/publicCaseProjects');
 
 const router = express.Router();
+const TEXT_PREVIEW_KINDS = new Set(['code', 'text', 'markdown', 'table', 'json', 'geojson', 'html']);
+const DIRECT_FILE_PREVIEW_KINDS = new Set(['image', 'pdf']);
+const MAX_TEXT_PREVIEW_BYTES = 1024 * 1024 * 4;
 
-function walkProjectFiles(rootDir, relativePath = '') {
-    const targetDir = path.join(rootDir, relativePath);
-    if (!fs.existsSync(targetDir)) {
-        return [];
-    }
-
-    const entries = fs.readdirSync(targetDir, { withFileTypes: true })
-        .filter(entry => !entry.name.startsWith('.'));
-
-    const files = [];
-    for (const entry of entries) {
-        const relativeName = relativePath ? path.posix.join(relativePath, entry.name) : entry.name;
-        const absolutePath = path.join(rootDir, relativeName);
-        const stats = fs.statSync(absolutePath);
-
-        if (entry.isDirectory()) {
-            files.push({
-                name: entry.name,
-                path: relativeName,
-                type: 'folder',
-                size: 0,
-                modifiedAt: stats.mtime
-            });
-            files.push(...walkProjectFiles(rootDir, relativeName));
-            continue;
-        }
-
-        files.push({
-            name: entry.name,
-            path: relativeName,
-            type: relativeName.toLowerCase().endsWith('.ipynb') ? 'notebook' : 'file',
-            size: stats.size,
-            modifiedAt: stats.mtime
-        });
-    }
-
-    return files;
+function normalizeQuery(value = '') {
+    return String(value || '').trim().toLowerCase();
 }
 
-function ensureSafeProjectPath(rootDir, requestedPath = '') {
-    const resolvedRoot = path.resolve(rootDir);
-    const resolvedPath = path.resolve(path.join(rootDir, requestedPath));
-    if (!resolvedPath.startsWith(resolvedRoot)) {
-        return null;
-    }
-    return resolvedPath;
+function caseMatchesQuery(item = {}, query = '') {
+    if (!query) return true;
+    const haystack = [
+        item.title,
+        item.summary,
+        item.description,
+        item.domain,
+        item.owner,
+        item.runtime?.label,
+        item.runtime?.imageName,
+        ...(Array.isArray(item.tags) ? item.tags : []),
+        ...(Array.isArray(item.case?.datasets) ? item.case.datasets : [])
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(query);
 }
 
-function writeProjectMeta(projectDir, meta) {
-    const metaPath = path.join(projectDir, '.project.json');
-    fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+function caseMatchesDomain(item = {}, domain = '') {
+    if (!domain) return true;
+    return String(item.domain || item.case?.scenario || '').trim() === domain;
 }
 
-function sanitizeProjectName(value, fallback = 'case-project') {
-    const cleaned = String(value || '')
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9\u4e00-\u9fa5_-]+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+function paginate(items, { page = 1, limit = 24 } = {}) {
+    const safePage = Math.max(parseInt(page, 10) || 1, 1);
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 24, 1), 120);
+    const start = (safePage - 1) * safeLimit;
+    return {
+        total: items.length,
+        page: safePage,
+        limit: safeLimit,
+        data: items.slice(start, start + safeLimit)
+    };
+}
 
-    return (cleaned || fallback).slice(0, 64);
+function sendPreviewError(res, resolvedFile) {
+    return res.status(resolvedFile.status || 404).json({
+        error: resolvedFile.error || 'File not found'
+    });
+}
+
+function listZipEntries(filePath, options = {}) {
+    const maxEntries = Number.parseInt(options.maxEntries || '500', 10);
+
+    return new Promise(resolve => {
+        execFile(
+            'unzip',
+            ['-l', filePath],
+            { timeout: 7000, maxBuffer: 1024 * 1024 * 4 },
+            (error, stdout) => {
+                if (error) {
+                    resolve({
+                        entries: [],
+                        totalEntries: 0,
+                        truncated: false,
+                        error: 'Archive listing is unavailable on this machine.'
+                    });
+                    return;
+                }
+
+                const entries = String(stdout || '')
+                    .split(/\r?\n/)
+                    .map(line => {
+                        const match = line.match(/^\s*(\d+)\s+(\d{2,4}-\d{2}-\d{2,4})\s+(\d{2}:\d{2})\s+(.+?)\s*$/);
+                        if (!match) return null;
+                        const name = match[4];
+                        if (!name || name === 'Name') return null;
+                        return {
+                            size: Number.parseInt(match[1], 10) || 0,
+                            date: match[2],
+                            time: match[3],
+                            name,
+                            isDirectory: name.endsWith('/')
+                        };
+                    })
+                    .filter(Boolean);
+
+                resolve({
+                    entries: entries.slice(0, maxEntries),
+                    totalEntries: entries.length,
+                    truncated: entries.length > maxEntries,
+                    error: ''
+                });
+            }
+        );
+    });
 }
 
 router.get('/', async (req, res) => {
     try {
-        const payload = await listCases({
-            page: req.query.page,
-            limit: req.query.limit,
-            query: req.query.query,
-            domain: req.query.domain
-        });
+        const query = normalizeQuery(req.query.query);
+        const domain = String(req.query.domain || '').trim();
+        const cases = await listPublicCaseSummaries();
+        const filtered = cases.filter(item => (
+            caseMatchesQuery(item, query) &&
+            caseMatchesDomain(item, domain)
+        ));
 
-        res.json(payload);
+        return res.json(paginate(filtered, {
+            page: req.query.page,
+            limit: req.query.limit
+        }));
     } catch (error) {
-        console.error('[Cases] Failed to list cases:', error.message);
-        res.status(500).json({
-            error: 'Failed to read local cases',
+        console.error('[Cases] Failed to list public case projects:', error.message);
+        return res.status(500).json({
+            error: 'Failed to read public cases',
             message: error.message
         });
     }
 });
 
-router.get('/:identifier/content', async (req, res) => {
+router.get('/:projectId/files/*filePath/content', (req, res) => {
+    const resolvedFile = resolvePublicCaseFile(req.params.projectId, req.params.filePath);
+    if (resolvedFile.error) {
+        return sendPreviewError(res, resolvedFile);
+    }
+
     try {
-        const caseDoc = await getCaseDocumentByIdentifier(req.params.identifier);
-        if (!caseDoc) {
-            return res.status(404).json({ error: 'Case not found' });
+        const stats = fs.statSync(resolvedFile.fullPath);
+        if (stats.isDirectory()) {
+            return res.status(415).json({ error: 'Folders cannot be previewed as text.' });
         }
 
-        const relativePath = String(req.query.path || '').trim();
-        if (!relativePath) {
-            return res.status(400).json({ error: 'File path is required' });
+        const preview = getPreviewInfo(resolvedFile.fullPath, 'file');
+        if (!TEXT_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.status(415).json({ error: 'This file type is not available through the text preview endpoint.' });
         }
 
-        const projectDir = getCaseProjectDirectory(caseDoc.slug);
-        const fullPath = ensureSafeProjectPath(projectDir, relativePath);
-        if (!fullPath) {
-            return res.status(403).json({ error: 'Access denied' });
+        if (stats.size > MAX_TEXT_PREVIEW_BYTES) {
+            return res.status(400).json({ error: 'File too large to preview.' });
         }
 
-        if (!fs.existsSync(fullPath)) {
-            return res.status(404).json({ error: 'File not found' });
-        }
-
-        const stats = fs.statSync(fullPath);
-        if (stats.size > 1024 * 1024 * 2) {
-            return res.status(400).json({ error: 'File too large to preview' });
-        }
-
-        const content = fs.readFileSync(fullPath, 'utf8');
-        res.json({
-            content,
+        return res.json({
+            name: path.basename(resolvedFile.fullPath),
+            path: resolvedFile.decodedPath,
+            content: fs.readFileSync(resolvedFile.fullPath, 'utf8'),
             size: stats.size,
-            modifiedAt: stats.mtime
+            modifiedAt: stats.mtime,
+            ...preview
         });
     } catch (error) {
-        console.error('[Cases] Failed to read case file:', error.message);
-        res.status(500).json({
+        console.error('[Cases] Failed to read public case file:', error.message);
+        return res.status(500).json({
             error: 'Failed to read case file',
             message: error.message
         });
     }
 });
 
-router.post('/:identifier/fork', authRoutes.authenticateToken, async (req, res) => {
+router.get('/:projectId/files/*filePath/preview', async (req, res) => {
+    const resolvedFile = resolvePublicCaseFile(req.params.projectId, req.params.filePath);
+    if (resolvedFile.error) {
+        return sendPreviewError(res, resolvedFile);
+    }
+
     try {
-        const caseDoc = await getCaseDocumentByIdentifier(req.params.identifier);
-        if (!caseDoc) {
-            return res.status(404).json({ error: 'Case not found' });
+        const stats = fs.statSync(resolvedFile.fullPath);
+        if (stats.isDirectory()) {
+            return res.status(415).json({ error: 'Folders cannot be previewed directly.' });
         }
 
-        const projectTemplateDir = getCaseProjectDirectory(caseDoc.slug);
-        if (!fs.existsSync(projectTemplateDir)) {
-            return res.status(404).json({ error: 'Case project files are missing' });
+        const preview = getPreviewInfo(resolvedFile.fullPath, 'file');
+        if (preview.previewKind === 'notebook') {
+            const html = await renderNotebookPreviewHtml(resolvedFile.fullPath);
+            return res.json({
+                name: path.basename(resolvedFile.fullPath),
+                path: resolvedFile.decodedPath,
+                html,
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
+            });
         }
 
-        const username = req.user.username;
-        const userDataDir = process.env.USER_DATA_DIR && path.isAbsolute(process.env.USER_DATA_DIR)
-            ? process.env.USER_DATA_DIR
-            : path.join(__dirname, '..', process.env.USER_DATA_DIR || 'jupyter-data');
-
-        const userDir = path.join(userDataDir, username);
-        fs.mkdirSync(userDir, { recursive: true });
-
-        let targetName = sanitizeProjectName(req.body?.newName || `case-${caseDoc.slug}`);
-        let targetDir = path.join(userDir, targetName);
-        let suffix = 1;
-        while (fs.existsSync(targetDir)) {
-            targetName = sanitizeProjectName(`${req.body?.newName || `case-${caseDoc.slug}`}-${suffix}`);
-            targetDir = path.join(userDir, targetName);
-            suffix += 1;
+        if (DIRECT_FILE_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.sendFile(resolvedFile.fullPath);
         }
 
-        fs.cpSync(projectTemplateDir, targetDir, { recursive: true });
-        const projectId = crypto.randomUUID();
-        writeProjectMeta(targetDir, {
-            ...createCaseProjectMeta(username, targetName, caseDoc),
-            projectId
-        });
+        if (TEXT_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.json({
+                name: path.basename(resolvedFile.fullPath),
+                path: resolvedFile.decodedPath,
+                content: fs.readFileSync(resolvedFile.fullPath, 'utf8'),
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
+            });
+        }
 
-        const files = walkProjectFiles(targetDir).filter(item => item.type !== 'folder');
-        const notebookCount = files.filter(item => item.path.toLowerCase().endsWith('.ipynb')).length;
+        if (preview.previewKind === 'archive') {
+            const archive = await listZipEntries(resolvedFile.fullPath);
+            return res.json({
+                name: path.basename(resolvedFile.fullPath),
+                path: resolvedFile.decodedPath,
+                archive,
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
+            });
+        }
 
-        res.json({
-            status: 'forked',
-            project: {
-                projectId,
-                name: targetName,
-                description: caseDoc.summary || caseDoc.description || '',
-                notebookCount,
-                fileCount: files.length,
-                modifiedAt: new Date(),
-                createdAt: new Date(),
-                isPublic: false,
-                isCase: false,
-                owner: username,
-                sourceCase: {
-                    slug: caseDoc.slug,
-                    title: caseDoc.title
-                }
-            }
+        return res.status(415).json({
+            error: preview.previewReason || 'This file type is not supported for preview.',
+            preview
         });
     } catch (error) {
-        console.error('[Cases] Failed to fork case:', error.message);
-        res.status(500).json({
-            error: 'Failed to fork case',
+        console.error('[Cases] Failed to render public case preview:', error.message);
+        return res.status(500).json({
+            error: 'Failed to render case preview',
             message: error.message
         });
     }
 });
 
-router.get('/:identifier', async (req, res) => {
+router.get('/:projectId', (req, res) => {
     try {
-        const caseDetail = await getCaseByIdentifier(req.params.identifier);
-        if (!caseDetail) {
+        const project = findPublicCaseByProjectId(req.params.projectId);
+        if (!project) {
             return res.status(404).json({
                 error: 'Case not found',
-                message: 'No local case was found for this identifier.'
+                message: 'No public runnable case was found for this project id.'
             });
         }
 
-        const projectDir = getCaseProjectDirectory(caseDetail.slug);
-        const files = walkProjectFiles(projectDir);
+        const detail = buildPublicCaseDetail(project);
+        if (!detail) {
+            return res.status(404).json({
+                error: 'Case not found',
+                message: 'No public runnable case was found for this project id.'
+            });
+        }
 
-        res.json({
-            ...caseDetail,
-            files
-        });
+        return res.json(detail);
     } catch (error) {
-        console.error('[Cases] Failed to read case detail:', error.message);
-        res.status(500).json({
-            error: 'Failed to read local case detail',
+        console.error('[Cases] Failed to read public case detail:', error.message);
+        return res.status(500).json({
+            error: 'Failed to read public case detail',
             message: error.message
         });
     }

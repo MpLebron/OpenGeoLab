@@ -2,7 +2,7 @@
   <div class="shared-preview-page">
     <header class="workspace-nav">
       <button class="nav-brand" type="button" @click="goBack">
-        <span aria-hidden="true">&larr;</span>
+        <AppIcon name="arrowLeft" :size="16" :stroke-width="2" />
         <span>OpenGeoLab</span>
       </button>
 
@@ -41,16 +41,21 @@
           <div class="explorer-header">
             <p class="explorer-title">EXPLORER</p>
             <div class="explorer-actions">
-              <button class="tool-btn" type="button" title="Expand all folders" @click="expandAllFolders">+</button>
-              <button class="tool-btn" type="button" title="Collapse all folders" @click="collapseAllFolders">−</button>
-              <button class="tool-btn" type="button" title="Refresh explorer" @click="refreshExplorer">↻</button>
+              <button class="tool-btn" type="button" title="Expand all folders" aria-label="Expand all folders" @click="expandAllFolders">
+                <AppIcon name="plus" :size="15" :stroke-width="1.9" />
+              </button>
+              <button class="tool-btn" type="button" title="Collapse all folders" aria-label="Collapse all folders" @click="collapseAllFolders">
+                <AppIcon name="minus" :size="15" :stroke-width="1.9" />
+              </button>
+              <button class="tool-btn" type="button" title="Refresh explorer" aria-label="Refresh explorer" @click="refreshExplorer">
+                <AppIcon name="refresh" :size="15" :stroke-width="1.9" />
+              </button>
             </div>
           </div>
 
-          <label class="explorer-search">
-            <span class="search-icon">⌕</span>
-            <input v-model.trim="searchQuery" type="text" placeholder="Search files..." />
-          </label>
+          <div class="explorer-search">
+            <StyledSearch v-model="searchQuery" placeholder="Search files..." />
+          </div>
 
           <p v-if="forkMessage" class="fork-message">{{ forkMessage }}</p>
 
@@ -69,11 +74,12 @@
               @click="handleTreeRowClick(entry)"
             >
               <span class="tree-indent"></span>
-              <span v-if="entry.type === 'folder'" class="tree-chevron">{{ isFolderExpanded(entry.path) ? '⌄' : '›' }}</span>
+              <span v-if="entry.type === 'folder'" class="tree-chevron">
+                <AppIcon :name="isFolderExpanded(entry.path) ? 'chevronDown' : 'chevronRight'" :size="14" :stroke-width="2" />
+              </span>
               <span v-else class="tree-chevron placeholder"></span>
               <span class="tree-icon" :class="treeIconClass(entry)">
-                <span v-if="entry.type === 'folder'" class="folder-shape" aria-hidden="true"></span>
-                <span v-else>{{ treeBadge(entry) }}</span>
+                <FileKindIcon :file="entry" :size="15" :stroke-width="1.8" />
               </span>
               <span class="tree-label" :title="entry.path">{{ entry.name }}</span>
               <span class="tree-size">{{ entry.type === 'folder' ? '' : formatSize(entry.size) }}</span>
@@ -141,7 +147,9 @@
             <section v-else-if="selectedFile.previewKind === 'notebook'" class="document-panel notebook-panel">
               <div class="document-head">
                 <div class="document-title">
-                  <span class="doc-badge notebook">NB</span>
+                  <span class="doc-badge notebook">
+                    <FileKindIcon :file="selectedFile" :size="18" :stroke-width="1.85" />
+                  </span>
                   <div>
                     <h3>{{ selectedFile.name }}</h3>
                     <p>{{ fileSubtitle(selectedFile) }}</p>
@@ -150,7 +158,9 @@
 
                 <div class="document-actions">
                   <span class="readonly-badge">READ ONLY</span>
-                  <button class="icon-btn" type="button" @click="downloadSelectedFile" title="下载文件">↓</button>
+                  <button class="icon-btn" type="button" @click="downloadSelectedFile" title="下载文件" aria-label="下载文件">
+                    <AppIcon name="download" :size="15" :stroke-width="1.9" />
+                  </button>
                 </div>
               </div>
 
@@ -166,7 +176,9 @@
             <section v-else-if="selectedFile.previewKind === 'code' || selectedFile.previewKind === 'text'" class="document-panel">
               <div class="document-head">
                 <div class="document-title">
-                  <span class="doc-badge" :class="selectedFile.previewKind">{{ fileBadge(selectedFile) }}</span>
+                  <span class="doc-badge" :class="selectedFile.previewKind">
+                    <FileKindIcon :file="selectedFile" :size="18" :stroke-width="1.85" />
+                  </span>
                   <div>
                     <h3>{{ selectedFile.name }}</h3>
                     <p>{{ fileSubtitle(selectedFile) }}</p>
@@ -175,8 +187,12 @@
 
                 <div class="document-actions">
                   <span class="readonly-badge">READ ONLY</span>
-                  <button class="icon-btn" type="button" @click="copySelectedContent" title="复制内容">⧉</button>
-                  <button class="icon-btn" type="button" @click="downloadSelectedFile" title="下载文件">↓</button>
+                  <button class="icon-btn" type="button" @click="copySelectedContent" title="复制内容" aria-label="复制内容">
+                    <AppIcon name="copy" :size="15" :stroke-width="1.9" />
+                  </button>
+                  <button class="icon-btn" type="button" @click="downloadSelectedFile" title="下载文件" aria-label="下载文件">
+                    <AppIcon name="download" :size="15" :stroke-width="1.9" />
+                  </button>
                 </div>
               </div>
 
@@ -196,7 +212,9 @@
 
             <section v-else class="document-panel unsupported-panel">
               <div class="unsupported-card">
-                <div class="unsupported-mark">{{ selectedFile.previewKind === 'folder' ? 'DIR' : 'NA' }}</div>
+                <div class="unsupported-mark">
+                  <FileKindIcon :file="selectedFile" :size="28" :stroke-width="1.75" />
+                </div>
                 <div class="unsupported-copy">
                   <h3>此类文件暂不支持预览</h3>
                   <p>{{ selectedFile.previewReason || '当前文件无法在网页端直接可视化。' }}</p>
@@ -226,6 +244,9 @@ import json from 'highlight.js/lib/languages/json'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import bash from 'highlight.js/lib/languages/bash'
+import StyledSearch from '../components/StyledSearch.vue'
+import AppIcon from '../components/AppIcon.vue'
+import FileKindIcon from '../components/FileKindIcon.vue'
 import { createApiClient } from '../utils/apiClient.js'
 
 hljs.registerLanguage('python', python)
@@ -533,6 +554,14 @@ async function loadProject() {
   }
 }
 
+function encodeSharedFilePath(filePath = '') {
+  return String(filePath || '')
+    .split('/')
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join('/')
+}
+
 async function selectFile(file) {
   const normalized = normalizeFile(file)
   selectedFile.value = normalized
@@ -550,7 +579,7 @@ async function selectFile(file) {
   try {
     if (normalized.previewKind === 'notebook') {
       const response = await authAxios().get(
-        `/api/jupyter/shared-projects/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}/files/${encodeURIComponent(activePath)}/preview`
+        `/api/jupyter/shared-projects/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}/files/${encodeSharedFilePath(activePath)}/preview`
       )
 
       if (selectedFile.value?.path === activePath) {
@@ -560,7 +589,7 @@ async function selectFile(file) {
     }
 
     const response = await authAxios().get(
-      `/api/jupyter/shared-projects/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}/files/${encodeURIComponent(activePath)}/content`
+      `/api/jupyter/shared-projects/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}/files/${encodeSharedFilePath(activePath)}/content`
     )
 
     if (selectedFile.value?.path === activePath) {
@@ -601,7 +630,7 @@ async function downloadSelectedFile() {
 
   try {
     const response = await authAxios().get(
-      `/api/jupyter/shared-projects/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}/files/${encodeURIComponent(selectedFile.value.path)}/download`,
+      `/api/jupyter/shared-projects/${encodeURIComponent(owner.value)}/${encodeURIComponent(projectName.value)}/files/${encodeSharedFilePath(selectedFile.value.path)}/download`,
       { responseType: 'blob' }
     )
 
@@ -629,24 +658,6 @@ async function copySelectedContent() {
   } catch (err) {
     forkMessage.value = '复制失败，请检查浏览器剪贴板权限'
   }
-}
-
-function fileBadge(file) {
-  const normalized = normalizeFile(file)
-  if (normalized.previewKind === 'notebook') return 'NB'
-  if (normalized.previewKind === 'code') return normalized.extension.replace('.', '').toUpperCase().slice(0, 4)
-  if (normalized.previewKind === 'text') return normalized.extension.replace('.', '').toUpperCase().slice(0, 4) || 'TXT'
-  if (normalized.previewKind === 'folder') return 'DIR'
-  return normalized.extension ? normalized.extension.replace('.', '').toUpperCase().slice(0, 4) : 'NA'
-}
-
-function treeBadge(file) {
-  const normalized = normalizeFile(file)
-  if (normalized.previewKind === 'notebook') return 'NB'
-  if (normalized.previewKind === 'code') return normalized.extension === '.py' ? 'PY' : '</>'
-  if (normalized.previewKind === 'text') return 'TXT'
-  if (normalized.previewKind === 'unsupported') return normalized.extension ? normalized.extension.replace('.', '').slice(0, 3).toUpperCase() : 'NA'
-  return ''
 }
 
 function treeIconClass(file) {
@@ -910,34 +921,8 @@ onMounted(() => {
 }
 
 .explorer-search {
-  position: relative;
-  display: block;
   padding: 0.95rem 1rem 0.9rem;
   border-bottom: 1px solid rgba(203, 213, 225, 0.72);
-}
-
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: 1.65rem;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 0.95rem;
-}
-
-.explorer-search input {
-  width: 100%;
-  height: 44px;
-  padding: 0 0.95rem 0 2.2rem;
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  border-radius: 8px;
-  background: #eef4ff;
-  color: #0f172a;
-  font: inherit;
-}
-
-.explorer-search input::placeholder {
-  color: #94a3b8;
 }
 
 .fork-message,
@@ -1018,28 +1003,6 @@ onMounted(() => {
   width: 22px;
   height: 18px;
   background: transparent;
-}
-
-.folder-shape {
-  position: relative;
-  display: block;
-  width: 18px;
-  height: 12px;
-  border: 1.7px solid #6b7280;
-  border-radius: 2px;
-}
-
-.folder-shape::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 1px;
-  width: 8px;
-  height: 4px;
-  border: 1.7px solid #6b7280;
-  border-bottom: none;
-  border-radius: 2px 2px 0 0;
-  background: #f8fbff;
 }
 
 .icon-notebook {

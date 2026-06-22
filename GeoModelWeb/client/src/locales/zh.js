@@ -38,11 +38,11 @@ export default {
         }
     },
     casesView: {
-        eyebrow: 'GeoAI Cases',
         title: '地理空间智能案例',
         subtitle: '把内置 notebook、案例资源和可复现入口整合进 OpenGeoLab，方便用户查看、复用和开展研究工作流。',
         searchPlaceholder: '搜索案例、标签、领域或作者',
         domainAll: '全部领域',
+        sortLabel: '案例排序',
         loading: '加载案例中...',
         empty: '暂无案例。',
         noSummary: '暂无简介。',

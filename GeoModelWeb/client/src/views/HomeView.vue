@@ -6,6 +6,7 @@ import geocopilotWorkbench from '../assets/landing/geocopilot-dark-workbench.png
 import blueMarble from '../assets/landing/nasa-blue-marble.jpg'
 import blueMarbleMap from '../assets/landing/nasa-blue-marble-map.jpg'
 import spatialContextModeling from '../assets/landing/spatial-context-modeling.png'
+import AppIcon from '../components/AppIcon.vue'
 const capabilityCards = [
   {
     to: '/model',
@@ -41,42 +42,34 @@ const capabilityCards = [
   }
 ]
 
-const workflowIconSvgs = {
-  discover: '<path d="M 12.248 21.969 a 1 1 0 0 1 -0.849 -0.17 C 9.539 20.193 4 14.993 4 10 a 8 8 0 0 1 16 0 C 20 10.42 19.961 10.841 19.888 11.262" /><path d="m22 22-1.88-1.88" /><circle cx="12" cy="10" r="3" /><circle cx="18" cy="18" r="3" />',
-  compose: '<rect width="8" height="8" x="3" y="3" rx="2" /><path d="M7 11v4a2 2 0 0 0 2 2h4" /><rect width="8" height="8" x="13" y="13" rx="2" />',
-  execute: '<path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z" /><circle cx="12" cy="12" r="10" />',
-  interpret: '<path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="m19 9-5 5-4-4-3 3" />',
-  iterate: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" />'
-}
-
 const workflowSteps = [
   {
     number: '01',
-    iconSvg: workflowIconSvgs.discover,
+    icon: 'search',
     title: 'Discover',
     text: 'Search model services, cloud data, case notebooks, and data methods.'
   },
   {
     number: '02',
-    iconSvg: workflowIconSvgs.compose,
+    icon: 'boxes',
     title: 'Compose',
     text: 'Bind parameters, data paths, model metadata, and method IO specs.'
   },
   {
     number: '03',
-    iconSvg: workflowIconSvgs.execute,
+    icon: 'play',
     title: 'Execute',
     text: 'Run calls inside JupyterLab with local project files and remote services.'
   },
   {
     number: '04',
-    iconSvg: workflowIconSvgs.interpret,
+    icon: 'layers',
     title: 'Interpret',
     text: 'Review maps, rasters, tables, provenance, and agent explanations.'
   },
   {
     number: '05',
-    iconSvg: workflowIconSvgs.iterate,
+    icon: 'refresh',
     title: 'Iterate',
     text: 'Adjust scenarios, rerun models, compare outputs, and fork cases.'
   }
@@ -91,14 +84,14 @@ const workspaceFeatures = [
     text: 'Every generated call remains visible and editable in the notebook.'
   },
   {
-    icon: 'network',
+    icon: 'layers',
     tone: 'secondary',
     title: 'Resource-aware',
     badge: 'Contextual',
     text: 'Models, methods, files, and cloud data are exposed as workflow context.'
   },
   {
-    icon: 'rocket',
+    icon: 'server',
     tone: 'tertiary',
     title: 'Runtime-oriented',
     badge: 'Execution',
@@ -107,7 +100,7 @@ const workspaceFeatures = [
 ]
 const researchCaseCards = [
   {
-    to: '/cases',
+    to: '/cases/59fd7b7e-d84c-4fd3-a194-344a58f2765e',
     accent: 'primary',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYPxyV4t1hJaD3HfBRofkJ8lEXhAGyrLQbBBhkn8_FIbhxK4bCAgLttqy5wGVpsoF1a0dbPXaDBq5Nn_02yo5z6kwMcAuDSHX9EKdnCJBscEXg7D-fWbXUpLc4rWliaGyS2DHfV0amZmQ-Ha5go71QmFzNJIpOBwX5pIS6ow5cJQY7zVvmaYWXJYzubd1NLhYKB9EKRhoJUfA1jc0BucE7jzA3uUXAwaaW4wsVSJwhoQLCc2I3rqOYodoxVSCv_8fR8BLepw0Id3-2',
     alt: 'Suzhou urban expansion visualization',
@@ -117,7 +110,7 @@ const researchCaseCards = [
     tags: ['UrbanM2M', 'Raster simulation', 'Validation']
   },
   {
-    to: '/cases',
+    to: '/cases/3a933203-7da7-417e-bfee-6bd137cb67b0',
     accent: 'tertiary',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAqAnrXwZV3JIFieOBvrmC7Y89cOmMXO0Ejh03zYqK_5_CcBr2L8GZnQe0aqyKMPdQnnyoucbnsfj2KtP0ST1LayIQ8asF87Vs5XVx_0EzJ_WfLJS2D8U4hwdyR6nGei4c8x1NblShacWANkw2yO-1eFIyo0Pwur_LreO3_CgO-EhOYNewMqvlfKn7e1zIBPmJscOpfMimBmM7B-fl0AknvdhX1cGQIOU5eB6J2a2eOCVT2vMSs4_kxVbiBiOTP2HiP05JRae52RYjv',
     alt: 'Nanjing rooftop photovoltaic potential visualization',
@@ -290,8 +283,7 @@ const resetRuntimeGlass = (event) => {
             <div class="workflow-step-number">
               <span>{{ step.number }}</span>
             </div>
-            <svg class="workflow-step-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" v-html="step.iconSvg"></svg>
+            <AppIcon class="workflow-step-icon" :name="step.icon" :size="24" :stroke-width="1.9" />
             <div class="workflow-step-copy">
               <h3>{{ step.title }}</h3>
               <p>{{ step.text }}</p>
@@ -322,8 +314,7 @@ const resetRuntimeGlass = (event) => {
           <div class="workspace-timeline">
             <div v-for="feature in workspaceFeatures" :key="feature.title" class="workspace-feature-card"
               :class="`workspace-feature-card--${feature.tone}`">
-              <span class="workspace-feature-icon" :class="`workspace-feature-icon--${feature.icon}`"
-                aria-hidden="true"></span>
+              <AppIcon class="workspace-feature-icon" :name="feature.icon" :size="16" :stroke-width="1.9" />
               <div class="workspace-feature-copy">
                 <h3>
                   {{ feature.title }}
@@ -1452,28 +1443,6 @@ const resetRuntimeGlass = (event) => {
 
 .workspace-feature-card--tertiary .workspace-feature-icon {
   color: #ddb7ff;
-}
-
-.workspace-feature-icon::before {
-  content: '';
-  width: 1rem;
-  height: 1rem;
-  display: block;
-  background: currentColor;
-  mask: var(--workspace-icon) center / contain no-repeat;
-  -webkit-mask: var(--workspace-icon) center / contain no-repeat;
-}
-
-.workspace-feature-icon--code {
-  --workspace-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 9-3 3 3 3'/%3E%3Cpath d='m16 9 3 3-3 3'/%3E%3Cpath d='m13 5-2 14'/%3E%3C/svg%3E");
-}
-
-.workspace-feature-icon--network {
-  --workspace-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='7' r='3'/%3E%3Ccircle cx='18' cy='7' r='3'/%3E%3Ccircle cx='12' cy='18' r='3'/%3E%3Cpath d='m8.5 9.5 2.1 5.1'/%3E%3Cpath d='m15.5 9.5-2.1 5.1'/%3E%3Cpath d='M9 7h6'/%3E%3C/svg%3E");
-}
-
-.workspace-feature-icon--rocket {
-  --workspace-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 16.5c-1 1-1.5 3-1.5 4.5 1.5 0 3.5-.5 4.5-1.5'/%3E%3Cpath d='M9 15 6 18l-2-2 3-3'/%3E%3Cpath d='m15 9 3-3 2 2-3 3'/%3E%3Cpath d='M9 15s1.5 0 4.5-3S17 5 17 5s-4 .5-7 3.5S6.5 13 6.5 13'/%3E%3Cpath d='M14 10h.01'/%3E%3C/svg%3E");
 }
 
 .workspace-feature-copy {

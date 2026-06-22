@@ -2,9 +2,14 @@
   <div class="catalog-page">
     <div class="catalog-shell">
       <aside class="catalog-sidebar">
-        <h2 class="catalog-sidebar-title font-headline">Repository Filters</h2>
+        <div class="catalog-sidebar-head">
+          <span class="catalog-sidebar-kicker">Filters</span>
+          <h2 class="catalog-sidebar-title font-headline">Model Repository</h2>
+          <p>{{ facetTotal || total || 0 }} models</p>
+        </div>
 
         <div class="catalog-filter-block">
+          <p class="catalog-label">Model Domain</p>
           <button
             :class="['catalog-filter-item', { active: activeDomain === 'all' }]"
             @click="selectDomain('all')"
@@ -41,6 +46,15 @@
             <input v-model="filterInstitutional" type="checkbox">
             <span>Institutional Only</span>
           </label>
+
+          <button
+            v-if="hasActiveFilters"
+            class="catalog-reset-btn"
+            type="button"
+            @click="clearFilters"
+          >
+            Reset filters
+          </button>
         </div>
 
       </aside>
@@ -52,15 +66,12 @@
             <p>{{ $t('ogmsModelView.subtitle') }}</p>
           </div>
 
-          <div class="catalog-search">
-            <span class="catalog-search-icon">⌕</span>
-            <input
-              v-model="searchQuery"
-              @keyup.enter="handleSearch"
-              type="text"
-              :placeholder="$t('ogmsModelView.searchPlaceholder')"
-            >
-          </div>
+          <StyledSearch
+            v-model="searchQuery"
+            class="catalog-search"
+            :placeholder="$t('ogmsModelView.searchPlaceholder')"
+            @enter="handleSearch"
+          />
         </header>
 
         <div v-if="loading && !models.length" class="catalog-loading">
@@ -117,6 +128,7 @@ import ModelCard from '../components/ModelCard.vue'
 import ModelRunModal from '../components/ModelRunModal.vue'
 import PaginationControl from '../components/PaginationControl.vue'
 import ResultModal from '../components/ResultModal.vue'
+import StyledSearch from '../components/StyledSearch.vue'
 import { notify } from '../utils/systemFeedback.js'
 
 const searchQuery = ref('')
@@ -141,6 +153,13 @@ const executionResult = ref(null)
 const taskInfo = ref(null)
 
 const totalPages = computed(() => Math.ceil(total.value / limit))
+const hasActiveFilters = computed(() => (
+  Boolean(searchQuery.value.trim()) ||
+  activeDomain.value !== 'all' ||
+  filterOnline.value ||
+  filterPublic.value ||
+  filterInstitutional.value
+))
 
 const fetchModels = async (page = 1) => {
   loading.value = true
@@ -195,6 +214,17 @@ const handleSearch = () => {
 const selectDomain = (domain) => {
   activeDomain.value = domain
   currentPage.value = 1
+  fetchModels(1)
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  activeDomain.value = 'all'
+  filterOnline.value = false
+  filterPublic.value = false
+  filterInstitutional.value = false
+  currentPage.value = 1
+  fetchModelFacets()
   fetchModels(1)
 }
 
@@ -275,28 +305,64 @@ watch([filterOnline, filterPublic, filterInstitutional], () => {
 
 .catalog-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 1.6rem;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
 .catalog-sidebar {
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--surface-card);
+  position: sticky;
+  top: 6.25rem;
+  max-height: calc(100vh - 7rem);
+  overflow: auto;
+  padding: 0.85rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+.catalog-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.catalog-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d4d4d4;
+}
+
+.catalog-sidebar-head {
+  padding: 0.05rem 0.05rem 0.85rem;
+  border-bottom: 1px solid #ececec;
 }
 
 .catalog-sidebar-title {
-  margin: 0;
-  color: var(--primary-strong);
+  margin: 0.2rem 0 0;
+  color: #111111;
 }
 
 .catalog-sidebar-title {
   font-size: 0.98rem;
-  font-weight: 800;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.catalog-sidebar-kicker {
+  color: #737373;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.catalog-sidebar-head p {
+  margin: 0.32rem 0 0;
+  color: #8a8a8a;
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
 .catalog-filter-block,
@@ -304,91 +370,163 @@ watch([filterOnline, filterPublic, filterInstitutional], () => {
   margin-top: 1rem;
 }
 
+.catalog-status-block {
+  padding-top: 0.95rem;
+  border-top: 1px solid #ececec;
+}
+
 .catalog-filter-item {
   position: relative;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 3.35rem;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 0.65rem;
-  min-height: 40px;
-  margin-bottom: 0.18rem;
-  padding: 0.45rem 0.7rem 0.45rem 0.9rem;
+  gap: 0.55rem;
+  min-height: 34px;
+  margin-bottom: 1px;
+  padding: 0.4rem 0.5rem;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 7px;
   background: transparent;
-  color: var(--text-secondary);
+  color: #525252;
   font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
   overflow: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .catalog-filter-item > span:not(.catalog-filter-indicator) {
   min-width: 0;
-  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .catalog-filter-item:hover {
-  background: #f8fafc;
-  color: var(--primary-strong);
+  background: #f7f7f7;
+  color: #111111;
 }
 
 .catalog-filter-item.active {
-  background: #eef2f7;
-  border-color: var(--border-light);
-  color: var(--primary-strong);
-  font-weight: 700;
+  background: #f0f0f0;
+  border-color: #e7e7e7;
+  color: #111111;
+  font-weight: 650;
+  box-shadow: none;
 }
 
 .catalog-filter-indicator {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 3px;
-  height: 24px;
-  border-radius: 0;
-  background: var(--accent-color);
-  transform: translateY(-50%);
+  display: none;
 }
 
 .catalog-filter-item strong {
-  min-width: 0;
   justify-self: end;
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  min-width: 2rem;
+  padding: 0;
+  color: #8a8a8a;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-weight: 600;
   text-align: right;
 }
 
 .catalog-filter-item.active strong {
-  color: var(--primary-strong);
+  color: #111111;
 }
 
 .catalog-label {
-  margin: 0 0 0.7rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  margin: 0 0 0.55rem;
+  color: #8a8a8a;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 800;
-  color: var(--text-muted);
 }
 
 .catalog-check {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.65rem;
-  color: var(--text-secondary);
+  gap: 0.55rem;
+  min-height: 34px;
+  margin-bottom: 1px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #525252;
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.catalog-check:hover {
+  background: #f7f7f7;
+  color: #111111;
 }
 
 .catalog-check input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent-color);
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  background: #ffffff;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.catalog-check input::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: #111111;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+}
+
+.catalog-check input:checked {
+  border-color: #111111;
+  background: #ffffff;
+}
+
+.catalog-check input:checked::after {
+  transform: scale(1);
+}
+
+.catalog-check:has(input:checked) {
+  border-color: #e7e7e7;
+  background: #f0f0f0;
+  color: #111111;
+  font-weight: 650;
+}
+
+.catalog-reset-btn {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #242424;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.catalog-reset-btn:hover {
+  border-color: #d4d4d4;
+  background: #f7f7f7;
 }
 
 .catalog-main {
@@ -420,36 +558,7 @@ watch([filterOnline, filterPublic, filterInstitutional], () => {
 }
 
 .catalog-search {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.65rem;
   width: 320px;
-  min-height: 44px;
-  padding: 0 0.8rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--surface-card);
-  box-shadow: none;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
-}
-
-.catalog-search:focus-within {
-  background: #ffffff;
-  border-color: rgba(15, 118, 110, 0.55);
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1);
-}
-
-.catalog-search-icon {
-  color: var(--text-muted);
-}
-
-.catalog-search input {
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: var(--primary-strong);
-  outline: none;
 }
 
 .catalog-list {

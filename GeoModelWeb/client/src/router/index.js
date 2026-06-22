@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ResearchView from '../views/ResearchView.vue'
 import CasesView from '../views/CasesView.vue'
-import CaseDetailPublicView from '../views/CaseDetailPublicView.vue'
 import ApplicationView from '../views/ApplicationView.vue'
 import ApplicationDetailView from '../views/ApplicationDetailView.vue'
 import ModelView from '../views/ModelView.vue'
@@ -32,9 +31,9 @@ const routes = [
         component: CasesView
     },
     {
-        path: '/cases/:slug',
+        path: '/cases/:projectId',
         name: 'CasesDetail',
-        component: CaseDetailPublicView
+        component: CaseDetail
     },
     {
         path: '/application',

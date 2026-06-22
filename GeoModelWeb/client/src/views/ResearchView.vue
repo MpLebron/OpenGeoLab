@@ -3,7 +3,6 @@
     <section class="research-hero">
       <div class="research-shell hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">OpenGeoLab Research</p>
           <h1 class="font-headline">Publications behind the modeling workspace</h1>
           <p class="hero-lede">
             A curated reading map for geographic model services, GeoAI code generation,
@@ -14,14 +13,11 @@
     </section>
 
     <section class="research-shell research-toolbar" aria-label="Research filters">
-      <div class="search-field">
-        <span aria-hidden="true">⌕</span>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search title, authors, keywords..."
-        >
-      </div>
+      <StyledSearch
+        v-model="searchQuery"
+        class="search-field"
+        placeholder="Search title, authors, keywords..."
+      />
 
       <div class="track-tabs" aria-label="Research tracks">
         <button
@@ -108,6 +104,7 @@ import aiSimulationSchedulingCover from '../assets/research/ai-simulation-schedu
 import geographicalModalCover from '../assets/research/geographical-modal-integration.webp'
 import hydrologySensitivityCover from '../assets/research/hydrology-sensitivity-analysis.webp'
 import mapmateCover from '../assets/research/mapmate-llm-map-design.webp'
+import StyledSearch from '../components/StyledSearch.vue'
 import modelAcademicInfluenceCover from '../assets/research/model-academic-influence-2023.webp'
 import openKnowledgeFrameworkCover from '../assets/research/open-knowledge-framework.webp'
 import regionalDecisionAgentCover from '../assets/research/regional-decision-making-agent.webp'
@@ -326,7 +323,7 @@ const filteredPapers = computed(() => {
 .research-hero {
   position: relative;
   overflow: hidden;
-  padding: 3rem 0 1.6rem;
+  padding: 1.15rem 0 0.9rem;
   background: var(--bg-color);
   border-bottom: 1px solid var(--border-light);
 }
@@ -344,7 +341,6 @@ const filteredPapers = computed(() => {
   text-transform: uppercase;
 }
 
-.hero-copy h1,
 .section-heading h2 {
   margin: 0.65rem 0 0;
   color: var(--primary-strong);
@@ -352,8 +348,11 @@ const filteredPapers = computed(() => {
 }
 
 .hero-copy h1 {
+  margin: 0;
   max-width: 100%;
+  color: var(--primary-strong);
   font-size: clamp(2.45rem, 3vw, 3.15rem);
+  letter-spacing: -0.03em;
   line-height: 1.06;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -362,10 +361,10 @@ const filteredPapers = computed(() => {
 
 .hero-lede {
   max-width: 100%;
-  margin: 0.9rem 0 0;
+  margin: 0.42rem 0 0;
   color: var(--text-secondary);
-  font-size: 1.02rem;
-  line-height: 1.55;
+  font-size: 0.98rem;
+  line-height: 1.45;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -376,33 +375,11 @@ const filteredPapers = computed(() => {
   grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
-  padding: 1.2rem 0;
+  padding: 0.85rem 0;
 }
 
 .search-field {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 44px;
-  padding: 0 0.85rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: #ffffff;
-  box-shadow: none;
-}
-
-.search-field span {
-  color: var(--text-muted);
-}
-
-.search-field input {
   width: 100%;
-  border: none;
-  background: transparent;
-  color: var(--primary-strong);
-  font: inherit;
-  outline: none;
 }
 
 .track-tabs {
@@ -431,7 +408,7 @@ const filteredPapers = computed(() => {
 }
 
 .publication-section {
-  padding: 1rem 0 2.4rem;
+  padding: 0.65rem 0 2.4rem;
 }
 
 .section-heading {
@@ -676,7 +653,7 @@ const filteredPapers = computed(() => {
   }
 
   .research-hero {
-    padding-top: 2.2rem;
+    padding-top: 1.05rem;
   }
 
   .publication-row {

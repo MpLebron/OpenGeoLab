@@ -7,7 +7,7 @@
           <img :src="withAppBasePath('logo.png')" alt="OpenGeoLab" class="logo">
         </RouterLink>
         <router-link to="/jupyter" class="back-link">
-          <span class="back-icon">←</span>
+          <AppIcon class="back-icon" name="arrowLeft" :size="16" :stroke-width="2" />
           <span>返回 Dashboard</span>
         </router-link>
       </div>
@@ -45,30 +45,20 @@
           <p class="explorer-title">EXPLORER</p>
           <div class="explorer-actions">
             <button class="tool-btn" type="button" title="Expand loaded folders" aria-label="Expand loaded folders" @click="expandAllFolders">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
+              <AppIcon name="plus" :size="15" :stroke-width="1.9" />
             </button>
             <button class="tool-btn" type="button" title="Collapse folders" aria-label="Collapse folders" @click="collapseAllFolders">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path d="M5 12h14"/>
-              </svg>
+              <AppIcon name="minus" :size="15" :stroke-width="1.9" />
             </button>
             <button class="tool-btn" type="button" title="Refresh explorer" aria-label="Refresh explorer" @click="refreshExplorer">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path d="M20 11a8 8 0 0 0-14.7-4.4L4 8"/>
-                <path d="M4 4v4h4"/>
-                <path d="M4 13a8 8 0 0 0 14.7 4.4L20 16"/>
-                <path d="M16 16h4v4"/>
-              </svg>
+              <AppIcon name="refresh" :size="15" :stroke-width="1.9" />
             </button>
           </div>
         </div>
 
-        <label class="explorer-search">
-          <span class="search-icon">⌕</span>
-          <input v-model.trim="searchQuery" type="text" placeholder="Search files..." />
-        </label>
+        <div class="explorer-search">
+          <StyledSearch v-model="searchQuery" placeholder="Search files..." />
+        </div>
 
         <section v-if="shouldShowProjectDataStrip" class="project-data-strip">
           <div class="project-data-head">
@@ -82,7 +72,9 @@
               type="button"
               title="Add from My Data"
               @click="openAttachDataModal"
-            >+</button>
+            >
+              <AppIcon name="plus" :size="15" :stroke-width="1.9" />
+            </button>
           </div>
 
           <div v-if="visibleProjectDataBindings.length" class="project-data-list">
@@ -104,7 +96,7 @@
                 title="Remove Project Data binding"
                 @click="removeProjectDataBinding(binding)"
               >
-                ×
+                <AppIcon name="x" :size="14" :stroke-width="2" />
               </button>
             </article>
           </div>
@@ -126,11 +118,12 @@
             @click="handleTreeRowClick(entry)"
           >
             <span class="tree-indent"></span>
-            <span v-if="entry.type === 'folder'" class="tree-chevron">{{ isFolderExpanded(entry.path) ? '⌄' : '›' }}</span>
+            <span v-if="entry.type === 'folder'" class="tree-chevron">
+              <AppIcon :name="isFolderExpanded(entry.path) ? 'chevronDown' : 'chevronRight'" :size="14" :stroke-width="2" />
+            </span>
             <span v-else class="tree-chevron placeholder"></span>
             <span class="tree-icon" :class="treeIconClass(entry)">
-              <span v-if="entry.type === 'folder'" class="folder-shape" aria-hidden="true"></span>
-              <span v-else>{{ treeBadge(entry) }}</span>
+              <FileKindIcon :file="entry" :size="15" :stroke-width="1.8" />
             </span>
             <span class="tree-label" :title="entry.path">{{ entry.name }}</span>
             <span class="tree-size">{{ entry.type === 'folder' ? '' : formatSize(entry.size) }}</span>
@@ -178,7 +171,9 @@
         <section v-else-if="selectedFile.previewKind === 'notebook'" class="document-panel notebook-panel">
           <div class="document-head">
             <div class="document-title">
-              <span class="doc-badge notebook">NB</span>
+              <span class="doc-badge notebook">
+                <FileKindIcon :file="selectedFile" :size="18" :stroke-width="1.85" />
+              </span>
               <div>
                 <h3>{{ selectedFile.name }}</h3>
                 <p>{{ fileSubtitle(selectedFile, formatSize) }}</p>
@@ -187,6 +182,9 @@
 
             <div class="document-actions">
               <span class="preview-badge">PREVIEW</span>
+              <button class="icon-btn" type="button" title="Download file" aria-label="Download file" @click="downloadSelectedFile">
+                <AppIcon name="download" :size="15" :stroke-width="1.9" />
+              </button>
               <button class="action-btn primary" type="button" @click="openInJupyter" :disabled="isStarting">
                 打开当前 Notebook
               </button>
@@ -202,10 +200,12 @@
           ></iframe>
         </section>
 
-        <section v-else-if="selectedFile.previewKind === 'code' || selectedFile.previewKind === 'text'" class="document-panel">
+        <section v-else-if="selectedFile.previewSupported" class="document-panel" :class="`${selectedFile.previewKind}-panel`">
           <div class="document-head">
             <div class="document-title">
-              <span class="doc-badge" :class="selectedFile.previewKind">{{ fileBadge(selectedFile) }}</span>
+              <span class="doc-badge" :class="selectedFile.previewKind">
+                <FileKindIcon :file="selectedFile" :size="18" :stroke-width="1.85" />
+              </span>
               <div>
                 <h3>{{ selectedFile.name }}</h3>
                 <p>{{ fileSubtitle(selectedFile, formatSize) }}</p>
@@ -214,10 +214,134 @@
 
             <div class="document-actions">
               <span class="preview-badge">PREVIEW</span>
+              <button v-if="canCopySelectedPreview" class="icon-btn" type="button" title="Copy content" aria-label="Copy content" @click="copySelectedContent">
+                <AppIcon name="copy" :size="15" :stroke-width="1.9" />
+              </button>
+              <button class="icon-btn" type="button" title="Download file" aria-label="Download file" @click="downloadSelectedFile">
+                <AppIcon name="download" :size="15" :stroke-width="1.9" />
+              </button>
             </div>
           </div>
 
-          <div class="document-body" :class="selectedFile.previewKind">
+          <div v-if="selectedFile.previewKind === 'markdown'" class="markdown-document" v-html="markdownHtml"></div>
+
+          <div v-else-if="selectedFile.previewKind === 'table'" class="table-preview">
+            <div class="preview-summary">
+              <span>{{ tablePreview.rowCount }} rows</span>
+              <span>{{ tablePreview.columnCount }} columns</span>
+              <span v-if="tablePreview.truncated">Showing first {{ tablePreview.rows.length }} rows</span>
+            </div>
+            <div class="data-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th v-for="(header, index) in tablePreview.header" :key="`header-${index}`">{{ header }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, rowIndex) in tablePreview.rows" :key="`row-${rowIndex}`">
+                    <td v-for="(cell, cellIndex) in row" :key="`cell-${rowIndex}-${cellIndex}`">{{ cell }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div v-else-if="selectedFile.previewKind === 'geojson'" class="geojson-preview">
+            <div v-if="geoJsonPreview.ok" class="geojson-layout">
+              <div class="geo-map-frame">
+                <svg viewBox="0 0 920 520" role="img" :aria-label="`${selectedFile.name} geospatial preview`">
+                  <rect class="geo-map-bg" x="0" y="0" width="920" height="520" rx="8"></rect>
+                  <polygon
+                    v-for="(shape, index) in geoJsonPreview.shapes.filter(item => item.kind === 'polygon')"
+                    :key="`poly-${index}`"
+                    class="geo-shape polygon"
+                    :points="formatShapePoints(shape.points)"
+                  ></polygon>
+                  <polyline
+                    v-for="(shape, index) in geoJsonPreview.shapes.filter(item => item.kind === 'line')"
+                    :key="`line-${index}`"
+                    class="geo-shape line"
+                    :points="formatShapePoints(shape.points)"
+                  ></polyline>
+                  <circle
+                    v-for="(shape, index) in geoJsonPreview.shapes.filter(item => item.kind === 'point')"
+                    :key="`point-${index}`"
+                    class="geo-shape point"
+                    :cx="shape.point[0]"
+                    :cy="shape.point[1]"
+                    r="4"
+                  ></circle>
+                </svg>
+              </div>
+              <aside class="geojson-side">
+                <div class="preview-summary stacked">
+                  <span>{{ geoJsonPreview.featureCount }} features</span>
+                  <span v-for="(count, type) in geoJsonPreview.geometryCounts" :key="type">{{ type }}: {{ count }}</span>
+                </div>
+                <div v-if="geoJsonPreview.properties.length" class="properties-preview">
+                  <h4>Feature properties</h4>
+                  <div v-for="item in geoJsonPreview.properties" :key="item.index" class="property-row">
+                    <strong>#{{ item.index }} {{ item.type }}</strong>
+                    <span>{{ summarizeProperties(item.properties) }}</span>
+                  </div>
+                </div>
+              </aside>
+            </div>
+            <div v-else class="structured-error">
+              <strong>GeoJSON preview failed</strong>
+              <span>{{ geoJsonPreview.error }}</span>
+            </div>
+          </div>
+
+          <div v-else-if="selectedFile.previewKind === 'json'" class="json-preview">
+            <div class="preview-summary">
+              <span>{{ jsonPreview.summary }}</span>
+              <span v-if="!jsonPreview.ok">{{ jsonPreview.error }}</span>
+            </div>
+            <pre>{{ jsonPreview.formatted }}</pre>
+          </div>
+
+          <iframe
+            v-else-if="selectedFile.previewKind === 'html'"
+            class="html-frame"
+            :srcdoc="fileContent"
+            sandbox="allow-scripts"
+            title="HTML file preview"
+          ></iframe>
+
+          <iframe
+            v-else-if="selectedFile.previewKind === 'pdf'"
+            class="pdf-frame"
+            :src="directPreviewUrl"
+            title="PDF file preview"
+          ></iframe>
+
+          <div v-else-if="selectedFile.previewKind === 'image'" class="image-preview-frame">
+            <img :src="directPreviewUrl" :alt="selectedFile.name">
+          </div>
+
+          <div v-else-if="selectedFile.previewKind === 'archive'" class="archive-preview">
+            <div class="preview-summary">
+              <span>{{ archivePreview?.totalEntries || 0 }} entries</span>
+              <span v-if="archivePreview?.truncated">Showing first {{ archivePreview.entries.length }}</span>
+              <span v-if="archivePreview?.error">{{ archivePreview.error }}</span>
+            </div>
+            <div v-if="archivePreview?.entries?.length" class="archive-list">
+              <div v-for="entry in archivePreview.entries" :key="entry.name" class="archive-row">
+                <span class="archive-kind">{{ entry.isDirectory ? 'DIR' : 'FILE' }}</span>
+                <span class="archive-name">{{ entry.name }}</span>
+                <span class="archive-size">{{ entry.isDirectory ? '' : formatSize(entry.size) }}</span>
+                <span class="archive-date">{{ entry.date }} {{ entry.time }}</span>
+              </div>
+            </div>
+            <div v-else class="structured-error">
+              <strong>Archive listing unavailable</strong>
+              <span>Download the archive to inspect its contents locally.</span>
+            </div>
+          </div>
+
+          <div v-else class="document-body" :class="selectedFile.previewKind">
             <div class="code-sheet" :class="selectedFile.previewKind">
               <div
                 v-for="(line, index) in highlightedFileLines"
@@ -233,10 +357,13 @@
 
         <section v-else class="document-panel unsupported-panel">
           <div class="unsupported-card">
-            <div class="unsupported-mark">{{ selectedFile.previewKind === 'folder' ? 'DIR' : 'NA' }}</div>
+            <div class="unsupported-mark">
+              <FileKindIcon :file="selectedFile" :size="28" :stroke-width="1.75" />
+            </div>
             <div class="unsupported-copy">
               <h3>此类文件暂不支持预览</h3>
               <p>{{ selectedFile.previewReason || '当前文件无法在网页端直接可视化。' }}</p>
+              <button v-if="selectedFile.type !== 'folder'" class="ghost-btn" type="button" @click="downloadSelectedFile">Download file</button>
             </div>
           </div>
         </section>
@@ -264,13 +391,14 @@
             <p class="project-data-kicker">MY DATA</p>
             <h2 id="attach-data-title">Attach data to project</h2>
           </div>
-          <button class="attach-close-btn" type="button" title="Close" @click="closeAttachDataModal">×</button>
+          <button class="attach-close-btn" type="button" title="Close" @click="closeAttachDataModal">
+            <AppIcon name="x" :size="16" :stroke-width="2" />
+          </button>
         </header>
 
-        <label class="attach-search">
-          <span class="search-icon">⌕</span>
-          <input v-model.trim="attachDataSearch" type="text" placeholder="Search My Data assets..." />
-        </label>
+        <div class="attach-search">
+          <StyledSearch v-model="attachDataSearch" placeholder="Search My Data assets..." />
+        </div>
 
         <div v-if="isLoadingAttachData" class="attach-state">Loading My Data...</div>
         <div v-else-if="attachableDataItems.length === 0" class="attach-state">
@@ -299,7 +427,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import hljs from 'highlight.js/lib/core'
@@ -312,13 +440,19 @@ import yaml from 'highlight.js/lib/languages/yaml'
 import bash from 'highlight.js/lib/languages/bash'
 import {
   escapeHtml,
-  fileBadge,
   fileLanguage,
   fileSubtitle,
   normalizeFile,
-  splitLines,
-  treeBadge
+  pickPreferredPreviewFile,
+  splitLines
 } from '../utils/filePreview.js'
+import {
+  buildGeoJsonPreview,
+  formatShapePoints,
+  parseDelimitedText,
+  parseJsonPreview,
+  renderMarkdown
+} from '../utils/filePreviewRenderers.js'
 import {
   canRemoveProjectDataBinding,
   canAttachMyDataItem,
@@ -336,6 +470,9 @@ import {
   shouldRefreshJupyterLaunchUrl
 } from '../utils/jupyterLaunchUrl.js'
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
+import StyledSearch from '../components/StyledSearch.vue'
+import AppIcon from '../components/AppIcon.vue'
+import FileKindIcon from '../components/FileKindIcon.vue'
 import { notify } from '../utils/systemFeedback.js'
 import { createApiClient, withAppBasePath } from '../utils/apiClient.js'
 
@@ -350,6 +487,9 @@ hljs.registerLanguage('bash', bash)
 const route = useRoute()
 const router = useRouter()
 
+const CONTENT_PREVIEW_KINDS = new Set(['code', 'text', 'markdown', 'table', 'json', 'geojson', 'html'])
+const DIRECT_PREVIEW_KINDS = new Set(['image', 'pdf'])
+
 // 状态
 const projectRouteId = computed(() => String(route.params.projectId || route.params.projectName || ''))
 const resolvedProjectName = ref('')
@@ -360,6 +500,8 @@ const files = ref([])
 const selectedFile = ref(null)
 const notebookPreviewHtml = ref('')
 const fileContent = ref('')
+const directPreviewUrl = ref('')
+const archivePreview = ref(null)
 const isLoadingPreview = ref(false)
 const previewError = ref('')
 const isStarting = ref(false)
@@ -522,6 +664,21 @@ const highlightedFileLines = computed(() => {
     }
   })
 })
+
+const canCopySelectedPreview = computed(() => {
+  return CONTENT_PREVIEW_KINDS.has(selectedFile.value?.previewKind) && Boolean(fileContent.value)
+})
+
+const markdownHtml = computed(() => renderMarkdown(fileContent.value))
+
+const tablePreview = computed(() => {
+  const delimiter = selectedFile.value?.extension === '.tsv' ? '\t' : ','
+  return parseDelimitedText(fileContent.value, delimiter, { maxRows: 200 })
+})
+
+const jsonPreview = computed(() => parseJsonPreview(fileContent.value))
+
+const geoJsonPreview = computed(() => buildGeoJsonPreview(fileContent.value))
 
 const matchesSearch = (node, keyword) => {
   if (!keyword) return true
@@ -747,12 +904,12 @@ const loadProject = async () => {
     files.value = res.data.files
     projectDataBindings.value = res.data.project?.dataBindings || []
 
-    // 自动选择第一个 notebook
-    const firstNotebook = files.value
-      .map(normalizeProjectFile)
-      .find(f => f.previewKind === 'notebook')
-    if (firstNotebook) {
-      selectFile(firstNotebook)
+    const initialFile = pickPreferredPreviewFile(
+      files.value.map(normalizeProjectFile),
+      project.value?.coreNotebook || project.value?.case?.coreNotebook || ''
+    )
+    if (initialFile) {
+      selectFile(initialFile)
     }
   } catch (e) {
     console.error('Failed to load project:', e)
@@ -769,6 +926,8 @@ const selectFile = async (file) => {
   selectedFile.value = normalized
   notebookPreviewHtml.value = ''
   fileContent.value = ''
+  releaseDirectPreviewUrl()
+  archivePreview.value = null
   previewError.value = ''
 
   const filePath = normalized.path || normalized.name
@@ -777,27 +936,51 @@ const selectFile = async (file) => {
     return
   }
 
+  if (DIRECT_PREVIEW_KINDS.has(normalized.previewKind)) {
+    await loadDirectFilePreview(filePath)
+    return
+  }
+
   if (normalized.previewKind === 'notebook') {
     await loadNotebookPreview(filePath)
-  } else if (normalized.previewKind === 'code' || normalized.previewKind === 'text') {
+  } else if (normalized.previewKind === 'archive') {
+    await loadArchivePreview(filePath)
+  } else if (CONTENT_PREVIEW_KINDS.has(normalized.previewKind)) {
     await loadTextFileContent(filePath)
+  } else {
+    previewError.value = normalized.previewReason || 'Preview is not available for this file.'
   }
+}
+
+const encodeProjectFilePath = (filePath = '') => (
+  String(filePath || '')
+    .split('/')
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join('/')
+)
+
+const projectFileEndpoint = (filePath = '', kind = 'content') => {
+  return `/api/jupyter/projects/${encodedProjectName.value}/files/${encodeProjectFilePath(filePath)}/${kind}`
 }
 
 // 加载文本文件内容
 const loadTextFileContent = async (filePath) => {
   isLoadingPreview.value = true
   try {
-    const encodedPath = encodeURIComponent(filePath)
     const res = await authAxios().get(
-      `/api/jupyter/projects/${encodedProjectName.value}/files/${encodedPath}/content`
+      projectFileEndpoint(filePath, 'content')
     )
-    fileContent.value = String(res.data.content || '')
+    if (selectedFile.value?.path === filePath) {
+      fileContent.value = String(res.data.content || '')
+    }
   } catch (e) {
     console.error('Failed to load text file:', e)
     previewError.value = e.response?.data?.error || e.message || '无法加载文件内容'
   } finally {
-    isLoadingPreview.value = false
+    if (selectedFile.value?.path === filePath) {
+      isLoadingPreview.value = false
+    }
   }
 }
 
@@ -805,18 +988,68 @@ const loadTextFileContent = async (filePath) => {
 const loadNotebookPreview = async (notebookPath) => {
   isLoadingPreview.value = true
   try {
-    // 使用 encodeURIComponent 编码整个路径，包括斜杠
-    const encodedPath = encodeURIComponent(notebookPath)
     const res = await authAxios().get(
-      `/api/jupyter/projects/${encodedProjectName.value}/notebooks/${encodedPath}/preview`
+      projectFileEndpoint(notebookPath, 'preview')
     )
-    notebookPreviewHtml.value = String(res.data.html || '')
+    if (selectedFile.value?.path === notebookPath) {
+      notebookPreviewHtml.value = sanitizeNotebookPreviewHtml(res.data.html)
+    }
   } catch (e) {
     console.error('Failed to load notebook preview:', e)
     previewError.value = e.response?.data?.error || e.message || 'Notebook 预览加载失败'
   } finally {
-    isLoadingPreview.value = false
+    if (selectedFile.value?.path === notebookPath) {
+      isLoadingPreview.value = false
+    }
   }
+}
+
+const loadArchivePreview = async (filePath) => {
+  isLoadingPreview.value = true
+  try {
+    const res = await authAxios().get(projectFileEndpoint(filePath, 'preview'))
+    if (selectedFile.value?.path === filePath) {
+      archivePreview.value = res.data.archive || { entries: [], totalEntries: 0, truncated: false, error: '' }
+    }
+  } catch (e) {
+    console.error('Failed to load archive preview:', e)
+    previewError.value = e.response?.data?.error || e.message || '压缩包预览加载失败'
+  } finally {
+    if (selectedFile.value?.path === filePath) {
+      isLoadingPreview.value = false
+    }
+  }
+}
+
+const loadDirectFilePreview = async (filePath) => {
+  isLoadingPreview.value = true
+  try {
+    const res = await authAxios().get(projectFileEndpoint(filePath, 'preview'), {
+      responseType: 'blob'
+    })
+    if (selectedFile.value?.path === filePath) {
+      releaseDirectPreviewUrl()
+      directPreviewUrl.value = window.URL.createObjectURL(res.data)
+    }
+  } catch (e) {
+    console.error('Failed to load direct file preview:', e)
+    previewError.value = e.response?.data?.error || e.message || '文件预览加载失败'
+  } finally {
+    if (selectedFile.value?.path === filePath) {
+      isLoadingPreview.value = false
+    }
+  }
+}
+
+const releaseDirectPreviewUrl = () => {
+  if (directPreviewUrl.value?.startsWith('blob:')) {
+    window.URL.revokeObjectURL(directPreviewUrl.value)
+  }
+  directPreviewUrl.value = ''
+}
+
+const sanitizeNotebookPreviewHtml = (html) => {
+  return String(html || '').replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
 }
 
 // 获取 Jupyter 状态（基于项目）
@@ -925,6 +1158,48 @@ const openInJupyter = async () => {
   }
 }
 
+const downloadSelectedFile = async () => {
+  if (!selectedFile.value || selectedFile.value.type === 'folder') return
+
+  try {
+    const response = await authAxios().get(
+      projectFileEndpoint(selectedFile.value.path || selectedFile.value.name, 'download'),
+      { responseType: 'blob' }
+    )
+
+    const blobUrl = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = selectedFile.value.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    notify(`下载失败：${e.response?.data?.error || e.message}`, 'error', { duration: 5000 })
+  }
+}
+
+const copySelectedContent = async () => {
+  if (!fileContent.value) return
+
+  try {
+    await navigator.clipboard.writeText(fileContent.value)
+    notify(`已复制 ${selectedFile.value?.name || '当前文件'}`, 'success')
+  } catch (e) {
+    notify('复制失败，请检查浏览器剪贴板权限。', 'error', { duration: 5000 })
+  }
+}
+
+const summarizeProperties = (properties = {}) => {
+  const entries = Object.entries(properties)
+    .filter(([, value]) => value !== null && value !== undefined && value !== '')
+    .slice(0, 4)
+
+  if (!entries.length) return 'No properties'
+  return entries.map(([key, value]) => `${key}: ${String(value).slice(0, 48)}`).join(' · ')
+}
+
 const formatSize = (bytes) => {
   if (!bytes) return '0 B'
   if (bytes < 1024) return bytes + ' B'
@@ -947,6 +1222,10 @@ onMounted(async () => {
 
   await loadProject()
   await fetchJupyterStatus()
+})
+
+onBeforeUnmount(() => {
+  releaseDirectPreviewUrl()
 })
 
 // 监听项目路由变化
@@ -1502,35 +1781,8 @@ watch(projectRouteId, async () => {
 }
 
 .explorer-search {
-  position: relative;
-  display: block;
   padding: 0.9rem 1rem;
   border-bottom: 1px solid rgba(203, 213, 225, 0.72);
-}
-
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: 1.65rem;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 0.95rem;
-}
-
-.explorer-search input {
-  width: 100%;
-  height: 42px;
-  padding: 0 0.9rem 0 2.15rem;
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  border-radius: 8px;
-  background: #eef4ff;
-  color: #0f172a;
-  font: inherit;
-  font-size: 0.9rem;
-}
-
-.explorer-search input::placeholder {
-  color: #94a3b8;
 }
 
 .project-data-strip {
@@ -1714,28 +1966,6 @@ watch(projectRouteId, async () => {
   background: transparent;
 }
 
-.folder-shape {
-  position: relative;
-  display: block;
-  width: 18px;
-  height: 12px;
-  border: 1.7px solid #6b7280;
-  border-radius: 2px;
-}
-
-.folder-shape::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 1px;
-  width: 8px;
-  height: 4px;
-  border: 1.7px solid #6b7280;
-  border-bottom: none;
-  border-radius: 2px 2px 0 0;
-  background: #f8fbff;
-}
-
 .icon-notebook {
   color: #ea580c;
   border: 1px solid rgba(251, 146, 60, 0.32);
@@ -1907,6 +2137,46 @@ watch(projectRouteId, async () => {
   letter-spacing: 0.06em;
 }
 
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d8dee9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.icon-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.ghost-btn {
+  justify-self: start;
+  min-height: 34px;
+  margin-top: 0.75rem;
+  padding: 0 0.85rem;
+  border: 1px solid #d8dee9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ghost-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
 .notebook-panel {
   background: #ffffff;
 }
@@ -1917,6 +2187,348 @@ watch(projectRouteId, async () => {
   min-height: 78vh;
   border: none;
   background: #ffffff;
+}
+
+.image-preview-frame {
+  display: grid;
+  place-items: center;
+  min-height: 420px;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+.image-preview-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.markdown-document {
+  max-width: 920px;
+  padding: clamp(1.3rem, 2.8vw, 2.6rem);
+  color: #242424;
+  font-size: 0.98rem;
+  line-height: 1.68;
+}
+
+.markdown-document :deep(h1),
+.markdown-document :deep(h2),
+.markdown-document :deep(h3),
+.markdown-document :deep(h4) {
+  margin: 1.45rem 0 0.6rem;
+  color: #111111;
+  line-height: 1.16;
+}
+
+.markdown-document :deep(h1) {
+  margin-top: 0;
+  font-size: 2rem;
+}
+
+.markdown-document :deep(h2) {
+  font-size: 1.45rem;
+}
+
+.markdown-document :deep(h3) {
+  font-size: 1.12rem;
+}
+
+.markdown-document :deep(p) {
+  margin: 0.7rem 0;
+}
+
+.markdown-document :deep(a) {
+  color: #111111;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.markdown-document :deep(ul),
+.markdown-document :deep(ol) {
+  margin: 0.7rem 0;
+  padding-left: 1.3rem;
+}
+
+.markdown-document :deep(blockquote) {
+  margin: 1rem 0;
+  padding: 0.2rem 0 0.2rem 1rem;
+  border-left: 3px solid #d4d4d4;
+  color: #525252;
+}
+
+.markdown-document :deep(pre),
+.markdown-document :deep(code) {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+
+.markdown-document :deep(pre) {
+  overflow: auto;
+  padding: 0.9rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+
+.markdown-document :deep(code) {
+  padding: 0.08rem 0.24rem;
+  border-radius: 4px;
+  background: #f0f0f0;
+  font-size: 0.88em;
+}
+
+.markdown-document :deep(pre code) {
+  padding: 0;
+  background: transparent;
+}
+
+.preview-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #ececec;
+  background: #ffffff;
+}
+
+.preview-summary.stacked {
+  display: grid;
+  align-content: start;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.preview-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 0.52rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #525252;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.data-table-wrap {
+  overflow: auto;
+  max-height: 68vh;
+}
+
+.data-table-wrap table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.data-table-wrap th,
+.data-table-wrap td {
+  max-width: 280px;
+  padding: 0.62rem 0.75rem;
+  border-bottom: 1px solid #ececec;
+  color: #242424;
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table-wrap th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fafafa;
+  color: #525252;
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.data-table-wrap td {
+  overflow: hidden;
+  color: #404040;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.json-preview pre {
+  overflow: auto;
+  max-height: 70vh;
+  margin: 0;
+  padding: 1rem;
+  background: #171717;
+  color: #e5e7eb;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.84rem;
+  line-height: 1.58;
+}
+
+.geojson-preview {
+  padding: 1rem;
+}
+
+.geojson-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.geo-map-frame {
+  overflow: hidden;
+  min-height: 420px;
+  border: 1px solid #e5e5e5;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.geo-map-frame svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+}
+
+.geo-map-bg {
+  fill: #fbfbfb;
+}
+
+.geo-shape.polygon {
+  fill: rgba(17, 17, 17, 0.08);
+  stroke: #111111;
+  stroke-width: 1.4;
+}
+
+.geo-shape.line {
+  fill: none;
+  stroke: #111111;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.geo-shape.point {
+  fill: #111111;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.geojson-side {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.properties-preview {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.properties-preview h4 {
+  margin: 0;
+  color: #111111;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.property-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.property-row strong {
+  color: #242424;
+  font-size: 0.78rem;
+}
+
+.property-row span {
+  overflow: hidden;
+  color: #737373;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.structured-error {
+  display: grid;
+  gap: 0.3rem;
+  margin: 1rem;
+  padding: 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #525252;
+}
+
+.structured-error strong {
+  color: #111111;
+}
+
+.html-frame,
+.pdf-frame {
+  display: block;
+  width: 100%;
+  min-height: 72vh;
+  border: none;
+  background: #ffffff;
+}
+
+.archive-preview {
+  background: #ffffff;
+}
+
+.archive-list {
+  display: grid;
+  max-height: 68vh;
+  overflow: auto;
+}
+
+.archive-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 96px 136px;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 38px;
+  padding: 0 1rem;
+  border-bottom: 1px solid #ececec;
+  color: #525252;
+  font-size: 0.82rem;
+}
+
+.archive-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 21px;
+  border: 1px solid #e1e1e1;
+  border-radius: 5px;
+  color: #737373;
+  font-size: 0.62rem;
+  font-weight: 760;
+}
+
+.archive-name {
+  overflow: hidden;
+  color: #242424;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-size,
+.archive-date {
+  color: #8a8a8a;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-align: right;
 }
 
 .code-sheet {
@@ -2481,25 +3093,8 @@ watch(projectRouteId, async () => {
 }
 
 .attach-search {
-  position: relative;
-  display: block;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #e2e8f0;
-}
-
-.attach-search .search-icon {
-  left: 1.95rem;
-}
-
-.attach-search input {
-  width: 100%;
-  height: 40px;
-  padding: 0 0.9rem 0 2.2rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #0f172a;
-  font: inherit;
 }
 
 .attach-data-list {
@@ -2782,12 +3377,6 @@ watch(projectRouteId, async () => {
 
 .explorer-search {
   padding: 12px 14px;
-}
-
-.explorer-search input {
-  height: 36px;
-  border-radius: var(--workbench-radius);
-  background: #ffffff;
 }
 
 .project-data-strip {

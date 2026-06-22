@@ -11,6 +11,23 @@ import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
+const PENDING_CASE_ACTION_KEY = 'opengeolab_pending_case_action'
+
+const getPendingCaseRedirect = () => {
+  try {
+    const raw = localStorage.getItem(PENDING_CASE_ACTION_KEY)
+    if (!raw) return ''
+    const parsed = JSON.parse(raw)
+    if (!parsed?.projectId || !parsed?.action) return ''
+    if (Date.now() - Number(parsed.createdAt || 0) > 15 * 60 * 1000) {
+      localStorage.removeItem(PENDING_CASE_ACTION_KEY)
+      return ''
+    }
+    return `/cases/${encodeURIComponent(parsed.projectId)}?caseAction=${encodeURIComponent(parsed.action)}`
+  } catch (error) {
+    return ''
+  }
+}
 
 onMounted(() => {
   // 从 URL 获取 token
@@ -21,8 +38,8 @@ onMounted(() => {
     localStorage.setItem('jupyter_token', token)
   }
   
-  // 重定向到 dashboard
-  router.replace('/jupyter')
+  const pendingRedirect = getPendingCaseRedirect()
+  router.replace(pendingRedirect || '/jupyter')
 })
 </script>
 

@@ -22,18 +22,15 @@
         </header>
 
         <div class="data-upload-body">
-          <label class="upload-field">
+          <div class="upload-field">
             <span>Destination</span>
-            <select v-model="selectedPath" :disabled="uploading">
-              <option
-                v-for="option in destinationOptions"
-                :key="option.path"
-                :value="option.path"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
+            <StyledSelect
+              v-model="selectedPath"
+              :options="destinationSelectOptions"
+              :disabled="uploading"
+              aria-label="Destination"
+            />
+          </div>
 
           <div class="upload-field">
             <span>File</span>
@@ -70,7 +67,7 @@
               </div>
 
               <div v-else class="dropzone-empty">
-                <span class="upload-icon" aria-hidden="true"></span>
+                <AppIcon class="upload-icon" name="upload" :size="30" :stroke-width="1.65" />
                 <strong>Drop a file here</strong>
                 <span>or click to choose from your computer</span>
               </div>
@@ -110,6 +107,8 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import StyledSelect from './StyledSelect.vue'
+import AppIcon from './AppIcon.vue'
 import { formatDataSize, getDataKind } from '../utils/dataLibraryDisplay.js'
 
 const props = defineProps({
@@ -160,6 +159,13 @@ const destinationOptions = computed(() => {
 
   return Array.from(byPath.values())
 })
+
+const destinationSelectOptions = computed(() => (
+  destinationOptions.value.map(option => ({
+    value: option.path,
+    label: option.label
+  }))
+))
 
 const selectedDestination = computed(() => (
   destinationOptions.value.find(option => option.path === selectedPath.value) ||
@@ -322,25 +328,6 @@ function submitUpload() {
   font-weight: 900;
 }
 
-.upload-field select {
-  width: 100%;
-  min-height: 42px;
-  padding: 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #0f172a;
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 800;
-}
-
-.upload-field select:focus {
-  border-color: #0f172a;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
-}
-
 .upload-dropzone {
   min-height: 132px;
   display: grid;
@@ -388,37 +375,7 @@ function submitUpload() {
 }
 
 .upload-icon {
-  position: relative;
-  width: 38px;
-  height: 30px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #ffffff;
-}
-
-.upload-icon::before,
-.upload-icon::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  background: #0f172a;
-  transform: translateX(-50%);
-}
-
-.upload-icon::before {
-  top: 8px;
-  width: 2px;
-  height: 13px;
-}
-
-.upload-icon::after {
-  top: 8px;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #0f172a;
-  border-left: 2px solid #0f172a;
-  background: transparent;
-  transform: translateX(-50%) rotate(45deg);
+  color: #0f172a;
 }
 
 .selected-file {
@@ -531,8 +488,7 @@ function submitUpload() {
 }
 
 .dialog-btn:disabled,
-.remove-file:disabled,
-.upload-field select:disabled {
+.remove-file:disabled {
   cursor: not-allowed;
   opacity: 0.58;
 }

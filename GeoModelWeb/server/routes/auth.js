@@ -31,6 +31,15 @@ const HOST_IP = process.env.HOST_IP || 'localhost';
 const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://${HOST_IP}:5173`;
 const BACKEND_URL = process.env.BACKEND_URL || `http://${HOST_IP}:${PORT}`;
+const OAUTH_HTTP_TIMEOUT_MS = Number(process.env.OAUTH_HTTP_TIMEOUT_MS || 10000);
+
+function buildOAuthRequestOptions(options = {}) {
+    return {
+        timeout: OAUTH_HTTP_TIMEOUT_MS,
+        httpsAgent,
+        ...options
+    };
+}
 
 /**
  * GET /api/auth/github
@@ -72,7 +81,7 @@ router.get('/github/callback', async (req, res) => {
             },
             {
                 headers: { Accept: 'application/json' },
-                httpsAgent: httpsAgent
+                ...buildOAuthRequestOptions()
             }
         );
         
@@ -86,7 +95,7 @@ router.get('/github/callback', async (req, res) => {
         // 2. 获取用户信息
         const userResponse = await axios.get('https://api.github.com/user', {
             headers: { Authorization: `Bearer ${accessToken}` },
-            httpsAgent: httpsAgent
+            ...buildOAuthRequestOptions()
         });
         
         const githubUser = userResponse.data;
@@ -97,7 +106,7 @@ router.get('/github/callback', async (req, res) => {
             try {
                 const emailResponse = await axios.get('https://api.github.com/user/emails', {
                     headers: { Authorization: `Bearer ${accessToken}` },
-                    httpsAgent: httpsAgent
+                    ...buildOAuthRequestOptions()
                 });
                 const primaryEmail = emailResponse.data.find(e => e.primary);
                 email = primaryEmail ? primaryEmail.email : null;
@@ -185,7 +194,7 @@ router.get('/google/callback', async (req, res) => {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                httpsAgent: httpsAgent
+                ...buildOAuthRequestOptions()
             }
         );
 
@@ -201,7 +210,7 @@ router.get('/google/callback', async (req, res) => {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
                 },
-                httpsAgent: httpsAgent
+                ...buildOAuthRequestOptions()
             }
         );
 

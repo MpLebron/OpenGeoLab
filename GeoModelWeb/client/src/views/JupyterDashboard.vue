@@ -3,7 +3,10 @@
     <!-- 独立的顶部导航栏 -->
     <header class="jupyter-nav">
       <div class="nav-left">
-        <RouterLink to="/" class="back-home-link">← Back to OpenGeoLab</RouterLink>
+        <RouterLink to="/" class="back-home-link">
+          <AppIcon name="arrowLeft" :size="16" :stroke-width="2" />
+          <span>Back to OpenGeoLab</span>
+        </RouterLink>
       </div>
       <div class="nav-right">
         <div v-if="isLoggedIn" class="workspace-avatar" :title="user?.displayName || user?.username">
@@ -36,10 +39,7 @@
             <label class="login-label" for="opengms-email">Email Address</label>
             <div class="login-field">
               <span class="login-input-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 6h16v12H4z" />
-                  <path d="m4 7 8 6 8-6" />
-                </svg>
+                <AppIcon name="mail" :size="18" :stroke-width="1.8" />
               </span>
               <input
                 id="opengms-email"
@@ -57,10 +57,7 @@
             <label class="login-label" for="opengms-password">Password</label>
             <div class="login-field">
               <span class="login-input-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M7 11h10v8H7z" />
-                  <path d="M9 11V8a3 3 0 0 1 6 0v3" />
-                </svg>
+                <AppIcon name="lock" :size="18" :stroke-width="1.8" />
               </span>
               <input
                 id="opengms-password"
@@ -76,10 +73,7 @@
 
           <button class="opengms-login-btn" @click="loginWithOpenGMS" :disabled="isLoading">
             <span>{{ isLoading ? 'Signing in...' : 'Sign in with OpenGMS' }}</span>
-            <svg class="login-button-arrow" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12h13" />
-              <path d="m13 6 6 6-6 6" />
-            </svg>
+            <AppIcon class="login-button-arrow" name="arrowRight" :size="18" :stroke-width="2" />
           </button>
         </div>
 
@@ -95,12 +89,7 @@
             @click="startOAuthLogin('github')"
           >
             <span class="social-login-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="img">
-                <path
-                  fill="currentColor"
-                  d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.56 0-.28-.01-1.18-.02-2.14-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.23-1.28-5.23-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.8 1.18 1.83 1.18 3.08 0 4.4-2.68 5.37-5.24 5.66.41.35.78 1.04.78 2.1 0 1.52-.01 2.74-.01 3.11 0 .31.2.67.79.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
-                />
-              </svg>
+              <AppIcon name="github" :size="18" :stroke-width="1.8" />
             </span>
             <span>{{ socialLoadingProvider === 'github' ? 'Redirecting...' : 'GitHub' }}</span>
           </button>
@@ -158,7 +147,7 @@
               :class="['nav-item', { active: activeMenu === 'recent' }]"
               @click.prevent="activeMenu = 'recent'"
             >
-              <span class="nav-icon icon-history"></span>
+              <AppIcon class="nav-icon" name="history" :size="18" :stroke-width="1.8" />
               <span>Recent</span>
             </a>
             <a
@@ -166,7 +155,7 @@
               :class="['nav-item', { active: activeMenu === 'myspace' }]"
               @click.prevent="activeMenu = 'myspace'"
             >
-              <span class="nav-icon icon-folder-shared"></span>
+              <AppIcon class="nav-icon" name="folderOpen" :size="18" :stroke-width="1.8" />
               <span>My Space</span>
             </a>
             <a
@@ -174,7 +163,7 @@
               :class="['nav-item', { active: activeMenu === 'cases' }]"
               @click.prevent="activeMenu = 'cases'"
             >
-              <span class="nav-icon icon-library"></span>
+              <AppIcon class="nav-icon" name="library" :size="18" :stroke-width="1.8" />
               <span>Case Library</span>
             </a>
           </div>
@@ -187,7 +176,7 @@
               :class="['nav-item', { active: activeMenu === 'mymodel' }]"
               @click.prevent="activeMenu = 'mymodel'"
             >
-              <span class="nav-icon icon-model"></span>
+              <AppIcon class="nav-icon" name="box" :size="18" :stroke-width="1.8" />
               <span>My Model</span>
             </a>
             <a
@@ -195,7 +184,7 @@
               :class="['nav-item', { active: activeMenu === 'mydata' }]"
               @click.prevent="activeMenu = 'mydata'"
             >
-              <span class="nav-icon icon-database"></span>
+              <AppIcon class="nav-icon" name="database" :size="18" :stroke-width="1.8" />
               <span>My Data</span>
             </a>
             <a
@@ -203,7 +192,7 @@
               :class="['nav-item', { active: activeMenu === 'mydatamethod' }]"
               @click.prevent="activeMenu = 'mydatamethod'"
             >
-              <span class="nav-icon icon-method"></span>
+              <AppIcon class="nav-icon" name="wrench" :size="18" :stroke-width="1.8" />
               <span>My Data Method</span>
             </a>
           </div>
@@ -216,7 +205,7 @@
               :class="['nav-item', { active: activeMenu === 'environments' }]"
               @click.prevent="activeMenu = 'environments'"
             >
-              <span class="nav-icon icon-settings"></span>
+              <AppIcon class="nav-icon" name="settings" :size="18" :stroke-width="1.8" />
               <span>Environments</span>
             </a>
           </div>
@@ -225,7 +214,7 @@
         <!-- 底部退出按钮 -->
         <div class="sidebar-footer">
           <button class="logout-btn" @click="logout">
-            <span class="nav-icon icon-signout"></span>
+            <AppIcon class="nav-icon" name="logout" :size="18" :stroke-width="1.8" />
             <span>Sign Out</span>
           </button>
         </div>
@@ -238,6 +227,7 @@
           v-if="activeMenu !== 'environments'"
           :class="[
             'content-header',
+            `${activeMenu}-header`,
             {
               'cases-header': activeMenu === 'cases',
               'myspace-header': activeMenu === 'myspace'
@@ -261,72 +251,54 @@
             ]"
           >
             <div v-if="activeMenu === 'cases'" class="case-header-tools">
-              <label class="case-search-control">
-                <svg class="case-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="7"/>
-                  <path d="m20 20-3.5-3.5"/>
-                </svg>
-                <input
-                  v-model="caseLibrarySearchQuery"
-                  class="case-header-search"
-                  type="text"
-                  placeholder="Search by project, tag, scenario, or owner"
-                >
-                <span class="case-search-shortcut" aria-hidden="true">⌘ K</span>
-              </label>
+              <StyledSearch
+                ref="caseLibrarySearchInputRef"
+                v-model="caseLibrarySearchQuery"
+                class="case-search-control"
+                placeholder="Search by project, tag, scenario, or owner"
+                shortcut-label="⌘ K"
+              />
               <div class="case-header-sort">
                 <label for="dashboard-case-sort">Sort by</label>
-                <span class="case-sort-select-wrap">
-                  <select id="dashboard-case-sort" v-model="caseLibrarySortBy">
-                    <option value="updated">Recently updated</option>
-                    <option value="files">Most files</option>
-                    <option value="size">Largest size</option>
-                    <option value="title">Title A-Z</option>
-                  </select>
-                  <svg class="case-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                </span>
+                <StyledSelect
+                  id="dashboard-case-sort"
+                  v-model="caseLibrarySortBy"
+                  class="case-sort-select-wrap"
+                  :options="caseSortOptions"
+                  aria-label="Sort cases"
+                />
               </div>
             </div>
             <div v-else-if="activeMenu === 'myspace'" class="myspace-header-tools">
-              <label class="case-search-control myspace-search-control">
-                <svg class="case-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="7"/>
-                  <path d="m20 20-3.5-3.5"/>
-                </svg>
-                <input
-                  v-model="searchQuery"
-                  class="case-header-search"
-                  type="text"
-                  placeholder="Search my projects..."
-                >
-                <span class="case-search-shortcut" aria-hidden="true">⌘ K</span>
-              </label>
+              <StyledSearch
+                ref="myspaceSearchInputRef"
+                v-model="searchQuery"
+                class="case-search-control myspace-search-control"
+                placeholder="Search my projects..."
+                shortcut-label="⌘ K"
+              />
               <button
                 class="dashboard-action-btn primary myspace-create-inline"
                 type="button"
                 @click="openCreateProjectModal()"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
+                <AppIcon name="plus" :size="16" :stroke-width="2" />
                 <span>Create Project</span>
               </button>
             </div>
-            <div v-else-if="showDashboardSearch" class="search-box">
-              <span class="search-icon"></span>
-              <input type="text" :placeholder="searchPlaceholder" v-model="searchQuery">
-            </div>
+            <StyledSearch
+              v-else-if="showDashboardSearch"
+              v-model="searchQuery"
+              class="search-box"
+              :placeholder="searchPlaceholder"
+            />
             <button
               v-if="activeMenu === 'mymodel'"
               class="dashboard-action-btn primary"
               type="button"
               @click="openModelSelector"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path d="M12 4v16M4 12h16"/>
-              </svg>
+              <AppIcon name="plus" :size="16" :stroke-width="2" />
               <span>Add from Model Library</span>
             </button>
             <button
@@ -335,9 +307,7 @@
               type="button"
               @click="openDataMethodSelector"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path d="M12 4v16M4 12h16"/>
-              </svg>
+              <AppIcon name="plus" :size="16" :stroke-width="2" />
               <span>Add from Data Method Library</span>
             </button>
           </div>
@@ -347,6 +317,7 @@
         <div
           :class="[
             'content-body',
+            `${activeMenu}-body`,
             {
               'cases-body': activeMenu === 'cases',
               'myspace-body': activeMenu === 'myspace'
@@ -358,17 +329,17 @@
           <div v-if="activeMenu === 'recent'" class="recent-panel">
             <div class="recent-top-grid">
               <button class="action-tile tile-create" @click="openCreateProjectModal()">
-                <span class="action-icon icon-create"></span>
+                <AppIcon class="action-icon" name="folderPlus" :size="22" :stroke-width="1.75" />
                 <strong>Create Project</strong>
                 <span>Initialize new repo</span>
               </button>
               <button class="action-tile tile-import" @click="activeMenu = 'mydata'">
-                <span class="action-icon icon-upload"></span>
+                <AppIcon class="action-icon" name="upload" :size="22" :stroke-width="1.75" />
                 <strong>Import Data</strong>
                 <span>GeoJSON, CSV, TIFF</span>
               </button>
               <button class="action-tile tile-open" @click="activeMenu = 'myspace'">
-                <span class="action-icon icon-notebook"></span>
+                <AppIcon class="action-icon" name="bookMarked" :size="22" :stroke-width="1.75" />
                 <strong>Open Projects</strong>
                 <span>Continue active notebooks</span>
               </button>
@@ -413,7 +384,7 @@
                     :key="resource.key"
                     class="resource-snippet-item"
                   >
-                    <span :class="['resource-snippet-icon', `type-${resource.type.toLowerCase().replace(/\\s+/g, '-')}`]"></span>
+                    <AppIcon class="resource-snippet-icon" :name="resourceIconName(resource.type)" :size="18" :stroke-width="1.75" />
                     <div class="resource-snippet-main">
                       <strong>{{ resource.name }}</strong>
                       <span>{{ resource.type }}</span>
@@ -542,11 +513,7 @@
                       aria-label="Open in OpenGMS"
                       @click.stop="openSavedModelExternalLink(model)"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-                        <path d="M14 4h6v6"/>
-                        <path d="M10 14L20 4"/>
-                        <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5"/>
-                      </svg>
+                      <AppIcon name="external" :size="16" :stroke-width="1.8" />
                     </button>
                     <button
                       class="saved-model-remove-btn"
@@ -554,12 +521,7 @@
                       title="Remove"
                       aria-label="Remove saved model"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-                        <path d="M4 7h16"/>
-                        <path d="M10 11v6M14 11v6"/>
-                        <path d="M6 7l1 13h10l1-13"/>
-                        <path d="M9 7V4h6v3"/>
-                      </svg>
+                      <AppIcon name="trash" :size="16" :stroke-width="1.8" />
                     </button>
                   </div>
                 </article>
@@ -611,12 +573,7 @@
                       Run
                     </button>
                     <button class="data-method-icon-btn danger" type="button" @click="removeFromMyDataMethods(method)" title="Remove" aria-label="Remove data method">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-                        <path d="M4 7h16"/>
-                        <path d="M10 11v6M14 11v6"/>
-                        <path d="M6 7l1 13h10l1-13"/>
-                        <path d="M9 7V4h6v3"/>
-                      </svg>
+                      <AppIcon name="trash" :size="16" :stroke-width="1.8" />
                     </button>
                   </div>
                 </article>
@@ -630,39 +587,25 @@
             <div class="netdisk-toolbar">
               <button class="toolbar-btn" @click="navigateBack" :disabled="currentDataPath === '/'">
                 <span class="btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M15 18l-6-6 6-6"/>
-                  </svg>
+                  <AppIcon name="arrowLeft" :size="16" :stroke-width="1.9" />
                 </span>
                 <span>Back</span>
               </button>
               <button class="toolbar-btn" @click="loadMyData">
                 <span class="btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M20 11a8 8 0 0 0-14.7-4.4L4 8"/>
-                    <path d="M4 4v4h4"/>
-                    <path d="M4 13a8 8 0 0 0 14.7 4.4L20 16"/>
-                    <path d="M16 16h4v4"/>
-                  </svg>
+                  <AppIcon name="refresh" :size="16" :stroke-width="1.9" />
                 </span>
                 <span>Refresh</span>
               </button>
               <button class="toolbar-btn upload" @click="openDataUploader">
                 <span class="btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M12 16V4"/>
-                    <path d="M7 9l5-5 5 5"/>
-                    <path d="M5 20h14"/>
-                  </svg>
+                  <AppIcon name="upload" :size="16" :stroke-width="1.9" />
                 </span>
                 <span>Upload Data</span>
               </button>
               <button class="toolbar-btn" @click="createNewFolder">
                 <span class="btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                    <path d="M12 11v5M9.5 13.5h5"/>
-                  </svg>
+                  <AppIcon name="folderPlus" :size="16" :stroke-width="1.9" />
                 </span>
                 <span>New Folder</span>
               </button>
@@ -782,15 +725,22 @@
                   Reusable runtime images for geospatial modeling, notebook execution, and reproducible project setup.
                 </p>
               </div>
-              <button
-                class="env-create-project-btn"
-                type="button"
-                :disabled="!canCreateProjectFromEnvironment(selectedEnvironmentCatalog)"
-                @click="createProjectFromEnvironment"
-              >
-                <span class="env-create-plus">+</span>
-                <span>Create Project from Environment</span>
-              </button>
+              <div class="environment-hero-actions">
+                <StyledSearch
+                  v-model="environmentSearchQuery"
+                  class="env-registry-search"
+                  placeholder="Search environments..."
+                />
+                <button
+                  class="env-create-project-btn"
+                  type="button"
+                  :disabled="!canCreateProjectFromEnvironment(selectedEnvironmentCatalog)"
+                  @click="createProjectFromEnvironment"
+                >
+                  <AppIcon class="env-create-plus" name="plus" :size="16" :stroke-width="2" />
+                  <span>Create Project from Environment</span>
+                </button>
+              </div>
             </section>
 
             <section class="env-registry-toolbar">
@@ -805,14 +755,6 @@
                   {{ filter.label }}
                 </button>
               </div>
-              <label class="env-registry-search">
-                <span class="search-icon"></span>
-                <input
-                  v-model="environmentSearchQuery"
-                  type="text"
-                  placeholder="Search environments..."
-                >
-              </label>
             </section>
 
             <div v-if="loadingEnvironments" class="loading-state">
@@ -838,9 +780,10 @@
                     class="env-info-btn"
                     type="button"
                     :title="`Open details for ${env.name}`"
+                    :aria-label="`Open details for ${env.name}`"
                     @click.stop="openEnvironmentDrawer(env.id)"
                   >
-                    i
+                    <AppIcon name="info" :size="15" :stroke-width="2" />
                   </button>
                 </div>
 
@@ -889,8 +832,8 @@
                         <span>{{ drawerEnvironment.detail.updated }}</span>
                       </p>
                     </div>
-                    <button class="environment-drawer-close" type="button" title="Close" @click="closeEnvironmentDrawer">
-                      ×
+                    <button class="environment-drawer-close" type="button" title="Close" aria-label="Close" @click="closeEnvironmentDrawer">
+                      <AppIcon name="x" :size="18" :stroke-width="2" />
                     </button>
                   </header>
 
@@ -917,14 +860,11 @@
                     <section class="environment-detail-section">
                       <div class="environment-section-head">
                         <h4>Included Libraries</h4>
-                        <label class="library-filter-box">
-                          <span class="search-icon"></span>
-                          <input
-                            v-model="environmentLibraryQuery"
-                            type="text"
-                            placeholder="Filter libraries..."
-                          >
-                        </label>
+                        <StyledSearch
+                          v-model="environmentLibraryQuery"
+                          class="library-filter-box"
+                          placeholder="Filter libraries..."
+                        />
                       </div>
                       <div class="library-chip-list">
                         <span
@@ -1050,7 +990,9 @@
       <div class="modal-content case-publish-modal">
         <div class="modal-header">
           <h2>Publish as Case</h2>
-          <button class="close-btn" @click="showCasePublishModal = false">×</button>
+          <button class="close-btn" type="button" aria-label="Close" @click="showCasePublishModal = false">
+            <AppIcon name="x" :size="18" :stroke-width="2" />
+          </button>
         </div>
         <div class="modal-body case-publish-body">
           <p class="case-publish-hint">Fill in the case metadata. Once published, the project will be public and appear in the Case Library.</p>
@@ -1137,7 +1079,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import CaseLibrary from './CaseLibrary.vue'
@@ -1148,7 +1090,10 @@ import LibrarySelectorDialog from '../components/LibrarySelectorDialog.vue'
 import ResultModal from '../components/ResultModal.vue'
 import RunModal from '../components/RunModal.vue'
 import PaginationControl from '../components/PaginationControl.vue'
+import StyledSearch from '../components/StyledSearch.vue'
+import StyledSelect from '../components/StyledSelect.vue'
 import WorkspaceProjectList from '../components/WorkspaceProjectList.vue'
+import AppIcon from '../components/AppIcon.vue'
 import { getJupyterLaunchErrorMessage } from '../utils/jupyterLaunchErrors.js'
 import {
   CREATE_PROJECT_TARGETS,
@@ -1181,6 +1126,7 @@ import {
 import { buildWorkspaceProjectRoutePath } from '../utils/workspaceProjectDisplay.js'
 import { confirmDialog, notify, promptDialog } from '../utils/systemFeedback.js'
 import { createApiClient, getAuthBaseUrl, resolvePublicResourceUrl } from '../utils/apiClient.js'
+import { CASE_SORT_OPTIONS } from '../utils/caseSortOptions.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -1192,6 +1138,7 @@ const loginForm = ref({
   email: '',
   password: ''
 })
+const PENDING_CASE_ACTION_KEY = 'opengeolab_pending_case_action'
 const isCreating = ref(false)
 const user = ref(null)
 const avatarLoadFailed = ref(false)
@@ -1217,8 +1164,11 @@ const activeMenu = ref(
 const LIBRARY_SELECTOR_PAGE_SIZE = 12
 const myspaceTab = ref('projects') // projects, data
 const searchQuery = ref('')
+const myspaceSearchInputRef = ref(null)
 const caseLibrarySearchQuery = ref('')
+const caseLibrarySearchInputRef = ref(null)
 const caseLibrarySortBy = ref('updated')
+const caseSortOptions = CASE_SORT_OPTIONS
 const caseLibraryResultCount = ref(0)
 const myspacePage = ref(1)
 const myspacePageSize = 10
@@ -1301,6 +1251,22 @@ const getUiErrorMessage = (error, fallback = 'Something went wrong') => {
     return fallback
   }
   return String(raw)
+}
+
+const getPendingCaseRedirect = () => {
+  try {
+    const raw = localStorage.getItem(PENDING_CASE_ACTION_KEY)
+    if (!raw) return ''
+    const parsed = JSON.parse(raw)
+    if (!parsed?.projectId || !parsed?.action) return ''
+    if (Date.now() - Number(parsed.createdAt || 0) > 15 * 60 * 1000) {
+      localStorage.removeItem(PENDING_CASE_ACTION_KEY)
+      return ''
+    }
+    return `/cases/${encodeURIComponent(parsed.projectId)}?caseAction=${encodeURIComponent(parsed.action)}`
+  } catch (error) {
+    return ''
+  }
 }
 
 // 显示提示框
@@ -1739,7 +1705,6 @@ const workspaceResources = computed(() => {
   myDataList.value.slice(0, 2).forEach(item => {
     items.push({
       key: `data-${item.id || item.name}`,
-      icon: '◫',
       name: item.name,
       type: item.type === 'folder' ? 'Folder' : 'Dataset',
       meta: item.size ? formatSize(item.size) : '--'
@@ -1749,7 +1714,6 @@ const workspaceResources = computed(() => {
   myModels.value.slice(0, 1).forEach(item => {
     items.push({
       key: `model-${item.id || item.name}`,
-      icon: '◧',
       name: item.name,
       type: 'Model',
       meta: item.author || 'OpenGeoLab'
@@ -1759,7 +1723,6 @@ const workspaceResources = computed(() => {
   myDataMethods.value.slice(0, 1).forEach(item => {
     items.push({
       key: `method-${item.id || item.name}`,
-      icon: '◨',
       name: item.name,
       type: 'Method',
       meta: item.author || 'OpenGeoLab'
@@ -1768,6 +1731,15 @@ const workspaceResources = computed(() => {
 
   return items
 })
+
+const resourceIconName = (type = '') => {
+  const normalizedType = String(type).toLowerCase()
+  if (normalizedType.includes('folder')) return 'folder'
+  if (normalizedType.includes('dataset')) return 'database'
+  if (normalizedType.includes('model')) return 'box'
+  if (normalizedType.includes('method')) return 'wrench'
+  return 'file'
+}
 
 // 过滤后的模型列表
 const filteredMyModels = computed(() => {
@@ -2204,6 +2176,10 @@ const loginWithOpenGMS = async () => {
     ])
 
     showToastMessage('Signed in successfully.', 'success')
+    const pendingRedirect = getPendingCaseRedirect()
+    if (pendingRedirect) {
+      router.replace(pendingRedirect)
+    }
   } catch (e) {
     clearToken()
     showToastMessage(getUiErrorMessage(e, 'Sign-in failed.'), 'error')
@@ -2897,11 +2873,35 @@ const formatWorkspaceDate = (dateStr) => {
   return date.toLocaleDateString('en-US')
 }
 
+const focusDashboardSearch = () => {
+  const target = activeMenu.value === 'cases'
+    ? caseLibrarySearchInputRef.value
+    : activeMenu.value === 'myspace'
+      ? myspaceSearchInputRef.value
+      : null
+
+  if (!target) return false
+  target.focus()
+  target.select?.()
+  return true
+}
+
+const handleDashboardSearchShortcut = event => {
+  const isSearchShortcut = (event.metaKey || event.ctrlKey) &&
+    !event.altKey &&
+    !event.shiftKey &&
+    event.key?.toLowerCase() === 'k'
+
+  if (!isSearchShortcut || !focusDashboardSearch()) return
+  event.preventDefault()
+}
+
 // 初始化
 onMounted(async () => {
   if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
     window.history.scrollRestoration = 'manual'
   }
+  window.addEventListener('keydown', handleDashboardSearchShortcut)
 
   const oauthError = route.query.error
   // 检查 URL 中是否有 token (OAuth 回调)
@@ -2933,6 +2933,10 @@ onMounted(async () => {
   await loadMenuData(activeMenu.value)
   resetDashboardScroll()
   setTimeout(resetDashboardScroll, 120)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleDashboardSearchShortcut)
 })
 </script>
 
@@ -3630,65 +3634,6 @@ onMounted(async () => {
 
 .case-search-control {
   width: 100%;
-  height: 48px;
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.72rem;
-  padding: 0 0.9rem 0 1.05rem;
-  border: 1px solid #dfe4ef;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
-
-.case-search-control:focus-within {
-  border-color: #b9c7dd;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
-}
-
-.case-search-icon {
-  width: 21px;
-  height: 21px;
-  color: #94a0b4;
-}
-
-.case-header-search {
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #172033;
-  font-family: 'Manrope', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  outline: none;
-}
-
-.case-header-search::placeholder {
-  color: #8f98aa;
-  font-weight: 700;
-}
-
-.case-search-shortcut {
-  min-width: 46px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e7f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #9aa3b5;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .case-header-sort {
@@ -3709,29 +3654,7 @@ onMounted(async () => {
 .case-sort-select-wrap {
   position: relative;
   min-width: 258px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.case-header-sort select {
-  width: 100%;
-  height: 48px;
-  padding: 0 2.75rem 0 1.15rem;
-  border: 1px solid #dfe4ef;
-  border-radius: 12px;
-  appearance: none;
-  background: rgba(255, 255, 255, 0.94);
-  color: #202a3f;
-  font-family: 'Manrope', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 850;
-  outline: none;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
-}
-
-.case-header-sort select:focus {
-  border-color: #b9c7dd;
-  box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
+  display: block;
 }
 
 .myspace-header-tools .myspace-create-inline {
@@ -3742,41 +3665,8 @@ onMounted(async () => {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
-.case-select-chevron {
-  position: absolute;
-  right: 1rem;
-  width: 18px;
-  height: 18px;
-  color: #8b95a8;
-  pointer-events: none;
-}
-
 .search-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f5f7fa;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
-.search-box .search-icon {
-  font-size: 14px;
-  color: #909399;
-}
-
-.search-box input {
-  background: transparent;
-  border: none;
-  color: #303133;
-  font-size: 14px;
-  outline: none;
   width: 180px;
-}
-
-.search-box input::placeholder {
-  color: #c0c4cc;
 }
 
 .header-btn {
@@ -5952,14 +5842,15 @@ onMounted(async () => {
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
-  content: '✓';
+  content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: bold;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .checkbox-text {
@@ -7283,52 +7174,15 @@ onMounted(async () => {
   object-fit: cover;
 }
 
-.jupyter-page .icon-history { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 1 0 3-6.708'/%3E%3Cpath d='M3 4v5h5'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-folder-shared { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z'/%3E%3Cpath d='M16 19v-1a3 3 0 0 0-6 0v1'/%3E%3Ccircle cx='13' cy='12' r='2'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-group { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9.5' cy='7' r='3'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 4.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-library { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cpath d='M8 13h8'/%3E%3Cpath d='M8 17h5'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-model { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z'/%3E%3Cpath d='M12 12l8-4.5'/%3E%3Cpath d='M12 12v9'/%3E%3Cpath d='M12 12L4 7.5'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-database { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5' rx='7' ry='3'/%3E%3Cpath d='M5 5v14c0 1.66 3.13 3 7 3s7-1.34 7-3V5'/%3E%3Cpath d='M5 12c0 1.66 3.13 3 7 3s7-1.34 7-3'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-method { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M4 12h10'/%3E%3Cpath d='M4 17h13'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-settings { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 4.39 16.96l.06-.06A1.65 1.65 0 0 0 4.78 15a1.65 1.65 0 0 0-1.51-1H3.18a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.22 4.3l.06.06A1.65 1.65 0 0 0 9.1 4.03 1.65 1.65 0 0 0 10.1 2.52V2.4a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 19.8 7.1l-.06.06A1.65 1.65 0 0 0 19.41 9c.2.63.8 1.05 1.46 1.05H21a2 2 0 1 1 0 4h-.09c-.66 0-1.25.42-1.51 1.05z'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-signout { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpath d='M16 17l5-5-5-5'/%3E%3Cpath d='M21 12H9'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-create { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z'/%3E%3Cpath d='M12 10v6'/%3E%3Cpath d='M9 13h6'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-upload { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cpath d='M12 18v-6'/%3E%3Cpath d='M9.5 14.5 12 12l2.5 2.5'/%3E%3C/svg%3E"); }
-.jupyter-page .icon-notebook { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 6h12'/%3E%3Cpath d='M8 12h12'/%3E%3Cpath d='M8 18h12'/%3E%3Cpath d='M4 6h.01'/%3E%3Cpath d='M4 12h.01'/%3E%3Cpath d='M4 18h.01'/%3E%3C/svg%3E"); }
-
 .jupyter-page .nav-icon,
 .jupyter-page .logout-btn .nav-icon {
-  width: 24px;
-  height: 24px;
   flex-shrink: 0;
-  background: currentColor;
-  mask: var(--icon) center / contain no-repeat;
-  -webkit-mask: var(--icon) center / contain no-repeat;
 }
 
 .jupyter-page .action-icon,
 .jupyter-page .resource-snippet-icon {
   position: relative;
 }
-
-.jupyter-page .action-icon::before,
-.jupyter-page .resource-snippet-icon::before,
-.jupyter-page .project-open-btn::before {
-  content: '';
-  display: block;
-  background: currentColor;
-  mask: var(--icon) center / contain no-repeat;
-  -webkit-mask: var(--icon) center / contain no-repeat;
-}
-
-.jupyter-page .project-open-btn {
-  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='M8 9l2 3-2 3'/%3E%3Cpath d='M12 15h4'/%3E%3C/svg%3E");
-}
-
-.jupyter-page .resource-snippet-icon.type-folder { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z'/%3E%3C/svg%3E"); }
-.jupyter-page .resource-snippet-icon.type-dataset { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5' rx='7' ry='3'/%3E%3Cpath d='M5 5v14c0 1.66 3.13 3 7 3s7-1.34 7-3V5'/%3E%3Cpath d='M5 12c0 1.66 3.13 3 7 3s7-1.34 7-3'/%3E%3C/svg%3E"); }
-.jupyter-page .resource-snippet-icon.type-model { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z'/%3E%3Cpath d='M12 12l8-4.5'/%3E%3Cpath d='M12 12v9'/%3E%3Cpath d='M12 12L4 7.5'/%3E%3C/svg%3E"); }
-.jupyter-page .resource-snippet-icon.type-method { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16'/%3E%3Cpath d='M4 12h10'/%3E%3Cpath d='M4 17h13'/%3E%3C/svg%3E"); }
 
 .jupyter-page .dashboard-layout {
   display: grid;
@@ -7523,23 +7377,7 @@ onMounted(async () => {
 }
 
 .jupyter-page .search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
   min-width: min(100%, 240px);
-  min-height: 42px;
-  padding: 0 0.8rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 10px 18px rgba(var(--primary-rgb), 0.05);
-}
-
-.jupyter-page .search-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--primary-strong);
 }
 
 .jupyter-page .header-btn,
@@ -7632,11 +7470,6 @@ onMounted(async () => {
   border-radius: 10px;
   background: #d9eef8;
   color: var(--primary-strong);
-}
-
-.jupyter-page .action-icon::before {
-  width: 22px;
-  height: 22px;
 }
 
 .jupyter-page .action-tile strong {
@@ -7897,11 +7730,6 @@ onMounted(async () => {
   border-radius: 8px;
   background: rgba(var(--accent-rgb), 0.12);
   color: #006876;
-}
-
-.jupyter-page .resource-snippet-icon::before {
-  width: 15px;
-  height: 15px;
 }
 
 .jupyter-page .resource-snippet-main strong {
@@ -8289,11 +8117,6 @@ onMounted(async () => {
   border-radius: 6px;
   background: #f2f5fb;
   color: #2f6cf6;
-}
-
-.jupyter-page .action-icon::before {
-  width: 18px;
-  height: 18px;
 }
 
 .jupyter-page .action-tile strong {
@@ -8757,36 +8580,7 @@ onMounted(async () => {
 }
 
 .jupyter-page .env-registry-search {
-  position: relative;
-  display: flex;
-  align-items: center;
   width: min(100%, 330px);
-}
-
-.jupyter-page .env-registry-search .search-icon {
-  position: absolute;
-  left: 1rem;
-  color: #6b768c;
-}
-
-.jupyter-page .env-registry-search input {
-  width: 100%;
-  height: 40px;
-  padding: 0 0.9rem 0 2.7rem;
-  border: 1px solid #c8d0e3;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.72);
-  color: #172037;
-  font-size: 0.86rem;
-  font-weight: 650;
-  outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
-
-.jupyter-page .env-registry-search input:focus {
-  border-color: #7da0ea;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 0 0 3px rgba(47, 108, 246, 0.12);
 }
 
 .jupyter-page .env-registry-grid {
@@ -9172,33 +8966,7 @@ onMounted(async () => {
 }
 
 .jupyter-page .library-filter-box {
-  position: relative;
-  display: flex;
-  align-items: center;
   width: min(100%, 248px);
-}
-
-.jupyter-page .library-filter-box .search-icon {
-  position: absolute;
-  left: 0.8rem;
-  color: #707a90;
-}
-
-.jupyter-page .library-filter-box input {
-  width: 100%;
-  height: 40px;
-  padding: 0 0.8rem 0 2.45rem;
-  border: 1px solid #cdd4e6;
-  border-radius: 5px;
-  background: #f8f9ff;
-  color: #2d3548;
-  font-weight: 700;
-  outline: none;
-}
-
-.jupyter-page .library-filter-box input:focus {
-  border-color: #7da0ea;
-  box-shadow: 0 0 0 3px rgba(47, 108, 246, 0.11);
 }
 
 .jupyter-page .library-chip-list {
@@ -9416,13 +9184,13 @@ onMounted(async () => {
 .jupyter-page .content-header.cases-header,
 .jupyter-page .content-header.myspace-header {
   margin-bottom: 0;
-  padding-left: 1.35rem;
-  padding-right: 1.35rem;
+  padding-left: 1.55rem;
+  padding-right: 1.55rem;
 }
 
 .jupyter-page .content-body.cases-body,
 .jupyter-page .content-body.myspace-body {
-  padding: 0 1.35rem 1.35rem;
+  padding: 0 1.55rem 1.35rem;
 }
 
 .jupyter-page .header-right {
@@ -9434,28 +9202,8 @@ onMounted(async () => {
 }
 
 .jupyter-page .search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
   width: min(100%, 320px);
   min-width: 280px;
-  min-height: 42px;
-  padding: 0 0.85rem;
-  border: 1px solid #c8d0e3;
-  border-radius: 5px;
-  background: transparent;
-  box-shadow: none;
-}
-
-.jupyter-page .search-box input {
-  width: 100%;
-  color: #172037;
-  font-size: 0.86rem;
-  font-weight: 650;
-}
-
-.jupyter-page .search-box input::placeholder {
-  color: #8a94a8;
 }
 
 .jupyter-page .dashboard-action-btn {
@@ -10601,5 +10349,257 @@ onMounted(async () => {
 
 .jupyter-page .current-path {
   border-radius: var(--workbench-radius);
+}
+
+/* Final dashboard density pass: align page headers and keep related controls together. */
+.jupyter-page .main-content {
+  padding: 0.9rem 1.45rem 1.35rem;
+}
+
+.jupyter-page .content-header {
+  align-items: center;
+  margin-bottom: 0;
+  padding: 0 2rem 0.5rem;
+}
+
+.jupyter-page .content-header .header-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.jupyter-page .content-header .page-subtitle {
+  max-width: 900px;
+  margin-top: 0.34rem;
+}
+
+.jupyter-page .content-body {
+  padding: 0.54rem 2rem 1.2rem;
+}
+
+.jupyter-page .content-body.cases-body,
+.jupyter-page .content-body.myspace-body {
+  padding-top: 0;
+}
+
+.jupyter-page .mydata-body {
+  padding-top: 0;
+}
+
+.jupyter-page .case-header-tools {
+  width: auto;
+  grid-template-columns: minmax(280px, 360px) auto;
+  gap: 0.68rem;
+}
+
+.jupyter-page .case-search-control {
+  max-width: 360px;
+}
+
+.jupyter-page .case-header-sort {
+  min-width: 232px;
+  gap: 0.48rem;
+}
+
+.jupyter-page .case-sort-select-wrap {
+  min-width: 190px;
+}
+
+.jupyter-page .cases-header .page-subtitle {
+  max-width: none;
+  white-space: nowrap;
+}
+
+.jupyter-page .content-header.cases-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title tools"
+    "subtitle subtitle";
+  align-items: center;
+  row-gap: 0.34rem;
+}
+
+.jupyter-page .cases-header .header-left {
+  display: contents;
+}
+
+.jupyter-page .cases-header .page-title {
+  grid-area: title;
+}
+
+.jupyter-page .cases-header .page-subtitle {
+  grid-area: subtitle;
+  margin-top: 0;
+}
+
+.jupyter-page .cases-header .header-right {
+  grid-area: tools;
+}
+
+.jupyter-page .mymodel-header .header-right,
+.jupyter-page .mydata-header .header-right,
+.jupyter-page .mydatamethod-header .header-right {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.jupyter-page .mymodel-header .search-box,
+.jupyter-page .mydata-header .search-box,
+.jupyter-page .mydatamethod-header .search-box {
+  width: 300px;
+  min-width: 260px;
+}
+
+.jupyter-page .mymodel-header .dashboard-action-btn,
+.jupyter-page .mydatamethod-header .dashboard-action-btn {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.jupyter-page .mydatamethod-header .header-right {
+  display: grid;
+  grid-template-columns: minmax(260px, 300px) max-content;
+  gap: 0.68rem;
+  flex-wrap: nowrap;
+}
+
+.jupyter-page .mydata-panel.netdisk-style {
+  gap: 0;
+}
+
+.jupyter-page .netdisk-toolbar {
+  padding: 0 0 0.42rem;
+  gap: 0.5rem;
+}
+
+.jupyter-page .netdisk-content {
+  margin: 0.72rem 0 0.5rem;
+  padding-top: 0.36rem;
+}
+
+.jupyter-page .environments-body {
+  padding-top: 0;
+}
+
+.jupyter-page .environment-registry-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: end;
+  gap: 1rem;
+  padding: 0 0 0.52rem;
+}
+
+.jupyter-page .env-registry-title {
+  font-size: clamp(1.75rem, 2vw, 2rem);
+  line-height: 1.04;
+}
+
+.jupyter-page .env-registry-desc {
+  margin-top: 0.34rem;
+}
+
+.jupyter-page .environment-hero-actions {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) max-content;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.jupyter-page .environment-hero-actions .env-registry-search {
+  width: 300px;
+  min-width: 0;
+}
+
+.jupyter-page .environment-hero-actions .env-create-project-btn {
+  min-width: 260px;
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.jupyter-page .env-registry-toolbar {
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.46rem 0 0.52rem;
+}
+
+.jupyter-page .env-filter-tabs {
+  gap: 0.48rem;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.jupyter-page .env-filter-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.jupyter-page .env-filter-tab {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1280px) {
+  .jupyter-page .cases-header .page-subtitle {
+    white-space: normal;
+  }
+
+  .jupyter-page .mymodel-header .header-right,
+  .jupyter-page .mydata-header .header-right {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1280px) {
+  .jupyter-page .mydatamethod-header .header-right,
+  .jupyter-page .environment-hero-actions {
+    flex-wrap: nowrap;
+  }
+
+  .jupyter-page .mydatamethod-header .search-box {
+    width: 280px;
+    min-width: 240px;
+  }
+
+  .jupyter-page .mydatamethod-header .dashboard-action-btn {
+    min-width: 248px;
+    padding-inline: 0.82rem;
+  }
+
+  .jupyter-page .environment-hero-actions .env-registry-search {
+    width: 280px;
+    min-width: 240px;
+  }
+
+  .jupyter-page .environment-hero-actions .env-create-project-btn {
+    min-width: 238px;
+    padding-inline: 0.82rem;
+  }
+}
+
+@media (max-width: 960px) {
+  .jupyter-page .content-header {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .jupyter-page .mydatamethod-header .header-right,
+  .jupyter-page .environment-registry-hero,
+  .jupyter-page .environment-hero-actions {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .jupyter-page .mymodel-header .search-box,
+  .jupyter-page .mydata-header .search-box,
+  .jupyter-page .mydatamethod-header .search-box,
+  .jupyter-page .environment-hero-actions .env-registry-search,
+  .jupyter-page .environment-hero-actions .env-create-project-btn {
+    width: 100%;
+    min-width: 0;
+  }
 }
 </style>

@@ -22,6 +22,7 @@ test('Nanjing rooftop PV case seed defines a runnable workbench case project', (
   })
 
   assert.equal(meta.name, 'nanjing-rooftop-pv')
+  assert.equal(meta.projectId, 'ea2b1a90-8421-5bdc-8a86-967e0b77883c')
   assert.equal(meta.createdBy, 'MpLebron')
   assert.equal(meta.isPublic, true)
   assert.equal(meta.isCase, true)
@@ -44,13 +45,15 @@ test('Nanjing rooftop PV notebook uses fresh PyGeoModel task outputs instead of 
   const resultShpPath = path.join(seed.projectDir, 'data', 'result', 'roof_results_with_power_generation.shp')
   const resultZipPath = path.join(seed.projectDir, 'data', 'SolarCalculation-roofSloar.zip')
   const outputsDir = path.join(seed.projectDir, 'outputs')
+  const processThumbnailPath = path.join(outputsDir, 'rooftop_pv_generation_map.png')
 
   assert.equal(fs.existsSync(notebookPath), true)
   assert.equal(fs.existsSync(inputShpPath), true)
   assert.equal(fs.existsSync(inputZipPath), true)
   assert.equal(fs.existsSync(resultShpPath), true)
   assert.equal(fs.existsSync(resultZipPath), true)
-  assert.equal(fs.existsSync(outputsDir), false)
+  assert.equal(fs.existsSync(outputsDir), true)
+  assert.equal(fs.existsSync(processThumbnailPath), true)
 
   const notebook = JSON.parse(fs.readFileSync(notebookPath, 'utf8'))
   const sourceText = notebook.cells

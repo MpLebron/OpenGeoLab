@@ -3,7 +3,9 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3>{{ $t('runModal.title', { name: model?.name }) }}</h3>
-        <button class="close-btn" @click="handleClose">×</button>
+        <button class="close-btn" type="button" aria-label="Close" @click="handleClose">
+          <AppIcon name="x" :size="17" :stroke-width="2" />
+        </button>
       </div>
       
       <div class="modal-body">
@@ -21,7 +23,9 @@
         <!-- Results State -->
         <div v-else-if="executionResult" class="results-container">
           <div class="success-header">
-            <span class="success-icon">✓</span>
+            <span class="success-icon">
+              <AppIcon name="circleCheck" :size="22" :stroke-width="1.8" />
+            </span>
             <h4>Execution Completed</h4>
           </div>
           
@@ -100,7 +104,8 @@
                       {{ $t('runModal.uploading') }}
                     </span>
                     <span v-else-if="formValues[stateName]?.[eventName]?.url" class="status-success">
-                      ✓ {{ $t('runModal.uploaded') }}
+                      <AppIcon class="inline-status-icon" name="check" :size="14" :stroke-width="2" />
+                      {{ $t('runModal.uploaded') }}
                       <span class="filename-badge">{{ formValues[stateName][eventName].filename }}</span>
                     </span>
                     <span v-else class="status-hint">
@@ -142,6 +147,7 @@
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 import { notify } from '../utils/systemFeedback.js'
+import AppIcon from './AppIcon.vue'
 
 const props = defineProps({
   visible: Boolean,

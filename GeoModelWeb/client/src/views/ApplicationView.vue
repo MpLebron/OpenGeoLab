@@ -3,7 +3,6 @@
     <section class="application-hero">
       <div class="application-shell hero-grid">
         <div class="hero-copy">
-          <p class="application-eyebrow">AIXES Applications</p>
           <h1 class="font-headline">{{ $t('applicationView.title') }}</h1>
           <p class="hero-lede">{{ $t('applicationView.subtitle') }}</p>
         </div>
@@ -111,7 +110,7 @@ onMounted(() => {
 .application-hero {
   position: relative;
   overflow: hidden;
-  padding: 3rem 0 2.35rem;
+  padding: 1.15rem 0 0.95rem;
   background: var(--bg-color);
   border-bottom: 1px solid var(--border-light);
 }
@@ -124,18 +123,9 @@ onMounted(() => {
   max-width: 100%;
 }
 
-.application-eyebrow {
-  margin: 0;
-  color: var(--accent-color);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
 .hero-copy h1 {
   max-width: 100%;
-  margin: 0.65rem 0 0;
+  margin: 0;
   color: var(--primary-strong);
   font-size: clamp(2.45rem, 3vw, 3.15rem);
   line-height: 1.06;
@@ -145,14 +135,14 @@ onMounted(() => {
 
 .hero-lede {
   max-width: 100%;
-  margin: 0.9rem 0 0;
+  margin: 0.42rem 0 0;
   color: var(--text-secondary);
-  font-size: 1.02rem;
-  line-height: 1.55;
+  font-size: 0.98rem;
+  line-height: 1.45;
 }
 
 .application-section {
-  padding: 2rem 0 4rem;
+  padding: 1rem 0 4rem;
 }
 
 .application-grid {
@@ -224,7 +214,7 @@ onMounted(() => {
   }
 
   .application-hero {
-    padding: 3.2rem 0 2.1rem;
+    padding: 1.05rem 0 0.9rem;
   }
 
   .application-grid {

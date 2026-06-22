@@ -33,16 +33,16 @@
 
         <div class="library-selector-body">
           <form class="library-selector-search" @submit.prevent="emitSearch">
-            <label>
-              <span>Search</span>
-              <input
-                :value="searchQuery"
-                type="text"
-                autocomplete="off"
+            <div class="library-selector-query">
+              <span id="library-selector-search-label">Search</span>
+              <StyledSearch
+                :model-value="searchQuery"
                 :placeholder="searchPlaceholder"
-                @input="emit('update:searchQuery', $event.target.value)"
-              >
-            </label>
+                aria-labelledby="library-selector-search-label"
+                @update:model-value="emit('update:searchQuery', $event)"
+                @enter="emitSearch"
+              />
+            </div>
             <button type="submit" class="dialog-btn ghost" :disabled="loading">
               Search
             </button>
@@ -170,6 +170,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import StyledSearch from './StyledSearch.vue'
 import {
   getLibraryItemDetailUrl,
   getLibraryItemIoStats,
@@ -360,34 +361,15 @@ function isItemAdded(item) {
   align-items: end;
 }
 
-.library-selector-search label {
+.library-selector-query {
   display: grid;
   gap: 8px;
 }
 
-.library-selector-search label span {
+.library-selector-query > span {
   color: #334155;
   font-size: 13px;
   font-weight: 800;
-}
-
-.library-selector-search input {
-  width: 100%;
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #0f172a;
-  font: inherit;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.library-selector-search input:focus {
-  border-color: #0b5fff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .library-resource-list {

@@ -2,9 +2,14 @@
   <div class="catalog-page">
     <div class="catalog-shell">
       <aside class="catalog-sidebar">
-        <h2 class="catalog-sidebar-title font-headline">Repository Filters</h2>
+        <div class="catalog-sidebar-head">
+          <span class="catalog-sidebar-kicker">Filters</span>
+          <h2 class="catalog-sidebar-title font-headline">Data Repository</h2>
+          <p>{{ total || dataList.length || 0 }} resources</p>
+        </div>
 
         <div class="catalog-filter-block category-list">
+          <p class="catalog-label">Data Category</p>
           <button
             v-for="cat in localizedCategories"
             :key="cat.value"
@@ -19,14 +24,24 @@
         <div class="catalog-status-block">
           <p class="catalog-label">{{ $t('dataView.sortLabel') }}</p>
 
-          <select v-model="sortField" @change="handleSortChange" class="catalog-select">
-            <option value="createTime">{{ $t('dataView.sortLatest') }}</option>
-            <option value="fileSize">{{ $t('dataView.sortSize') }}</option>
-            <option value="pageviews">{{ $t('dataView.sortViews') }}</option>
-          </select>
+          <StyledSelect
+            v-model="sortField"
+            class="catalog-select"
+            :options="sortOptions"
+            :aria-label="$t('dataView.sortLabel')"
+            @change="handleSortChange"
+          />
 
           <button class="catalog-order-btn" @click="toggleSortOrder">
             {{ sortAsc ? 'Ascending' : 'Descending' }}
+          </button>
+          <button
+            v-if="hasActiveFilters"
+            class="catalog-reset-btn"
+            type="button"
+            @click="clearFilters"
+          >
+            Reset filters
           </button>
         </div>
 
@@ -39,15 +54,12 @@
             <p>{{ $t('dataView.subtitle') }}</p>
           </div>
 
-          <div class="catalog-search">
-            <span class="catalog-search-icon">⌕</span>
-            <input
-              v-model="searchQuery"
-              @keyup.enter="handleSearch"
-              type="text"
-              :placeholder="$t('dataView.searchPlaceholder')"
-            >
-          </div>
+          <StyledSearch
+            v-model="searchQuery"
+            class="catalog-search"
+            :placeholder="$t('dataView.searchPlaceholder')"
+            @enter="handleSearch"
+          />
         </header>
 
         <div v-if="loading && !dataList.length" class="catalog-loading">
@@ -91,7 +103,7 @@
     >
       <section class="data-detail-dialog" role="dialog" aria-modal="true" :aria-label="$t('dataView.detailsTitle')">
         <button class="modal-close-btn" type="button" :aria-label="$t('dataView.close')" @click="closeDataDetails">
-          ×
+          <AppIcon name="x" :size="18" :stroke-width="2" />
         </button>
 
         <p class="modal-eyebrow">{{ $t('dataView.detailsEyebrow') }}</p>
@@ -138,7 +150,7 @@
     >
       <section class="external-source-dialog" role="dialog" aria-modal="true" :aria-label="$t('dataView.externalDataTitle')">
         <button class="modal-close-btn" type="button" :aria-label="$t('dataView.close')" @click="closeExternalPrompt">
-          ×
+          <AppIcon name="x" :size="18" :stroke-width="2" />
         </button>
 
         <h2 class="font-headline">{{ $t('dataView.externalDataTitle') }}</h2>
@@ -166,6 +178,9 @@ import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import DataCard from '../components/DataCard.vue'
 import PaginationControl from '../components/PaginationControl.vue'
+import StyledSearch from '../components/StyledSearch.vue'
+import StyledSelect from '../components/StyledSelect.vue'
+import AppIcon from '../components/AppIcon.vue'
 import { notify } from '../utils/systemFeedback.js'
 
 const { t } = useI18n()
@@ -211,6 +226,19 @@ const totalPages = ref(0)
 const pageSize = 18
 const selectedData = ref(null)
 const externalPrompt = ref(null)
+
+const sortOptions = computed(() => [
+  { value: 'createTime', label: t('dataView.sortLatest') },
+  { value: 'fileSize', label: t('dataView.sortSize') },
+  { value: 'pageviews', label: t('dataView.sortViews') }
+])
+
+const hasActiveFilters = computed(() => (
+  Boolean(searchQuery.value.trim()) ||
+  Boolean(selectedCategory.value) ||
+  sortField.value !== 'createTime' ||
+  sortAsc.value
+))
 
 const fetchData = async (page = 1) => {
   loading.value = true
@@ -263,6 +291,15 @@ const handleSortChange = () => {
 const toggleSortOrder = () => {
   sortAsc.value = !sortAsc.value
   fetchData(currentPage.value)
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedCategory.value = ''
+  sortField.value = 'createTime'
+  sortAsc.value = false
+  currentPage.value = 1
+  fetchData(1)
 }
 
 const changePage = (page) => {
@@ -429,28 +466,61 @@ onMounted(() => {
 
 .catalog-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 1.6rem;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
 .catalog-sidebar {
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--surface-card);
+  position: sticky;
+  top: 6.25rem;
+  max-height: calc(100vh - 7rem);
+  overflow: auto;
+  padding: 0.85rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+.catalog-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.catalog-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d4d4d4;
+}
+
+.catalog-sidebar-head {
+  padding: 0.05rem 0.05rem 0.85rem;
+  border-bottom: 1px solid #ececec;
 }
 
 .catalog-sidebar-title {
-  margin: 0;
-  color: var(--primary-strong);
+  margin: 0.2rem 0 0;
+  font-size: 0.96rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #111111;
 }
 
-.catalog-sidebar-title {
-  font-size: 0.98rem;
-  font-weight: 800;
+.catalog-sidebar-kicker {
+  color: #737373;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.catalog-sidebar-head p {
+  margin: 0.32rem 0 0;
+  color: #8a8a8a;
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
 .catalog-filter-block,
@@ -458,8 +528,13 @@ onMounted(() => {
   margin-top: 1rem;
 }
 
+.catalog-status-block {
+  padding-top: 0.95rem;
+  border-top: 1px solid #ececec;
+}
+
 .category-list {
-  max-height: 430px;
+  max-height: 46vh;
   overflow: auto;
   padding-right: 0.25rem;
 }
@@ -467,76 +542,99 @@ onMounted(() => {
 .catalog-filter-item {
   position: relative;
   width: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  min-height: 40px;
-  margin-bottom: 0.18rem;
-  padding: 0 0.75rem 0 0.9rem;
+  gap: 0.55rem;
+  min-height: 34px;
+  margin-bottom: 1px;
+  padding: 0.4rem 0.5rem;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 7px;
   background: transparent;
-  color: var(--text-secondary);
+  color: #525252;
   font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
   overflow: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.catalog-filter-item > span:not(.catalog-filter-indicator) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .catalog-filter-item:hover {
-  background: #f8fafc;
-  color: var(--primary-strong);
+  background: #f7f7f7;
+  color: #111111;
 }
 
 .catalog-filter-item.active {
-  background: #eef2f7;
-  border-color: var(--border-light);
-  color: var(--primary-strong);
-  font-weight: 700;
+  background: #f0f0f0;
+  border-color: #e7e7e7;
+  color: #111111;
+  font-weight: 650;
+  box-shadow: none;
 }
 
 .catalog-filter-indicator {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 3px;
-  height: 24px;
-  border-radius: 0;
-  background: var(--accent-color);
-  transform: translateY(-50%);
+  display: none;
 }
 
 .catalog-label {
-  margin: 0 0 0.7rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  margin: 0 0 0.55rem;
+  color: #8a8a8a;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 800;
-  color: var(--text-muted);
 }
 
-.catalog-select,
 .catalog-order-btn {
   width: 100%;
-  min-height: 40px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  min-height: 36px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
   font: inherit;
 }
 
 .catalog-select {
-  padding: 0 0.75rem;
-  background: var(--surface-card);
-  color: var(--primary-strong);
+  width: 100%;
 }
 
 .catalog-order-btn {
   margin-top: 0.55rem;
-  background: #f8fafc;
-  color: var(--primary-strong);
+  background: #ffffff;
+  color: #242424;
   font-family: 'Manrope', sans-serif;
-  font-weight: 800;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.catalog-order-btn:hover,
+.catalog-reset-btn:hover {
+  border-color: #d4d4d4;
+  background: #f7f7f7;
+}
+
+.catalog-reset-btn {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #242424;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -569,36 +667,7 @@ onMounted(() => {
 }
 
 .catalog-search {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.65rem;
   width: 320px;
-  min-height: 44px;
-  padding: 0 0.8rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--surface-card);
-  box-shadow: none;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
-}
-
-.catalog-search:focus-within {
-  background: #ffffff;
-  border-color: rgba(15, 118, 110, 0.55);
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1);
-}
-
-.catalog-search-icon {
-  color: var(--text-muted);
-}
-
-.catalog-search input {
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: var(--primary-strong);
-  outline: none;
 }
 
 .catalog-list {

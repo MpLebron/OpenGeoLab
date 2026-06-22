@@ -3,21 +3,35 @@ export const NOTEBOOK_EXTENSIONS = new Set(['.ipynb'])
 export const CODE_EXTENSIONS = new Set([
   '.py', '.r', '.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs',
   '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.go', '.rs',
-  '.sh', '.bash', '.zsh', '.sql', '.jl', '.m'
+  '.sh', '.bash', '.zsh', '.sql', '.jl', '.m', '.css', '.scss', '.less'
 ])
 
+export const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.qmd'])
+
+export const TABLE_EXTENSIONS = new Set(['.csv', '.tsv'])
+
+export const JSON_EXTENSIONS = new Set(['.json', '.jsonl', '.ndjson'])
+
+export const GEOJSON_EXTENSIONS = new Set(['.geojson', '.topojson'])
+
+export const HTML_EXTENSIONS = new Set(['.html', '.htm'])
+
+export const PDF_EXTENSIONS = new Set(['.pdf'])
+
+export const ARCHIVE_EXTENSIONS = new Set(['.zip'])
+
 export const TEXT_EXTENSIONS = new Set([
-  '.md', '.txt', '.json', '.geojson', '.csv', '.tsv', '.xml',
-  '.yml', '.yaml', '.toml', '.ini', '.cfg', '.conf', '.log',
-  '.html', '.css', '.scss', '.less'
+  '.txt', '.xml', '.yml', '.yaml', '.toml', '.ini', '.cfg', '.conf',
+  '.log', '.prj', '.wkt', '.sld', '.cpg'
 ])
 
 export const UNSUPPORTED_EXTENSIONS = new Set([
   '.tif', '.tiff', '.geotiff', '.nc', '.h5', '.hdf5', '.grd',
-  '.zip', '.rar', '.7z', '.tar', '.gz', '.pdf', '.doc', '.docx',
-  '.xls', '.xlsx', '.ppt', '.pptx', '.png', '.jpg', '.jpeg',
-  '.gif', '.bmp', '.webp', '.svg'
+  '.rar', '.7z', '.tar', '.gz', '.doc', '.docx', '.xls', '.xlsx',
+  '.ppt', '.pptx'
 ])
+
+export const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'])
 
 export function getExtension(name) {
   const match = String(name || '').toLowerCase().match(/(\.[^.\\/]+)$/)
@@ -27,8 +41,16 @@ export function getExtension(name) {
 export function inferPreviewKind(file, extension = getExtension(file?.name)) {
   if (file?.type === 'folder') return 'folder'
   if (NOTEBOOK_EXTENSIONS.has(extension)) return 'notebook'
+  if (IMAGE_EXTENSIONS.has(extension)) return 'image'
+  if (PDF_EXTENSIONS.has(extension)) return 'pdf'
+  if (HTML_EXTENSIONS.has(extension)) return 'html'
+  if (MARKDOWN_EXTENSIONS.has(extension)) return 'markdown'
+  if (GEOJSON_EXTENSIONS.has(extension)) return 'geojson'
+  if (TABLE_EXTENSIONS.has(extension)) return 'table'
+  if (JSON_EXTENSIONS.has(extension)) return 'json'
   if (CODE_EXTENSIONS.has(extension)) return 'code'
   if (TEXT_EXTENSIONS.has(extension)) return 'text'
+  if (ARCHIVE_EXTENSIONS.has(extension)) return 'archive'
   return 'unsupported'
 }
 
@@ -44,7 +66,7 @@ export function normalizeFile(file = {}) {
   const previewKind = file.previewKind || inferPreviewKind(file, extension)
   const previewSupported = typeof file.previewSupported === 'boolean'
     ? file.previewSupported
-    : ['notebook', 'code', 'text'].includes(previewKind)
+    : ['notebook', 'code', 'text', 'image', 'pdf', 'html', 'markdown', 'table', 'json', 'geojson', 'archive'].includes(previewKind)
 
   return {
     ...file,
@@ -65,12 +87,21 @@ export function fileLanguage(file) {
     '.ts': 'typescript',
     '.tsx': 'typescript',
     '.json': 'json',
+    '.jsonl': 'json',
+    '.ndjson': 'json',
+    '.geojson': 'json',
+    '.topojson': 'json',
     '.xml': 'xml',
     '.yml': 'yaml',
     '.yaml': 'yaml',
     '.sh': 'bash',
     '.bash': 'bash',
-    '.zsh': 'bash'
+    '.zsh': 'bash',
+    '.css': 'css',
+    '.scss': 'scss',
+    '.less': 'less',
+    '.html': 'xml',
+    '.htm': 'xml'
   }
   return map[extension] || ''
 }
@@ -88,22 +119,24 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-export function fileBadge(file) {
+export function filePreviewIconName(file) {
   const normalized = normalizeFile(file)
-  if (normalized.previewKind === 'notebook') return 'NB'
-  if (normalized.previewKind === 'code') return normalized.extension.replace('.', '').toUpperCase().slice(0, 4)
-  if (normalized.previewKind === 'text') return normalized.extension.replace('.', '').toUpperCase().slice(0, 4) || 'TXT'
-  if (normalized.previewKind === 'folder') return 'DIR'
-  return normalized.extension ? normalized.extension.replace('.', '').toUpperCase().slice(0, 4) : 'NA'
-}
+  const extension = normalized.extension || ''
 
-export function treeBadge(file) {
-  const normalized = normalizeFile(file)
-  if (normalized.previewKind === 'notebook') return 'NB'
-  if (normalized.previewKind === 'code') return normalized.extension === '.py' ? 'PY' : '</>'
-  if (normalized.previewKind === 'text') return 'TXT'
-  if (normalized.previewKind === 'unsupported') return normalized.extension ? normalized.extension.replace('.', '').slice(0, 3).toUpperCase() : 'NA'
-  return ''
+  if (normalized.type === 'folder' || normalized.previewKind === 'folder') return 'folder'
+  if (normalized.previewKind === 'notebook') return 'bookMarked'
+  if (normalized.previewKind === 'code') return extension === '.json' ? 'fileJson' : 'fileCode'
+  if (normalized.previewKind === 'markdown' || normalized.previewKind === 'text') return 'fileText'
+  if (normalized.previewKind === 'json' || normalized.previewKind === 'geojson') return 'fileJson'
+  if (normalized.previewKind === 'table') return 'fileSpreadsheet'
+  if (normalized.previewKind === 'image') return 'fileImage'
+  if (['.tif', '.tiff', '.geotiff', '.nc', '.h5', '.hdf5', '.grd'].includes(extension)) return 'image'
+  if (normalized.previewKind === 'pdf') return 'fileType'
+  if (normalized.previewKind === 'html') return 'code'
+  if (normalized.previewKind === 'archive' || ['.rar', '.7z', '.tar', '.gz'].includes(extension)) return 'fileArchive'
+  if (['.doc', '.docx', '.ppt', '.pptx'].includes(extension)) return 'fileText'
+  if (['.xls', '.xlsx'].includes(extension)) return 'fileSpreadsheet'
+  return 'file'
 }
 
 export function languageLabel(file) {
@@ -111,17 +144,25 @@ export function languageLabel(file) {
     '.py': 'Python Script',
     '.js': 'JavaScript File',
     '.ts': 'TypeScript File',
+    '.jsx': 'JavaScript Component',
+    '.tsx': 'TypeScript Component',
     '.sh': 'Shell Script',
     '.r': 'R Script',
-    '.sql': 'SQL Script'
+    '.sql': 'SQL Script',
+    '.css': 'CSS Stylesheet',
+    '.scss': 'SCSS Stylesheet',
+    '.less': 'Less Stylesheet',
+    '.html': 'HTML Document',
+    '.htm': 'HTML Document'
   }
   return labels[file.extension] || 'Code File'
 }
 
 export function textLabel(file) {
   if (file.extension === '.txt') return 'Plain Text Document'
-  if (file.extension === '.md') return 'Markdown Document'
-  if (file.extension === '.json') return 'JSON Document'
+  if (file.extension === '.xml') return 'XML Document'
+  if (['.yml', '.yaml'].includes(file.extension)) return 'YAML Document'
+  if (file.extension === '.log') return 'Log File'
   return 'Text Document'
 }
 
@@ -130,7 +171,15 @@ export function fileSubtitle(file, formatSize = defaultFormatSize) {
   const sizeLabel = formatSize(normalized.size)
   if (normalized.previewKind === 'notebook') return `Jupyter Notebook • ${sizeLabel}`
   if (normalized.previewKind === 'code') return `${languageLabel(normalized)} • ${sizeLabel}`
+  if (normalized.previewKind === 'markdown') return `Markdown document • ${sizeLabel}`
+  if (normalized.previewKind === 'table') return `${normalized.extension === '.tsv' ? 'TSV' : 'CSV'} table • ${sizeLabel}`
+  if (normalized.previewKind === 'json') return `JSON data • ${sizeLabel}`
+  if (normalized.previewKind === 'geojson') return `Geospatial JSON data • ${sizeLabel}`
+  if (normalized.previewKind === 'html') return `HTML document • ${sizeLabel}`
+  if (normalized.previewKind === 'pdf') return `PDF document • ${sizeLabel}`
+  if (normalized.previewKind === 'archive') return `ZIP archive • ${sizeLabel}`
   if (normalized.previewKind === 'text') return `${textLabel(normalized)} • ${sizeLabel}`
+  if (normalized.previewKind === 'image') return `Image preview • ${sizeLabel}`
   return sizeLabel
 }
 

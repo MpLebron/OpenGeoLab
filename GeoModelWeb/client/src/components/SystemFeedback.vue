@@ -14,9 +14,7 @@
             <p>{{ toast.message }}</p>
           </div>
           <button type="button" class="toast-close" aria-label="Dismiss message" @click="dismissToast(toast.id)">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M4 4l8 8M12 4l-8 8" />
-            </svg>
+            <AppIcon name="x" :size="15" :stroke-width="2" />
           </button>
         </article>
       </TransitionGroup>
@@ -90,6 +88,7 @@ import {
   feedbackState,
   resolveDialog
 } from '../utils/systemFeedback.js'
+import AppIcon from './AppIcon.vue'
 
 const dialogInput = ref(null)
 const dialogPanel = ref(null)

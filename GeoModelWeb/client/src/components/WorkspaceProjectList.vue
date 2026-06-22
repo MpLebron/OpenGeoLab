@@ -87,10 +87,7 @@
         <div class="workspace-data-column files">
           <span>Files</span>
           <strong class="workspace-file-count">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-              <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/>
-              <path d="M14 2v5h5"/>
-            </svg>
+            <AppIcon name="fileText" :size="15" :stroke-width="1.8" />
             <span>{{ projectFileLabel(project) }}</span>
           </strong>
         </div>
@@ -131,32 +128,12 @@
             :disabled="actionDisabled(action, project)"
             @click.stop="$emit('action', { action: action.key, project })"
           >
-            <svg v-if="actionIcon(action) === 'open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-              <path d="M2.5 12C3.8 8 7.6 5 12 5s8.2 3 9.5 7c-1.3 4-5.1 7-9.5 7s-8.2-3-9.5-7z"/>
-            </svg>
-            <svg v-else-if="actionIcon(action) === 'edit'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M15.2 5.2l3.6 3.6"/>
-              <path d="M4 20h3.6L19.8 7.8a2.5 2.5 0 0 0-3.6-3.6L4 16.4V20z"/>
-            </svg>
-            <svg v-else-if="actionIcon(action) === 'visibility'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M12 3a9 9 0 1 0 9 9"/>
-              <path d="M3.6 9.5H8a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2h1"/>
-              <path d="M15 4.3V7a2 2 0 0 0 2 2h3.4"/>
-            </svg>
-            <svg v-else-if="actionIcon(action) === 'case'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M12 3l2.3 4.7 5.2.8-3.8 3.7.9 5.2L12 15l-4.6 2.4.9-5.2-3.8-3.7 5.2-.8L12 3z"/>
-            </svg>
-            <svg v-else-if="actionIcon(action) === 'fork'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M7 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM17 15a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 9v3a4 4 0 0 0 4 4h4"/>
-              <path d="M17 5v10"/>
-            </svg>
-            <svg v-else-if="actionIcon(action) === 'delete'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M4 7h16"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M6 7l1 13h10l1-13"/>
-              <path d="M9 7V4h6v3"/>
-            </svg>
+            <AppIcon
+              v-if="actionIconName(action)"
+              :name="actionIconName(action)"
+              :size="16"
+              :stroke-width="1.8"
+            />
             <span v-else class="workspace-action-label">{{ action.iconLabel || action.key }}</span>
           </button>
         </div>
@@ -178,6 +155,7 @@ import {
   getWorkspaceProjectVisibility
 } from '../utils/workspaceProjectDisplay.js'
 import { createApiClient } from '../utils/apiClient.js'
+import AppIcon from './AppIcon.vue'
 
 defineEmits(['open', 'action', 'retry'])
 
@@ -207,6 +185,14 @@ const thumbnailUrls = ref({})
 const thumbnailRequests = new Set()
 
 const actionIcon = (action) => action.icon || action.key
+const actionIconName = (action) => ({
+  open: 'eye',
+  edit: 'pencil',
+  visibility: 'eye',
+  case: 'fileCheck',
+  fork: 'fork',
+  delete: 'trash'
+}[actionIcon(action)] || '')
 const visibleActions = (project) => props.actions.filter(action => {
   if (typeof action.visible === 'function') return action.visible(project)
   return action.visible !== false

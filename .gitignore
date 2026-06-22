@@ -50,6 +50,8 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.development
+.env.production
 
 # Temporary files
 *.tmp

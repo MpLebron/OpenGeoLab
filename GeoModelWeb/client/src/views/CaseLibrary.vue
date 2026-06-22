@@ -3,7 +3,7 @@
     <header v-if="!props.embedded" class="library-nav">
       <div class="nav-left">
         <button class="back-btn" @click="goBack">
-          <span>&larr;</span>
+          <AppIcon name="arrowLeft" :size="16" :stroke-width="2" />
           <span>Back to Dashboard</span>
         </button>
       </div>
@@ -24,33 +24,23 @@
         </div>
         <div class="hero-controls" aria-label="Case search and sorting">
           <div class="toolbar-left">
-            <label class="case-search-control">
-              <svg class="case-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="7"/>
-                <path d="m20 20-3.5-3.5"/>
-              </svg>
-              <input
-                v-model="searchQueryModel"
-                class="search-input"
-                type="text"
-                placeholder="Search by project, tag, scenario, or owner"
-              >
-              <span class="case-search-shortcut" aria-hidden="true">⌘ K</span>
-            </label>
+            <StyledSearch
+              ref="searchInputRef"
+              v-model="searchQueryModel"
+              class="case-search-control"
+              placeholder="Search by project, tag, scenario, or owner"
+              shortcut-label="⌘ K"
+            />
           </div>
           <div class="toolbar-right">
             <label class="sort-label" for="case-library-sort">Sort by</label>
-            <span class="case-sort-select-wrap">
-              <select id="case-library-sort" v-model="sortByModel" class="sort-select">
-                <option value="updated">Recently updated</option>
-                <option value="files">Most files</option>
-                <option value="size">Largest size</option>
-                <option value="title">Title A-Z</option>
-              </select>
-              <svg class="case-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
-            </span>
+            <StyledSelect
+              id="case-library-sort"
+              v-model="sortByModel"
+              class="case-sort-select-wrap"
+              :options="caseSortOptions"
+              aria-label="Sort cases"
+            />
           </div>
         </div>
       </section>
@@ -122,10 +112,7 @@
             <div class="case-data-column">
               <span>Files</span>
               <strong class="case-file-count">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/>
-                  <path d="M14 2v5h5"/>
-                </svg>
+                <AppIcon name="fileText" :size="15" :stroke-width="1.8" />
                 <span>{{ caseFileCountLabel(item) }}</span>
               </strong>
             </div>
@@ -145,13 +132,11 @@
               <strong>
                 <span class="owner-avatar" aria-hidden="true">
                   <img
-                    v-if="ownerAvatarSrc(item)"
                     :src="ownerAvatarSrc(item)"
                     :alt="`${ownerLabel(item)} avatar`"
                     loading="lazy"
                     @error="markOwnerAvatarFailed(item)"
                   >
-                  <span v-else>{{ ownerInitials(item) }}</span>
                 </span>
                 <span class="owner-name">@{{ ownerLabel(item) }}</span>
               </strong>
@@ -170,10 +155,7 @@
                 data-tooltip="Open case"
                 @click.stop="openCase(item)"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-                  <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                  <path d="M2.5 12C3.8 8 7.6 5 12 5s8.2 3 9.5 7c-1.3 4-5.1 7-9.5 7s-8.2-3-9.5-7z"/>
-                </svg>
+                <AppIcon name="eye" :size="16" :stroke-width="1.8" />
               </button>
             </div>
           </article>
@@ -199,10 +181,12 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PaginationControl from '../components/PaginationControl.vue'
+import StyledSearch from '../components/StyledSearch.vue'
+import StyledSelect from '../components/StyledSelect.vue'
+import AppIcon from '../components/AppIcon.vue'
 import {
   formatWorkspaceProjectSize,
   getWorkspaceProjectOwnerAvatarUrl,
-  getWorkspaceProjectOwnerInitials,
   getWorkspaceProjectOwnerLabel,
   getWorkspaceProjectRuntimeImage,
   getWorkspaceProjectRuntimeLabel,
@@ -213,6 +197,8 @@ import {
   getWorkspaceProjectTitle
 } from '../utils/workspaceProjectDisplay.js'
 import { createApiClient, resolvePublicResourceUrl } from '../utils/apiClient.js'
+import { CASE_SORT_OPTIONS } from '../utils/caseSortOptions.js'
+import { buildGithubStyleIdenticonDataUri } from '../utils/generatedAvatar.js'
 
 const props = defineProps({
   embedded: {
@@ -236,7 +222,9 @@ const loading = ref(true)
 const error = ref('')
 const cases = ref([])
 const localSearchQuery = ref(props.searchQuery)
+const searchInputRef = ref(null)
 const localSortBy = ref(props.sortBy || 'updated')
+const caseSortOptions = CASE_SORT_OPTIONS
 const currentPage = ref(1)
 const pageSize = 10
 const thumbnailUrls = ref({})
@@ -338,7 +326,6 @@ const caseTitle = getWorkspaceProjectTitle
 const caseSummary = getWorkspaceProjectSummary
 const caseTags = item => getWorkspaceProjectTags(item, 4)
 const ownerLabel = getWorkspaceProjectOwnerLabel
-const ownerInitials = getWorkspaceProjectOwnerInitials
 const caseRuntimeFull = item => getWorkspaceProjectRuntimeImage(item) || getWorkspaceProjectRuntimeLabel(item) || '-'
 const caseSize = item => formatWorkspaceProjectSize(item.sizeBytes)
 const caseFileCountLabel = (item = {}) => {
@@ -359,8 +346,12 @@ const caseThumbnailAlt = (item = {}) => `${caseTitle(item)} result thumbnail`
 const caseThumbnailSrc = (item = {}) => thumbnailUrls.value[caseKey(item)] || ''
 const ownerAvatarSrc = (item = {}) => {
   const key = caseKey(item)
-  if (avatarFailures.value[key]) return ''
-  return resolvePublicResourceUrl(getWorkspaceProjectOwnerAvatarUrl(item))
+  const avatarUrl = getWorkspaceProjectOwnerAvatarUrl(item)
+  if (avatarUrl && !avatarFailures.value[key]) {
+    return resolvePublicResourceUrl(avatarUrl)
+  }
+
+  return buildGithubStyleIdenticonDataUri(ownerLabel(item))
 }
 
 const markOwnerAvatarFailed = (item = {}) => {
@@ -436,11 +427,30 @@ watch(() => filteredCases.value.length, value => {
   emit('result-count-change', value)
 }, { immediate: true })
 
+const focusCaseSearch = () => {
+  if (!searchInputRef.value) return false
+  searchInputRef.value.focus()
+  searchInputRef.value.select?.()
+  return true
+}
+
+const handleSearchShortcut = event => {
+  const isSearchShortcut = (event.metaKey || event.ctrlKey) &&
+    !event.altKey &&
+    !event.shiftKey &&
+    event.key?.toLowerCase() === 'k'
+
+  if (!isSearchShortcut || !focusCaseSearch()) return
+  event.preventDefault()
+}
+
 onMounted(() => {
   loadCases().then(loadVisibleThumbnails)
+  window.addEventListener('keydown', handleSearchShortcut)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleSearchShortcut)
   for (const objectUrl of Object.values(thumbnailUrls.value)) {
     URL.revokeObjectURL(objectUrl)
   }
@@ -542,10 +552,10 @@ onBeforeUnmount(() => {
 
 .hero-controls {
   display: grid;
-  grid-template-columns: minmax(420px, 620px) auto;
+  grid-template-columns: minmax(280px, 420px) auto;
   align-items: center;
   justify-content: end;
-  gap: 1.45rem;
+  gap: 0.75rem;
   padding-top: 0.12rem;
 }
 
@@ -555,71 +565,13 @@ onBeforeUnmount(() => {
 
 .case-search-control {
   width: 100%;
-  height: 48px;
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.72rem;
-  padding: 0 0.9rem 0 1.05rem;
-  border: 1px solid #dfe4ef;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
-
-.case-search-control:focus-within {
-  border-color: #b9c7dd;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
-}
-
-.case-search-icon {
-  width: 21px;
-  height: 21px;
-  color: #94a0b4;
-}
-
-.search-input {
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #172033;
-  font-size: 0.9rem;
-  font-weight: 700;
-  outline: none;
-}
-
-.search-input::placeholder {
-  color: #8f98aa;
-  font-weight: 700;
-}
-
-.case-search-shortcut {
-  min-width: 46px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e7f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #9aa3b5;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .toolbar-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.55rem;
 }
 
 .sort-label {
@@ -631,39 +583,8 @@ onBeforeUnmount(() => {
 
 .case-sort-select-wrap {
   position: relative;
-  min-width: 258px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.sort-select {
-  width: 100%;
-  height: 48px;
-  padding: 0 2.75rem 0 1.15rem;
-  border: 1px solid #dfe4ef;
-  border-radius: 12px;
-  appearance: none;
-  background: rgba(255, 255, 255, 0.94);
-  color: #202a3f;
-  font-family: 'Manrope', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 850;
-  outline: none;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
-}
-
-.sort-select:focus {
-  border-color: #b9c7dd;
-  box-shadow: 0 0 0 3px rgba(83, 119, 179, 0.09), 0 8px 24px rgba(15, 23, 42, 0.04);
-}
-
-.case-select-chevron {
-  position: absolute;
-  right: 1rem;
-  width: 18px;
-  height: 18px;
-  color: #8b95a8;
-  pointer-events: none;
+  min-width: 210px;
+  display: block;
 }
 
 .case-directory {

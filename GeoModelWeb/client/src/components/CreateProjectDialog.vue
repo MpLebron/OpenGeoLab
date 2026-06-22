@@ -44,18 +44,15 @@
             ></textarea>
           </label>
 
-          <label class="project-field">
+          <div class="project-field">
             <span>Runtime environment</span>
-            <select v-model="runtimeId" :disabled="creating">
-              <option
-                v-for="runtime in runtimeOptions"
-                :key="runtime.id"
-                :value="runtime.id"
-              >
-                {{ runtime.name || runtime.title || runtime.label || runtime.id }}
-              </option>
-            </select>
-          </label>
+            <StyledSelect
+              v-model="runtimeId"
+              :options="runtimeSelectOptions"
+              :disabled="creating"
+              aria-label="Runtime environment"
+            />
+          </div>
 
           <div v-if="selectedRuntime" class="runtime-summary">
             <span>Runtime</span>
@@ -118,6 +115,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import StyledSelect from './StyledSelect.vue'
 import { getDefaultStarterTemplateId, normalizeStarterTemplateId } from '../utils/projectCreateFlow.js'
 
 const props = defineProps({
@@ -159,6 +157,13 @@ const selectedRuntime = computed(() => (
   props.runtimeOptions.find(runtime => runtime.id === runtimeId.value) ||
   props.runtimeOptions[0] ||
   null
+))
+
+const runtimeSelectOptions = computed(() => (
+  props.runtimeOptions.map(runtime => ({
+    value: runtime.id,
+    label: runtime.name || runtime.title || runtime.label || runtime.id
+  }))
 ))
 
 const canSubmit = computed(() => (
@@ -283,8 +288,7 @@ function submitProject() {
 }
 
 .project-field input,
-.project-field textarea,
-.project-field select {
+.project-field textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -297,8 +301,7 @@ function submitProject() {
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.project-field input,
-.project-field select {
+.project-field input {
   height: 44px;
   padding: 0 12px;
 }
@@ -310,8 +313,7 @@ function submitProject() {
 }
 
 .project-field input:focus,
-.project-field textarea:focus,
-.project-field select:focus {
+.project-field textarea:focus {
   border-color: #0b5fff;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }

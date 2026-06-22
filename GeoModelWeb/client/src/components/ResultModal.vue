@@ -3,12 +3,16 @@
     <div class="result-modal-content">
       <div class="modal-header">
         <h3>{{ title }}</h3>
-        <button class="close-btn" @click="$emit('close')">×</button>
+        <button class="close-btn" type="button" aria-label="Close" @click="$emit('close')">
+          <AppIcon name="x" :size="17" :stroke-width="2" />
+        </button>
       </div>
       
       <div class="modal-body">
         <div v-if="result.status === 'success'" class="success-section">
-          <div class="status-icon">✓</div>
+          <div class="status-icon">
+            <AppIcon name="circleCheck" :size="30" :stroke-width="1.8" />
+          </div>
           <p class="status-message">{{ result.message }}</p>
           
           <div v-if="result.output" class="output-section">
@@ -19,12 +23,12 @@
                 <div v-if="item.isMultiple" class="output-links">
                   <a v-for="(url, idx) in item.urls" :key="idx" :href="url" target="_blank" class="output-link">
                     {{ $t('resultModal.downloadFile') }} {{ idx + 1 }}
-                    <span class="download-icon">⬇</span>
+                    <AppIcon class="download-icon" name="download" :size="15" :stroke-width="1.9" />
                   </a>
                 </div>
                 <a v-else-if="item.isUrl" :href="item.value" target="_blank" class="output-link">
                   {{ item.originalValue || item.value }}
-                  <span class="download-icon">⬇</span>
+                  <AppIcon class="download-icon" name="download" :size="15" :stroke-width="1.9" />
                 </a>
                 <span v-else class="output-value">{{ item.value }}</span>
               </div>
@@ -38,7 +42,9 @@
         </div>
         
         <div v-else class="error-section">
-          <div class="status-icon error">✗</div>
+          <div class="status-icon error">
+            <AppIcon name="circleX" :size="30" :stroke-width="1.8" />
+          </div>
           <p class="status-message error">{{ result.message }}</p>
         </div>
       </div>
@@ -52,6 +58,7 @@
 
 <script setup>
 import { useI18n } from 'vue-i18n'
+import AppIcon from './AppIcon.vue'
 
 const { t } = useI18n()
 

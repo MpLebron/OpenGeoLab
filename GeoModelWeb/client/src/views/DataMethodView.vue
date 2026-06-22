@@ -2,9 +2,19 @@
   <div class="catalog-page">
     <div class="catalog-shell">
       <aside class="catalog-sidebar">
-        <h2 class="catalog-sidebar-title font-headline">Repository Filters</h2>
+        <div class="catalog-sidebar-head">
+          <span class="catalog-sidebar-kicker">Filters</span>
+          <h2 class="catalog-sidebar-title font-headline">Method Library</h2>
+          <p>{{ facetTotal || total || 0 }} methods</p>
+        </div>
+
+        <div class="catalog-filter-summary" v-if="hasActiveFilters">
+          <span>Filtered view</span>
+          <button v-if="hasActiveFilters" type="button" @click="clearFilters">Clear</button>
+        </div>
 
         <div class="catalog-filter-block">
+          <p class="catalog-label">Method Categories</p>
           <button
             :class="['catalog-filter-item', { active: activeFacet === 'all' }]"
             @click="selectFacet('all')"
@@ -26,16 +36,70 @@
           </button>
         </div>
 
-        <div class="catalog-status-block">
-          <p class="catalog-label">Execution</p>
-          <label class="catalog-check">
-            <input v-model="preferInteractive" type="checkbox">
-            <span>Interactive Ready</span>
-          </label>
-          <label class="catalog-check">
-            <input v-model="preferPython" type="checkbox">
-            <span>Python Based</span>
-          </label>
+        <div class="catalog-filter-block">
+          <p class="catalog-label">Data Type</p>
+          <button
+            :class="['catalog-filter-item compact', { active: selectedDataType === 'all' }]"
+            @click="selectDataType('all')"
+          >
+            <span v-if="selectedDataType === 'all'" class="catalog-filter-indicator"></span>
+            <span>All types</span>
+            <strong>{{ facetTotal || total || 0 }}</strong>
+          </button>
+          <button
+            v-for="option in dataTypeFacets"
+            :key="option.label"
+            :class="['catalog-filter-item compact', { active: selectedDataType === option.label }]"
+            @click="selectDataType(option.label)"
+          >
+            <span v-if="selectedDataType === option.label" class="catalog-filter-indicator"></span>
+            <span>{{ option.label }}</span>
+            <strong>{{ option.count }}</strong>
+          </button>
+        </div>
+
+        <div class="catalog-filter-block">
+          <p class="catalog-label">Runtime Engine</p>
+          <button
+            :class="['catalog-filter-item compact', { active: selectedRuntime === 'all' }]"
+            @click="selectRuntime('all')"
+          >
+            <span v-if="selectedRuntime === 'all'" class="catalog-filter-indicator"></span>
+            <span>All engines</span>
+            <strong>{{ facetTotal || total || 0 }}</strong>
+          </button>
+          <button
+            v-for="option in runtimeFacets"
+            :key="option.label"
+            :class="['catalog-filter-item compact', { active: selectedRuntime === option.label }]"
+            @click="selectRuntime(option.label)"
+          >
+            <span v-if="selectedRuntime === option.label" class="catalog-filter-indicator"></span>
+            <span>{{ option.label }}</span>
+            <strong>{{ option.count }}</strong>
+          </button>
+        </div>
+
+        <div class="catalog-filter-block">
+          <p class="catalog-label">Execution Mode</p>
+          <button
+            :class="['catalog-filter-item compact', { active: selectedExecutionMode === 'all' }]"
+            @click="selectExecutionMode('all')"
+          >
+            <span v-if="selectedExecutionMode === 'all'" class="catalog-filter-indicator"></span>
+            <span>All modes</span>
+            <strong>{{ facetTotal || total || 0 }}</strong>
+          </button>
+          <button
+            v-for="option in executionModeFacets"
+            :key="option.label"
+            :class="['catalog-filter-item compact', { active: selectedExecutionMode === option.label }]"
+            @click="selectExecutionMode(option.label)"
+          >
+            <span v-if="selectedExecutionMode === option.label" class="catalog-filter-indicator"></span>
+            <span>{{ option.label }}</span>
+            <strong>{{ option.count }}</strong>
+          </button>
         </div>
 
       </aside>
@@ -47,16 +111,13 @@
             <p>{{ $t('dataMethodView.subtitle') }}</p>
           </div>
 
-          <div class="catalog-search">
-            <span class="catalog-search-icon">⌕</span>
-            <input
-              v-model="searchQuery"
-              @keyup.enter="handleSearch"
-              type="text"
-              :placeholder="$t('dataMethodView.searchPlaceholder')"
-              :disabled="loading"
-            >
-          </div>
+          <StyledSearch
+            v-model="searchQuery"
+            class="catalog-search"
+            :placeholder="$t('dataMethodView.searchPlaceholder')"
+            :disabled="loading"
+            @enter="handleSearch"
+          />
         </header>
 
         <div v-if="searchNote && !loading" class="catalog-note">
@@ -66,6 +127,10 @@
         <div v-if="loading" class="catalog-loading">
           <div class="spinner"></div>
           <p>Loading data methods...</p>
+        </div>
+
+        <div v-else-if="loadError" class="catalog-empty catalog-error">
+          <p>{{ loadError }}</p>
         </div>
 
         <div v-else class="catalog-list">
@@ -118,6 +183,7 @@ import DataMethodCard from '../components/DataMethodCard.vue'
 import PaginationControl from '../components/PaginationControl.vue'
 import RunModal from '../components/RunModal.vue'
 import ResultModal from '../components/ResultModal.vue'
+import StyledSearch from '../components/StyledSearch.vue'
 import { buildDataMethodRunRequest } from '../utils/dataMethodExecution.js'
 
 const searchQuery = ref('')
@@ -126,13 +192,18 @@ const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
 const searchNote = ref('')
+const loadError = ref('')
 const limit = 12
 const facetTotal = ref(0)
 const methodFacets = ref([])
+const dataTypeFacets = ref([])
+const runtimeFacets = ref([])
+const executionModeFacets = ref([])
 
 const activeFacet = ref('all')
-const preferInteractive = ref(false)
-const preferPython = ref(false)
+const selectedDataType = ref('all')
+const selectedRuntime = ref('all')
+const selectedExecutionMode = ref('all')
 
 const showModal = ref(false)
 const selectedMethod = ref(null)
@@ -141,10 +212,18 @@ const showResultModal = ref(false)
 const executionResult = ref(null)
 
 const totalPages = computed(() => Math.ceil(total.value / limit))
+const hasActiveFilters = computed(() => (
+  activeFacet.value !== 'all' ||
+  selectedDataType.value !== 'all' ||
+  selectedRuntime.value !== 'all' ||
+  selectedExecutionMode.value !== 'all' ||
+  Boolean(searchQuery.value.trim())
+))
 
 const fetchDataMethods = async (page = 1) => {
   loading.value = true
   searchNote.value = ''
+  loadError.value = ''
   try {
     const response = await axios.get('/api/datamethods', {
       params: {
@@ -152,16 +231,20 @@ const fetchDataMethods = async (page = 1) => {
         limit,
         q: searchQuery.value,
         facet: activeFacet.value,
-        interactive: preferInteractive.value,
-        python: preferPython.value
+        dataType: selectedDataType.value,
+        runtime: selectedRuntime.value,
+        executionMode: selectedExecutionMode.value
       }
     })
-    dataMethods.value = response.data.data
-    total.value = response.data.total
-    currentPage.value = response.data.page
+    dataMethods.value = Array.isArray(response.data.data) ? response.data.data : []
+    total.value = response.data.total || 0
+    currentPage.value = response.data.page || page
     searchNote.value = response.data.searchNote || ''
   } catch (error) {
     console.error('Failed to fetch data methods:', error)
+    dataMethods.value = []
+    total.value = 0
+    loadError.value = error.response?.data?.message || error.response?.data?.error || 'Failed to load data methods.'
   } finally {
     loading.value = false
   }
@@ -171,17 +254,24 @@ const fetchMethodFacets = async () => {
   try {
     const response = await axios.get('/api/datamethods/facets', {
       params: {
-        q: searchQuery.value,
-        interactive: preferInteractive.value,
-        python: preferPython.value
+        q: searchQuery.value
       }
     })
+    const groups = response.data.groups || {}
     facetTotal.value = response.data.total || 0
-    methodFacets.value = Array.isArray(response.data.facets) ? response.data.facets : []
+    methodFacets.value = Array.isArray(groups.categories)
+      ? groups.categories
+      : (Array.isArray(response.data.facets) ? response.data.facets : [])
+    dataTypeFacets.value = Array.isArray(groups.dataTypes) ? groups.dataTypes : []
+    runtimeFacets.value = Array.isArray(groups.runtimes) ? groups.runtimes : []
+    executionModeFacets.value = Array.isArray(groups.executionModes) ? groups.executionModes : []
   } catch (error) {
     console.error('Failed to fetch data method facets:', error)
     facetTotal.value = total.value
     methodFacets.value = []
+    dataTypeFacets.value = []
+    runtimeFacets.value = []
+    executionModeFacets.value = []
   }
 }
 
@@ -194,6 +284,35 @@ const handleSearch = () => {
 const selectFacet = (facet) => {
   activeFacet.value = facet
   currentPage.value = 1
+  fetchDataMethods(1)
+}
+
+const selectDataType = (dataType) => {
+  selectedDataType.value = dataType
+  currentPage.value = 1
+  fetchDataMethods(1)
+}
+
+const selectRuntime = (runtime) => {
+  selectedRuntime.value = runtime
+  currentPage.value = 1
+  fetchDataMethods(1)
+}
+
+const selectExecutionMode = (executionMode) => {
+  selectedExecutionMode.value = executionMode
+  currentPage.value = 1
+  fetchDataMethods(1)
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  activeFacet.value = 'all'
+  selectedDataType.value = 'all'
+  selectedRuntime.value = 'all'
+  selectedExecutionMode.value = 'all'
+  currentPage.value = 1
+  fetchMethodFacets()
   fetchDataMethods(1)
 }
 
@@ -244,11 +363,6 @@ onMounted(() => {
   fetchDataMethods()
 })
 
-watch([preferInteractive, preferPython], () => {
-  currentPage.value = 1
-  fetchMethodFacets()
-  fetchDataMethods(1)
-})
 </script>
 
 <style scoped>
@@ -264,120 +378,174 @@ watch([preferInteractive, preferPython], () => {
 
 .catalog-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 1.6rem;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
 .catalog-sidebar {
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--surface-card);
+  position: sticky;
+  top: 6.25rem;
+  max-height: calc(100vh - 7rem);
+  overflow: auto;
+  padding: 0.85rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+.catalog-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.catalog-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d4d4d4;
+}
+
+.catalog-sidebar-head {
+  padding: 0.05rem 0.05rem 0.85rem;
+  border-bottom: 1px solid #ececec;
 }
 
 .catalog-sidebar-title {
-  margin: 0;
-  color: var(--primary-strong);
+  margin: 0.2rem 0 0;
+  color: #111111;
 }
 
 .catalog-sidebar-title {
-  font-size: 0.98rem;
-  font-weight: 800;
+  font-size: 0.96rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.catalog-sidebar-kicker {
+  color: #737373;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.catalog-filter-block,
-.catalog-status-block {
-  margin-top: 1rem;
+.catalog-sidebar-head p {
+  margin: 0.32rem 0 0;
+  color: #8a8a8a;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.catalog-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.85rem;
+  padding: 0.48rem 0.5rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #525252;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.catalog-filter-summary button {
+  border: none;
+  background: transparent;
+  color: #111111;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.catalog-filter-block {
+  margin-top: 0.95rem;
+}
+
+.catalog-filter-block + .catalog-filter-block {
+  padding-top: 0.95rem;
+  border-top: 1px solid #ececec;
 }
 
 .catalog-filter-item {
   position: relative;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 3.35rem;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 0.65rem;
-  min-height: 40px;
-  margin-bottom: 0.18rem;
-  padding: 0.45rem 0.7rem 0.45rem 0.9rem;
+  gap: 0.55rem;
+  min-height: 34px;
+  margin-bottom: 1px;
+  padding: 0.4rem 0.5rem;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 7px;
   background: transparent;
-  color: var(--text-secondary);
+  color: #525252;
   font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
   overflow: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .catalog-filter-item > span:not(.catalog-filter-indicator) {
   min-width: 0;
-  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .catalog-filter-item:hover {
-  background: #f8fafc;
-  color: var(--primary-strong);
+  background: #f7f7f7;
+  color: #111111;
 }
 
 .catalog-filter-item.active {
-  background: #eef2f7;
-  border-color: var(--border-light);
-  color: var(--primary-strong);
-  font-weight: 700;
+  background: #f0f0f0;
+  border-color: #e7e7e7;
+  color: #111111;
+  font-weight: 650;
 }
 
 .catalog-filter-indicator {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 3px;
-  height: 24px;
-  border-radius: 0;
-  background: var(--accent-color);
-  transform: translateY(-50%);
+  display: none;
 }
 
 .catalog-filter-item strong {
-  min-width: 0;
   justify-self: end;
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  min-width: 2rem;
+  padding: 0;
+  color: #8a8a8a;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  letter-spacing: 0.01em;
   text-align: right;
+  font-weight: 600;
 }
 
 .catalog-filter-item.active strong {
-  color: var(--primary-strong);
+  color: #111111;
+}
+
+.catalog-filter-item.compact {
+  min-height: 32px;
+  padding-top: 0.34rem;
+  padding-bottom: 0.34rem;
+  font-size: 0.84rem;
 }
 
 .catalog-label {
-  margin: 0 0 0.7rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  margin: 0 0 0.55rem;
+  color: #8a8a8a;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 800;
-  color: var(--text-muted);
-}
-
-.catalog-check {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.65rem;
-  color: var(--text-secondary);
-}
-
-.catalog-check input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent-color);
 }
 
 .catalog-main {
@@ -409,36 +577,7 @@ watch([preferInteractive, preferPython], () => {
 }
 
 .catalog-search {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.65rem;
   width: 320px;
-  min-height: 44px;
-  padding: 0 0.8rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--surface-card);
-  box-shadow: none;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
-}
-
-.catalog-search:focus-within {
-  background: #ffffff;
-  border-color: rgba(15, 118, 110, 0.55);
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1);
-}
-
-.catalog-search-icon {
-  color: var(--text-muted);
-}
-
-.catalog-search input {
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: var(--primary-strong);
-  outline: none;
 }
 
 .catalog-note {
@@ -466,6 +605,11 @@ watch([preferInteractive, preferPython], () => {
   border-radius: 6px;
   background: var(--surface-card);
   box-shadow: none;
+}
+
+.catalog-error {
+  color: #9f1239;
+  background: #fff5f7;
 }
 
 .spinner {

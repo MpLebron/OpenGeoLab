@@ -38,11 +38,11 @@ export default {
         }
     },
     casesView: {
-        eyebrow: 'GeoAI Cases',
         title: 'Geospatial cases for research workflows',
         subtitle: 'Built-in notebooks, curated assets, and reproducible runtime entry points for your OpenGeoLab workspace.',
         searchPlaceholder: 'Search cases, tags, domains, or authors',
         domainAll: 'All domains',
+        sortLabel: 'Sort cases',
         loading: 'Loading cases...',
         empty: 'No cases available.',
         noSummary: 'No summary available.',

@@ -2,7 +2,7 @@
   <div class="application-detail-page">
     <section class="detail-shell detail-page-top">
       <RouterLink class="back-link" :to="{ name: 'Application' }">
-        <span aria-hidden="true">&larr;</span>
+        <AppIcon name="arrowLeft" :size="16" :stroke-width="2" />
         {{ $t('applicationDetail.back') }}
       </RouterLink>
 
@@ -64,7 +64,7 @@
                 rel="noreferrer"
                 class="detail-action"
               >
-                <span class="action-icon" :class="`icon-${link.key}`" aria-hidden="true"></span>
+                <AppIcon class="action-icon" :name="actionIconName(link.key)" :size="16" :stroke-width="1.9" />
                 {{ link.label }}
               </a>
             </div>
@@ -76,7 +76,7 @@
     <section v-if="application" class="detail-shell detail-board">
       <article class="content-panel detail-main-panel">
         <div class="panel-heading">
-          <span class="panel-menu-icon" aria-hidden="true"></span>
+          <AppIcon class="panel-menu-icon" name="fileText" :size="17" :stroke-width="1.9" />
           <h2>{{ $t('applicationDetail.details') }}</h2>
         </div>
 
@@ -98,12 +98,18 @@
             <span>{{ nextApplication.category || 'Application' }}</span>
             <h3>{{ nextApplication.title }}</h3>
             <p>{{ nextApplication.description || $t('applicationView.noDescription') }}</p>
-            <strong>{{ $t('applicationDetail.openNext') }} &rarr;</strong>
+            <strong>
+              <span>{{ $t('applicationDetail.openNext') }}</span>
+              <AppIcon name="arrowRight" :size="15" :stroke-width="2" />
+            </strong>
           </RouterLink>
 
           <RouterLink v-else class="next-application-link empty-next" :to="{ name: 'Application' }">
             <h3>{{ $t('applicationDetail.noNext') }}</h3>
-            <strong>{{ $t('applicationDetail.back') }} &rarr;</strong>
+            <strong>
+              <span>{{ $t('applicationDetail.back') }}</span>
+              <AppIcon name="arrowRight" :size="15" :stroke-width="2" />
+            </strong>
           </RouterLink>
         </section>
       </aside>
@@ -117,6 +123,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { resolvePublicResourceUrl } from '../utils/apiClient.js'
+import AppIcon from '../components/AppIcon.vue'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -142,6 +149,13 @@ const activeLinks = computed(() => {
     { key: 'video', label: t('applicationDetail.links.video'), href: links.video }
   ].filter(link => Boolean(link.href))
 })
+
+const actionIconName = (key) => ({
+  code: 'code',
+  demo: 'external',
+  paper: 'fileText',
+  video: 'play'
+}[key] || 'external')
 
 const coverImageSrc = computed(() => resolvePublicResourceUrl(application.value?.coverImageUrl))
 
@@ -526,63 +540,7 @@ onMounted(() => {
 }
 
 .action-icon {
-  width: 20px;
-  height: 20px;
-  position: relative;
-  display: inline-block;
   flex: 0 0 20px;
-}
-
-.icon-code::before {
-  content: '</>';
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-family: 'Manrope', 'Inter', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 900;
-}
-
-.icon-demo,
-.icon-paper,
-.icon-video {
-  border: 2px solid currentColor;
-  border-radius: 4px;
-}
-
-.icon-paper::before,
-.icon-paper::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  height: 2px;
-  background: currentColor;
-}
-
-.icon-paper::before {
-  top: 6px;
-}
-
-.icon-paper::after {
-  top: 12px;
-}
-
-.icon-video {
-  border-radius: 6px;
-}
-
-.icon-video::before {
-  content: '';
-  position: absolute;
-  left: 7px;
-  top: 4px;
-  width: 0;
-  height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 7px solid currentColor;
 }
 
 .detail-board {
@@ -622,22 +580,7 @@ onMounted(() => {
 }
 
 .panel-menu-icon {
-  width: 18px;
-  height: 14px;
-  display: inline-block;
-  position: relative;
   color: var(--accent-color);
-}
-
-.panel-menu-icon::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 18px;
-  height: 2px;
-  background: currentColor;
-  box-shadow: 0 6px 0 currentColor, 0 12px 0 currentColor;
 }
 
 .detail-sidebar {
@@ -696,6 +639,9 @@ onMounted(() => {
 }
 
 .next-application-link strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--accent-color);
   font-size: 0.9rem;
   font-weight: 900;

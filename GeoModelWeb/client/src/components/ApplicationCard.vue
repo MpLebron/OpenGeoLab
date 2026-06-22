@@ -16,7 +16,7 @@
 
       <div class="application-body">
         <div class="application-title-line">
-          <span class="document-icon" aria-hidden="true"></span>
+          <AppIcon class="document-icon" name="bookMarked" :size="15" :stroke-width="1.9" />
           <h3 :title="application.title">{{ application.title }}</h3>
         </div>
 
@@ -49,7 +49,7 @@
         :aria-label="action.label"
         :data-tooltip="action.label"
       >
-        <span class="action-icon" :class="`icon-${action.key}`" aria-hidden="true"></span>
+        <AppIcon class="action-icon" :name="actionIconName(action.key)" :size="15" :stroke-width="1.9" />
       </component>
     </div>
   </article>
@@ -58,6 +58,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { resolvePublicResourceUrl } from '../utils/apiClient.js'
+import AppIcon from './AppIcon.vue'
 
 const props = defineProps({
   application: {
@@ -102,6 +103,13 @@ const actions = computed(() => {
     { key: 'video', label: 'Video', href: links.video }
   ]
 })
+
+const actionIconName = (key) => ({
+  code: 'code',
+  demo: 'external',
+  paper: 'fileText',
+  video: 'play'
+}[key] || 'external')
 
 const detailTo = computed(() => ({
   name: 'ApplicationDetail',
@@ -225,25 +233,9 @@ const detailTo = computed(() => ({
 }
 
 .document-icon {
-  width: 18px;
-  height: 22px;
   flex: 0 0 18px;
   margin-top: 0.12rem;
-  border: 2px solid rgba(0, 104, 118, 0.7);
-  border-radius: 3px;
-  position: relative;
-}
-
-.document-icon::before {
-  content: '';
-  position: absolute;
-  right: -2px;
-  top: -2px;
-  width: 7px;
-  height: 7px;
-  background: var(--surface-card);
-  border-left: 2px solid rgba(0, 104, 118, 0.7);
-  border-bottom: 2px solid rgba(0, 104, 118, 0.7);
+  color: rgba(0, 104, 118, 0.82);
 }
 
 .application-title-line h3 {
@@ -392,77 +384,7 @@ const detailTo = computed(() => ({
 }
 
 .action-icon {
-  width: 24px;
-  height: 24px;
-  position: relative;
-  display: inline-block;
-}
-
-.icon-code::before {
-  content: '</>';
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-family: 'Manrope', 'Inter', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
-.icon-demo {
-  border: 2px solid currentColor;
-  border-radius: 4px;
-}
-
-.icon-demo::before {
-  content: '';
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  bottom: -5px;
-  height: 2px;
-  background: currentColor;
-  box-shadow: 0 4px 0 currentColor;
-}
-
-.icon-paper {
-  border: 2px solid currentColor;
-  border-radius: 3px;
-}
-
-.icon-paper::before,
-.icon-paper::after {
-  content: '';
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  height: 2px;
-  background: currentColor;
-}
-
-.icon-paper::before {
-  top: 7px;
-}
-
-.icon-paper::after {
-  top: 14px;
-}
-
-.icon-video {
-  border: 2px solid currentColor;
-  border-radius: 6px;
-}
-
-.icon-video::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 5px;
-  width: 0;
-  height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 8px solid currentColor;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 640px) {

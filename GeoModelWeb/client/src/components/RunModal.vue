@@ -3,7 +3,9 @@
     <div class="run-modal-content">
       <div class="run-modal-header">
         <h3>{{ $t('runModal.title', { name: model?.name }) }}</h3>
-        <button class="close-btn" @click="$emit('close')">×</button>
+        <button class="close-btn" type="button" aria-label="Close" @click="$emit('close')">
+          <AppIcon name="x" :size="17" :stroke-width="2" />
+        </button>
       </div>
 
       <div class="run-modal-body">
@@ -76,7 +78,7 @@
                 </div>
 
                 <div v-else class="run-file-empty">
-                  <span class="run-upload-icon" aria-hidden="true"></span>
+                  <AppIcon class="run-upload-icon" name="upload" :size="30" :stroke-width="1.65" />
                   <strong>Select {{ getRunFileKindLabel(param) }} input</strong>
                   <span>Drop a file here or browse from your computer</span>
                   <em>{{ param.Optional ? $t('runModal.optional') : $t('runModal.required') }} · {{ getRunFileKindLabel(param) }}</em>
@@ -136,19 +138,13 @@
 
             <!-- OptionList (Select Dropdown) -->
             <div v-else-if="param.parameter_type?.OptionList">
-              <select
+              <StyledSelect
                 v-model="formValues[`val${index}`]"
                 class="select-input"
-              >
-                <option value="" disabled>{{ $t('runModal.selectOption') }}</option>
-                <option
-                  v-for="option in param.parameter_type.OptionList.options"
-                  :key="option"
-                  :value="option"
-                >
-                  {{ option }}
-                </option>
-              </select>
+                :options="optionListOptions(param)"
+                :placeholder="$t('runModal.selectOption')"
+                :aria-label="$t('runModal.selectOption')"
+              />
             </div>
 
             <!-- Default Text Input (for String or unknown types) -->
@@ -183,6 +179,8 @@ import {
   getRunFileBadge,
   getRunFileKindLabel
 } from '../utils/runModalFileDisplay.js'
+import StyledSelect from './StyledSelect.vue'
+import AppIcon from './AppIcon.vue'
 import { notify } from '../utils/systemFeedback.js'
 
 const props = defineProps({
@@ -219,6 +217,13 @@ const getTypeHint = (param) => {
 
   return ''
 }
+
+const optionListOptions = (param) => (
+  (param.parameter_type?.OptionList?.options || []).map(option => ({
+    value: option,
+    label: option
+  }))
+)
 
 // Fetch model details when modal opens
 watch(() => props.visible, async (newVal) => {
@@ -562,37 +567,7 @@ const handleExecute = () => {
 }
 
 .run-upload-icon {
-  position: relative;
-  width: 38px;
-  height: 30px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #ffffff;
-}
-
-.run-upload-icon::before,
-.run-upload-icon::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  background: #0f172a;
-  transform: translateX(-50%);
-}
-
-.run-upload-icon::before {
-  top: 8px;
-  width: 2px;
-  height: 13px;
-}
-
-.run-upload-icon::after {
-  top: 8px;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #0f172a;
-  border-left: 2px solid #0f172a;
-  background: transparent;
-  transform: translateX(-50%) rotate(45deg);
+  color: #0f172a;
 }
 
 .selected-run-file {
@@ -688,7 +663,7 @@ const handleExecute = () => {
   font-style: italic;
 }
 
-.text-input, .select-input {
+.text-input {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
@@ -701,14 +676,14 @@ const handleExecute = () => {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.text-input:focus, .select-input:focus {
+.text-input:focus {
   outline: none;
   border-color: #0b5fff;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .select-input {
-  cursor: pointer;
+  width: 100%;
 }
 
 /* Toggle Switch for Boolean */

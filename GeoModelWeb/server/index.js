@@ -544,6 +544,52 @@ function normalizeDataMethodEngine(value) {
     return isDisplayableMethodFacetLabel(label) ? label : null;
 }
 
+function normalizeDataMethodKind(value) {
+    const label = normalizeMethodFacetLabel(value);
+    if (!label || !isDisplayableMethodFacetLabel(label)) {
+        return null;
+    }
+
+    const lower = label.toLowerCase();
+
+    if (lower === 'any') return 'Any';
+    if (lower.includes('raster') || lower.includes('image') || lower.includes('grid') || lower.includes('dem')) return 'Raster';
+    if (lower.includes('vector') || lower.includes('shape') || lower.includes('shp') || lower.includes('point') || lower.includes('line') || lower.includes('polygon')) return 'Vector';
+    if (lower.includes('table') || lower.includes('csv') || lower.includes('excel') || lower.includes('xls') || lower.includes('dbf')) return 'Table';
+    if (lower.includes('lidar') || lower === 'las' || lower === 'laz') return 'LiDAR';
+    if (lower.includes('directory') || lower.includes('folder')) return 'Directory';
+    if (lower.includes('file')) return 'File';
+
+    return 'File';
+}
+
+function normalizeDataMethodRuntime(value) {
+    const label = normalizeMethodFacetLabel(value);
+    if (!label || !isDisplayableMethodFacetLabel(label)) {
+        return null;
+    }
+
+    const lower = label.toLowerCase();
+    if (lower.includes('whitebox')) return 'Whitebox';
+    if (lower.includes('saga')) return 'SAGA';
+    if (lower.includes('python') || lower === 'py') return 'Python';
+
+    return label;
+}
+
+function normalizeDataMethodExecutionMode(value) {
+    const label = normalizeMethodFacetLabel(value);
+    if (!label || !isDisplayableMethodFacetLabel(label)) {
+        return null;
+    }
+
+    const lower = label.toLowerCase();
+    if (lower === 'exe' || lower.includes('executable')) return 'Executable';
+    if (lower === 'py' || lower.includes('python')) return 'Python';
+
+    return label;
+}
+
 function getDataMethodFacetValues(method) {
     const values = [
         ...(Array.isArray(method.tags) ? method.tags : []),
@@ -555,14 +601,45 @@ function getDataMethodFacetValues(method) {
     return Array.from(new Set(values));
 }
 
+function getDataMethodKindValues(method) {
+    return Array.from(new Set([
+        ...(Array.isArray(method.inputKinds) ? method.inputKinds : []),
+        ...(Array.isArray(method.outputKinds) ? method.outputKinds : [])
+    ]
+        .map(normalizeDataMethodKind)
+        .filter(Boolean)));
+}
+
+function getDataMethodRuntimeValues(method) {
+    return Array.from(new Set([
+        normalizeDataMethodRuntime(method.engine)
+    ].filter(Boolean)));
+}
+
+function getDataMethodExecutionModeValues(method) {
+    return Array.from(new Set([
+        normalizeDataMethodExecutionMode(method.execution)
+    ].filter(Boolean)));
+}
+
+function includesFacetValue(values, selectedValue) {
+    return !selectedValue || selectedValue === 'all' || values.includes(selectedValue);
+}
+
 function matchesMethodFilters(method, {
     search = '',
     facet = 'all',
+    dataType = 'all',
+    runtime = 'all',
+    executionMode = 'all',
     interactive = false,
     python = false
 } = {}) {
     const normalizedSearch = String(search || '').trim().toLowerCase();
     const facetValues = getDataMethodFacetValues(method);
+    const dataTypeValues = getDataMethodKindValues(method);
+    const runtimeValues = getDataMethodRuntimeValues(method);
+    const executionModeValues = getDataMethodExecutionModeValues(method);
 
     if (normalizedSearch) {
         const haystacks = [
@@ -572,7 +649,10 @@ function matchesMethodFilters(method, {
             Array.isArray(method.tags) ? method.tags.join(' ') : '',
             method.engine,
             method.execution,
-            method.methodType
+            method.methodType,
+            dataTypeValues.join(' '),
+            runtimeValues.join(' '),
+            executionModeValues.join(' ')
         ]
             .map(value => String(value || '').toLowerCase());
 
@@ -581,7 +661,19 @@ function matchesMethodFilters(method, {
         }
     }
 
-    if (facet && facet !== 'all' && !facetValues.includes(facet)) {
+    if (!includesFacetValue(facetValues, facet)) {
+        return false;
+    }
+
+    if (!includesFacetValue(dataTypeValues, dataType)) {
+        return false;
+    }
+
+    if (!includesFacetValue(runtimeValues, runtime)) {
+        return false;
+    }
+
+    if (!includesFacetValue(executionModeValues, executionMode)) {
         return false;
     }
 
@@ -607,21 +699,88 @@ function matchesMethodFilters(method, {
     return true;
 }
 
-function buildMethodFacetCounts(methods) {
+function sortFacetCounts(entries, priorityOrder = []) {
+    const priority = new Map(priorityOrder.map((label, index) => [label, index]));
+
+    return entries
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => {
+            const priorityA = priority.has(a.label) ? priority.get(a.label) : Number.POSITIVE_INFINITY;
+            const priorityB = priority.has(b.label) ? priority.get(b.label) : Number.POSITIVE_INFINITY;
+
+            if (priorityA !== priorityB) return priorityA - priorityB;
+            return b.count - a.count || a.label.localeCompare(b.label);
+        });
+}
+
+function buildMethodFacetCounts(methods, getValues = getDataMethodFacetValues, priorityOrder = []) {
     const map = new Map();
 
     methods.forEach(method => {
-        getDataMethodFacetValues(method).forEach(label => {
+        getValues(method).forEach(label => {
             map.set(label, (map.get(label) || 0) + 1);
         });
     });
 
-    return Array.from(map.entries())
-        .map(([label, count]) => ({ label, count }))
-        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    return sortFacetCounts(Array.from(map.entries()), priorityOrder);
+}
+
+function buildDataMethodFacetGroups(methods) {
+    return {
+        categories: buildMethodFacetCounts(methods, getDataMethodFacetValues).slice(0, 12),
+        dataTypes: buildMethodFacetCounts(
+            methods,
+            getDataMethodKindValues,
+            ['Raster', 'Vector', 'Table', 'LiDAR', 'File', 'Directory', 'Any']
+        ).slice(0, 8),
+        runtimes: buildMethodFacetCounts(
+            methods,
+            getDataMethodRuntimeValues,
+            ['Whitebox', 'SAGA', 'Python']
+        ).slice(0, 6),
+        executionModes: buildMethodFacetCounts(
+            methods,
+            getDataMethodExecutionModeValues,
+            ['Executable', 'Python']
+        ).slice(0, 6)
+    };
+}
+
+function ensureDataMethodApiToken() {
+    if (API_TOKEN) {
+        return;
+    }
+
+    const error = new Error('Data method API token is not configured');
+    error.code = 'DATA_METHOD_AUTH';
+    throw error;
+}
+
+function isDataMethodAuthError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return error?.code === 'DATA_METHOD_AUTH' ||
+        message.includes('invalid token') ||
+        message.includes('401');
+}
+
+function sendDataMethodError(res, error, fallbackError) {
+    if (isDataMethodAuthError(error)) {
+        const hasConfiguredToken = Boolean(API_TOKEN);
+        res.status(503).json({
+            error: 'Data method service authentication failed',
+            message: hasConfiguredToken
+                ? 'The configured Data Method API token is invalid or expired. Update API_TOKEN or OGMS_TOKEN and restart the backend.'
+                : 'Data Method API token is not configured. Set API_TOKEN or OGMS_TOKEN in GeoModelWeb/server/.env and restart the backend.'
+        });
+        return;
+    }
+
+    res.status(500).json({ error: fallbackError });
 }
 
 async function fetchDataMethodListPage(page, limit) {
+    ensureDataMethodApiToken();
+
     const cacheKey = `page:${page}:limit:${limit}`;
     const cachedValue = getCacheValue(cacheKey);
     if (cachedValue) {
@@ -649,6 +808,8 @@ async function fetchDataMethodListPage(page, limit) {
 }
 
 async function fetchSearchableDataMethodBatch(searchLimit) {
+    ensureDataMethodApiToken();
+
     const cacheKey = `search-batch:${searchLimit}`;
     const cachedValue = getCacheValue(cacheKey);
     if (cachedValue) {
@@ -673,6 +834,8 @@ async function fetchSearchableDataMethodBatch(searchLimit) {
 }
 
 async function fetchAllDataMethods() {
+    ensureDataMethodApiToken();
+
     const cacheKey = 'all';
     const cachedValue = getCacheValue(`repository:${cacheKey}`);
     if (cachedValue) {
@@ -860,10 +1023,19 @@ app.get('/api/datamethods', async (req, res) => {
         const limit = parseInt(req.query.limit) || 12;
         const search = (req.query.q || '').trim().toLowerCase();
         const facet = String(req.query.facet || 'all').trim();
+        const dataType = String(req.query.dataType || 'all').trim();
+        const runtime = String(req.query.runtime || 'all').trim();
+        const executionMode = String(req.query.executionMode || 'all').trim();
         const interactive = String(req.query.interactive || 'false') === 'true';
         const python = String(req.query.python || 'false') === 'true';
 
-        const requiresRepositoryFilter = Boolean(search) || facet !== 'all' || interactive || python;
+        const requiresRepositoryFilter = Boolean(search) ||
+            facet !== 'all' ||
+            dataType !== 'all' ||
+            runtime !== 'all' ||
+            executionMode !== 'all' ||
+            interactive ||
+            python;
 
         // 无搜索、无附加过滤时，直接分页请求后端 API
         if (!requiresRepositoryFilter) {
@@ -876,6 +1048,9 @@ app.get('/api/datamethods', async (req, res) => {
         const filteredMethods = repository.methods.filter(method => matchesMethodFilters(method, {
             search,
             facet,
+            dataType,
+            runtime,
+            executionMode,
             interactive,
             python
         }));
@@ -892,30 +1067,38 @@ app.get('/api/datamethods', async (req, res) => {
         res.json(payload);
     } catch (error) {
         console.error('Error fetching data methods:', error.message);
-        res.status(500).json({ error: 'Failed to fetch data methods' });
+        sendDataMethodError(res, error, 'Failed to fetch data methods');
     }
 });
 
 app.get('/api/datamethods/facets', async (req, res) => {
     try {
         const search = (req.query.q || '').trim().toLowerCase();
+        const dataType = String(req.query.dataType || 'all').trim();
+        const runtime = String(req.query.runtime || 'all').trim();
+        const executionMode = String(req.query.executionMode || 'all').trim();
         const interactive = String(req.query.interactive || 'false') === 'true';
         const python = String(req.query.python || 'false') === 'true';
 
         const repository = await fetchAllDataMethods();
         const scopedMethods = repository.methods.filter(method => matchesMethodFilters(method, {
             search,
+            dataType,
+            runtime,
+            executionMode,
             interactive,
             python
         }));
+        const groups = buildDataMethodFacetGroups(scopedMethods);
 
         res.json({
             total: scopedMethods.length,
-            facets: buildMethodFacetCounts(scopedMethods).slice(0, 8)
+            facets: groups.categories,
+            groups
         });
     } catch (error) {
         console.error('Error fetching data method facets:', error.message);
-        res.status(500).json({ error: 'Failed to fetch data method facets' });
+        sendDataMethodError(res, error, 'Failed to fetch data method facets');
     }
 });
 
@@ -929,7 +1112,7 @@ app.get('/api/datamethods/info/:name', async (req, res) => {
         res.json(response.data);
     } catch (error) {
         console.error(`Error fetching data method info for ${req.params.name}:`, error.message);
-        res.status(500).json({ error: 'Failed to fetch data method info' });
+        sendDataMethodError(res, error, 'Failed to fetch data method info');
     }
 });
 
@@ -945,7 +1128,7 @@ app.get('/api/datamethods/:name', async (req, res) => {
         }
     } catch (error) {
         console.error(`Error fetching data method details for ${req.params.name}:`, error.message);
-        res.status(500).json({ error: 'Failed to fetch data method details' });
+        sendDataMethodError(res, error, 'Failed to fetch data method details');
     }
 });
 
@@ -989,7 +1172,7 @@ app.post('/api/datamethods/run', async (req, res) => {
         }
     } catch (error) {
         console.error('Error running data method:', error.message);
-        res.status(500).json({ error: 'Failed to run data method' });
+        sendDataMethodError(res, error, 'Failed to run data method');
     }
 });
 

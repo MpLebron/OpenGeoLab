@@ -33,6 +33,12 @@ const { normalizeOpenGmsModelFavorite } = require('../utils/openGmsModelLinks');
 const { summarizeProjectFiles } = require('../utils/projectFileSummary');
 const { findProjectThumbnail } = require('../utils/projectThumbnail');
 const {
+    buildPublicCaseDetail,
+    findPublicCaseByOwnerProject,
+    findPublicCaseByProjectId,
+    listPublicCaseSummaries
+} = require('../utils/publicCaseProjects');
+const {
     buildJupyterBasePath,
     buildJupyterLaunchUrl,
     buildJupyterServerId,
@@ -587,13 +593,221 @@ router.get('/images', async (req, res) => {
     }
 });
 
+function createRouteError(status, payload) {
+    const error = new Error(payload?.message || payload?.error || 'Request failed');
+    error.status = status;
+    error.payload = payload;
+    return error;
+}
+
+async function startJupyterProjectForUser(req, projectName) {
+    const userId = req.user.userId;
+    const username = req.user.username;
+
+    const resolvedProject = resolveUserProject(username, projectName);
+    if (!resolvedProject) {
+        throw createRouteError(404, { error: '项目不存在' });
+    }
+
+    const canonicalProjectName = resolvedProject.projectName;
+    const projectDir = resolvedProject.projectDir;
+    const projectMeta = resolvedProject.meta;
+    const containerName = getContainerName(username, canonicalProjectName);
+    const containerKey = `${userId}-${canonicalProjectName}`;
+    const workspaceId = resolvedProject.projectId;
+    const proxyPath = buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH);
+    let projectDataManifest = null;
+    const dataBindingWarnings = [];
+    try {
+        const { dataList } = getUserDataList(userId);
+        projectMeta.name = projectMeta.name || canonicalProjectName;
+        const prepared = await materializeProjectDataForJupyter(
+            projectDir,
+            projectMeta,
+            dataList
+        );
+        projectDataManifest = prepared.manifest;
+        dataBindingWarnings.push(...prepared.warnings);
+        if (Array.isArray(projectMeta.dataBindings)) {
+            saveProjectMeta(projectDir, projectMeta);
+        }
+    } catch (manifestError) {
+        console.warn('Failed to prepare Project Data manifest:', manifestError.message);
+        dataBindingWarnings.push({
+            code: 'project_data_manifest_failed',
+            message: manifestError.message
+        });
+    }
+
+    const runtimeResult = resolveProjectRuntime(projectMeta);
+    if (!runtimeResult.ok) {
+        throw createRouteError(runtimeResult.status, {
+            error: runtimeResult.message,
+            code: runtimeResult.code,
+            imageId: runtimeResult.imageId,
+            runtimeSource: runtimeResult.runtimeSource
+        });
+    }
+
+    const runtimeStatus = await inspectRuntimeReadiness(runtimeResult.runtime, runDockerCommand);
+    if (!runtimeStatus.ok) {
+        throw createRouteError(runtimeStatus.status, {
+            error: runtimeStatus.message,
+            message: runtimeStatus.message,
+            code: runtimeStatus.code,
+            imageId: runtimeStatus.imageId,
+            imageName: runtimeStatus.imageName,
+            runtime: runtimeResult.runtime,
+            runtimeSource: runtimeResult.runtimeSource
+        });
+    }
+
+    const imageName = runtimeResult.runtime.imageName;
+    console.log(`Using project runtime: ${imageName} (${runtimeResult.runtime.label})`);
+
+    const running = await isContainerRunning(containerName);
+    if (running) {
+        const containerInfo = jupyterContainers.get(containerKey);
+        if (containerInfo) {
+            defaultJupyterGatewayRegistry.register({
+                workspaceId: containerInfo.workspaceId || workspaceId,
+                port: containerInfo.port,
+                containerName,
+                username,
+                projectName: canonicalProjectName
+            });
+            return {
+                status: 'already_running',
+                url: containerInfo.url,
+                publicUrl: containerInfo.publicUrl || containerInfo.url,
+                proxyPath: containerInfo.proxyPath || proxyPath,
+                workspaceId: containerInfo.workspaceId || workspaceId,
+                token: containerInfo.token,
+                port: containerInfo.port,
+                containerName,
+                projectName: canonicalProjectName,
+                runtime: containerInfo.runtime || runtimeResult.runtime,
+                runtimeSource: containerInfo.runtimeSource || runtimeResult.runtimeSource,
+                dataBindingManifest: projectDataManifest,
+                dataBindingWarnings
+            };
+        }
+        await runDockerCommand(`docker stop ${containerName}`);
+        await removeContainer(containerName);
+    } else if (await containerExists(containerName)) {
+        console.log(`Removing stale Jupyter container before restart: ${containerName}`);
+        await removeContainer(containerName);
+    }
+
+    const token = generateToken();
+    const port = await findAvailablePort(JUPYTER_BASE_PORT);
+    const openGeoLabApi = process.env.JUPYTER_OPENGEOLAB_API || process.env.OPENGEOLAB_API || 'http://host.docker.internal:3000/api';
+    const portBinding = buildLoopbackDockerPortBinding(port, JUPYTER_BIND_HOST);
+    const openGmsCredentialEnv = buildOpenGmsCredentialEnv();
+    const openGmsCredentialArgs = Object.entries(openGmsCredentialEnv).map(
+        ([key, value]) => `-e ${key}=${shellQuote(value)}`
+    );
+
+    let dockerVolumePath = projectDir;
+    if (process.platform === 'win32') {
+        dockerVolumePath = projectDir.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, letter) => `/${letter.toLowerCase()}`);
+    }
+
+    console.log(`Starting JupyterLab container for project ${canonicalProjectName}...`);
+    console.log(`  Container: ${containerName}`);
+    console.log(`  Port: ${port}`);
+    console.log(`  Volume: ${dockerVolumePath}:/home/jovyan/work`);
+
+    const dockerCommand = [
+        'docker run -d',
+        `--name ${containerName}`,
+        '--add-host=host.docker.internal:host-gateway',
+        `-p ${shellQuote(portBinding)}`,
+        `-v ${shellQuote(`${dockerVolumePath}:/home/jovyan/work`)}`,
+        '-w /home/jovyan/work',
+        '-e JUPYTER_ENABLE_LAB=yes',
+        `-e OPENGEOLAB_API=${shellQuote(openGeoLabApi)}`,
+        `-e JUPYTER_TOKEN=${shellQuote(token)}`,
+        ...openGmsCredentialArgs,
+        '--user root',
+        '-e CHOWN_HOME=yes',
+        '-e CHOWN_HOME_OPTS="-R"',
+        '-e GRANT_SUDO=yes',
+        imageName,
+        'start-notebook.sh',
+        `--ServerApp.base_url=${shellQuote(proxyPath)}`,
+        '--ServerApp.trust_xheaders=True'
+    ].join(' ');
+
+    console.log('Docker command:', redactDockerCommand(dockerCommand));
+
+    const containerId = await runDockerCommand(dockerCommand);
+    console.log(`Container started: ${containerId.substring(0, 12)}`);
+
+    const authHeader = req.headers.authorization || req.headers['authorization'] || '';
+    const jwtToken = authHeader.replace('Bearer ', '');
+    console.log('  JWT Token for extension:', jwtToken ? 'present' : 'missing');
+    const publicOrigin = normalizePublicOrigin(PUBLIC_ORIGIN, req);
+    const url = buildJupyterLaunchUrl({
+        publicOrigin,
+        basePath: JUPYTER_PUBLIC_BASE_PATH,
+        workspaceId,
+        token,
+        geomodelToken: jwtToken,
+        containerName,
+        username,
+        projectName: canonicalProjectName
+    });
+
+    defaultJupyterGatewayRegistry.register({
+        workspaceId,
+        port,
+        containerName,
+        username,
+        projectName: canonicalProjectName
+    });
+
+    jupyterContainers.set(containerKey, {
+        containerId: containerId.substring(0, 12),
+        containerName,
+        port,
+        token,
+        url,
+        publicUrl: url,
+        proxyPath,
+        workspaceId,
+        username,
+        projectName: canonicalProjectName,
+        runtime: runtimeResult.runtime,
+        runtimeSource: runtimeResult.runtimeSource,
+        startTime: new Date()
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    return {
+        status: 'started',
+        url,
+        publicUrl: url,
+        proxyPath,
+        workspaceId,
+        token,
+        port,
+        containerName,
+        projectName: canonicalProjectName,
+        runtime: runtimeResult.runtime,
+        runtimeSource: runtimeResult.runtimeSource,
+        dataBindingManifest: projectDataManifest,
+        dataBindingWarnings,
+        message: 'JupyterLab container is starting...'
+    };
+}
+
 /**
  * POST /api/jupyter/start
  * 启动 JupyterLab Docker 容器（基于项目）
  */
 router.post('/start', async (req, res) => {
-    const userId = req.user.userId;
-    const username = req.user.username;
     const { projectName } = req.body;
 
     if (!projectName) {
@@ -601,218 +815,10 @@ router.post('/start', async (req, res) => {
     }
 
     try {
-        // 检查项目是否存在
-        const resolvedProject = resolveUserProject(username, projectName);
-        if (!resolvedProject) {
-            return res.status(404).json({ error: '项目不存在' });
-        }
-
-        const canonicalProjectName = resolvedProject.projectName;
-        const projectDir = resolvedProject.projectDir;
-        const projectMeta = resolvedProject.meta;
-        const containerName = getContainerName(username, canonicalProjectName);
-        const containerKey = `${userId}-${canonicalProjectName}`;
-        const workspaceId = resolvedProject.projectId;
-        const proxyPath = buildJupyterBasePath(workspaceId, JUPYTER_PUBLIC_BASE_PATH);
-        let projectDataManifest = null;
-        const dataBindingWarnings = [];
-        try {
-            const { dataList } = getUserDataList(userId);
-            projectMeta.name = projectMeta.name || canonicalProjectName;
-            const prepared = await materializeProjectDataForJupyter(
-                projectDir,
-                projectMeta,
-                dataList
-            );
-            projectDataManifest = prepared.manifest;
-            dataBindingWarnings.push(...prepared.warnings);
-            if (Array.isArray(projectMeta.dataBindings)) {
-                saveProjectMeta(projectDir, projectMeta);
-            }
-        } catch (manifestError) {
-            console.warn('Failed to prepare Project Data manifest:', manifestError.message);
-            dataBindingWarnings.push({
-                code: 'project_data_manifest_failed',
-                message: manifestError.message
-            });
-        }
-
-        const runtimeResult = resolveProjectRuntime(projectMeta);
-        if (!runtimeResult.ok) {
-            return res.status(runtimeResult.status).json({
-                error: runtimeResult.message,
-                code: runtimeResult.code,
-                imageId: runtimeResult.imageId,
-                runtimeSource: runtimeResult.runtimeSource
-            });
-        }
-
-        const runtimeStatus = await inspectRuntimeReadiness(runtimeResult.runtime, runDockerCommand);
-        if (!runtimeStatus.ok) {
-            return res.status(runtimeStatus.status).json({
-                error: runtimeStatus.message,
-                message: runtimeStatus.message,
-                code: runtimeStatus.code,
-                imageId: runtimeStatus.imageId,
-                imageName: runtimeStatus.imageName,
-                runtime: runtimeResult.runtime,
-                runtimeSource: runtimeResult.runtimeSource
-            });
-        }
-
-        const imageName = runtimeResult.runtime.imageName;
-        console.log(`Using project runtime: ${imageName} (${runtimeResult.runtime.label})`);
-
-        // 检查容器是否已在运行
-        const running = await isContainerRunning(containerName);
-        if (running) {
-            const containerInfo = jupyterContainers.get(containerKey);
-            if (containerInfo) {
-                defaultJupyterGatewayRegistry.register({
-                    workspaceId: containerInfo.workspaceId || workspaceId,
-                    port: containerInfo.port,
-                    containerName,
-                    username,
-                    projectName: canonicalProjectName
-                });
-                return res.json({
-                    status: 'already_running',
-                    url: containerInfo.url,
-                    publicUrl: containerInfo.publicUrl || containerInfo.url,
-                    proxyPath: containerInfo.proxyPath || proxyPath,
-                    workspaceId: containerInfo.workspaceId || workspaceId,
-                    token: containerInfo.token,
-                    port: containerInfo.port,
-                    containerName,
-                    projectName: canonicalProjectName,
-                    runtime: containerInfo.runtime || runtimeResult.runtime,
-                    runtimeSource: containerInfo.runtimeSource || runtimeResult.runtimeSource,
-                    dataBindingManifest: projectDataManifest,
-                    dataBindingWarnings
-                });
-            }
-            // 容器在运行但没有信息，停止后重新启动
-            await runDockerCommand(`docker stop ${containerName}`);
-            await removeContainer(containerName);
-        } else if (await containerExists(containerName)) {
-            console.log(`Removing stale Jupyter container before restart: ${containerName}`);
-            await removeContainer(containerName);
-        }
-
-        // 生成 token 和查找端口
-        const token = generateToken();
-        const port = await findAvailablePort(JUPYTER_BASE_PORT);
-        const openGeoLabApi = process.env.JUPYTER_OPENGEOLAB_API || process.env.OPENGEOLAB_API || 'http://host.docker.internal:3000/api';
-        const portBinding = buildLoopbackDockerPortBinding(port, JUPYTER_BIND_HOST);
-        const openGmsCredentialEnv = buildOpenGmsCredentialEnv();
-        const openGmsCredentialArgs = Object.entries(openGmsCredentialEnv).map(
-            ([key, value]) => `-e ${key}=${shellQuote(value)}`
-        );
-
-        // 将 Windows 项目路径转换为 Docker 可用的格式
-        let dockerVolumePath = projectDir;
-        if (process.platform === 'win32') {
-            dockerVolumePath = projectDir.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, letter) => `/${letter.toLowerCase()}`);
-        }
-
-        console.log(`Starting JupyterLab container for project ${canonicalProjectName}...`);
-        console.log(`  Container: ${containerName}`);
-        console.log(`  Port: ${port}`);
-        console.log(`  Volume: ${dockerVolumePath}:/home/jovyan/work`);
-
-        // 启动 Docker 容器 - 使用预装了扩展的自定义镜像
-        // 项目目录挂载到 /home/jovyan/work
-        const dockerCommand = [
-            'docker run -d',
-            `--name ${containerName}`,
-            '--add-host=host.docker.internal:host-gateway',
-            `-p ${shellQuote(portBinding)}`,
-            `-v ${shellQuote(`${dockerVolumePath}:/home/jovyan/work`)}`,
-            '-w /home/jovyan/work',
-            '-e JUPYTER_ENABLE_LAB=yes',
-            `-e OPENGEOLAB_API=${shellQuote(openGeoLabApi)}`,
-            `-e JUPYTER_TOKEN=${shellQuote(token)}`,
-            ...openGmsCredentialArgs,
-            '--user root',
-            '-e CHOWN_HOME=yes',
-            '-e CHOWN_HOME_OPTS="-R"',
-            '-e GRANT_SUDO=yes',
-            imageName,  // 使用选择的镜像
-            'start-notebook.sh',
-            `--ServerApp.base_url=${shellQuote(proxyPath)}`,
-            '--ServerApp.trust_xheaders=True'
-        ].join(' ');
-
-        console.log('Docker command:', redactDockerCommand(dockerCommand));
-
-        const containerId = await runDockerCommand(dockerCommand);
-        console.log(`Container started: ${containerId.substring(0, 12)}`);
-
-        // URL 使用配置的主机地址，支持局域网访问
-        // 注意：这里的 token 是 Jupyter 的认证 token
-        // 用户的 GeoModelWeb JWT 需要从请求头获取，传给扩展用于访问收藏 API
-        const authHeader = req.headers.authorization || req.headers['authorization'] || '';
-        const jwtToken = authHeader.replace('Bearer ', '');
-        console.log('  JWT Token for extension:', jwtToken ? 'present' : 'missing');
-        const publicOrigin = normalizePublicOrigin(PUBLIC_ORIGIN, req);
-        const url = buildJupyterLaunchUrl({
-            publicOrigin,
-            basePath: JUPYTER_PUBLIC_BASE_PATH,
-            workspaceId,
-            token,
-            geomodelToken: jwtToken,
-            containerName,
-            username,
-            projectName: canonicalProjectName
-        });
-
-        defaultJupyterGatewayRegistry.register({
-            workspaceId,
-            port,
-            containerName,
-            username,
-            projectName: canonicalProjectName
-        });
-
-        // 存储容器信息
-        jupyterContainers.set(containerKey, {
-            containerId: containerId.substring(0, 12),
-            containerName,
-            port,
-            token,
-            url,
-            publicUrl: url,
-            proxyPath,
-            workspaceId,
-            username,
-            projectName: canonicalProjectName,
-            runtime: runtimeResult.runtime,
-            runtimeSource: runtimeResult.runtimeSource,
-            startTime: new Date()
-        });
-
-        // 等待 Jupyter 启动
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        res.json({
-            status: 'started',
-            url,
-            publicUrl: url,
-            proxyPath,
-            workspaceId,
-            token,
-            port,
-            containerName,
-            projectName: canonicalProjectName,
-            runtime: runtimeResult.runtime,
-            runtimeSource: runtimeResult.runtimeSource,
-            dataBindingManifest: projectDataManifest,
-            dataBindingWarnings,
-            message: 'JupyterLab container is starting...'
-        });
+        return res.json(await startJupyterProjectForUser(req, projectName));
     } catch (error) {
         console.error('Error starting Jupyter container:', error);
-        res.status(500).json({
+        return res.status(error.status || 500).json(error.payload || {
             error: 'Failed to start JupyterLab',
             message: error.stderr || error.message || 'Unknown error'
         });
@@ -1121,19 +1127,27 @@ const SHARED_NOTEBOOK_EXTENSIONS = new Set(['.ipynb']);
 const SHARED_CODE_EXTENSIONS = new Set([
     '.py', '.r', '.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs',
     '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.go', '.rs',
-    '.sh', '.bash', '.zsh', '.sql', '.jl', '.m'
+    '.sh', '.bash', '.zsh', '.sql', '.jl', '.m', '.css', '.scss', '.less'
 ]);
+const SHARED_MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.qmd']);
+const SHARED_TABLE_EXTENSIONS = new Set(['.csv', '.tsv']);
+const SHARED_JSON_EXTENSIONS = new Set(['.json', '.jsonl', '.ndjson']);
+const SHARED_GEOJSON_EXTENSIONS = new Set(['.geojson', '.topojson']);
+const SHARED_HTML_EXTENSIONS = new Set(['.html', '.htm']);
+const SHARED_PDF_EXTENSIONS = new Set(['.pdf']);
+const SHARED_ARCHIVE_EXTENSIONS = new Set(['.zip']);
 const SHARED_TEXT_EXTENSIONS = new Set([
-    '.md', '.txt', '.json', '.geojson', '.csv', '.tsv', '.xml',
-    '.yml', '.yaml', '.toml', '.ini', '.cfg', '.conf', '.log',
-    '.html', '.css', '.scss', '.less'
+    '.txt', '.xml', '.yml', '.yaml', '.toml', '.ini', '.cfg', '.conf',
+    '.log', '.prj', '.wkt', '.sld', '.cpg'
 ]);
+const SHARED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg']);
 const SHARED_UNSUPPORTED_EXTENSIONS = new Set([
     '.tif', '.tiff', '.geotiff', '.nc', '.h5', '.hdf5', '.grd',
-    '.zip', '.rar', '.7z', '.tar', '.gz', '.pdf', '.doc', '.docx',
-    '.xls', '.xlsx', '.ppt', '.pptx', '.png', '.jpg', '.jpeg',
-    '.gif', '.bmp', '.webp', '.svg'
+    '.rar', '.7z', '.tar', '.gz', '.doc', '.docx', '.xls', '.xlsx',
+    '.ppt', '.pptx'
 ]);
+const SHARED_TEXT_PREVIEW_KINDS = new Set(['code', 'text', 'markdown', 'table', 'json', 'geojson', 'html']);
+const SHARED_DIRECT_FILE_PREVIEW_KINDS = new Set(['image', 'pdf']);
 
 function getSharedPreviewInfo(fileName, entryType = 'file') {
     if (entryType === 'folder') {
@@ -1164,6 +1178,69 @@ function getSharedPreviewInfo(fileName, entryType = 'file') {
         };
     }
 
+    if (SHARED_IMAGE_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'image',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
+    if (SHARED_PDF_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'pdf',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
+    if (SHARED_HTML_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'html',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
+    if (SHARED_MARKDOWN_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'markdown',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
+    if (SHARED_GEOJSON_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'geojson',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
+    if (SHARED_TABLE_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'table',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
+    if (SHARED_JSON_EXTENSIONS.has(extension)) {
+        return {
+            extension,
+            previewKind: 'json',
+            previewSupported: true,
+            previewReason: ''
+        };
+    }
+
     if (SHARED_CODE_EXTENSIONS.has(extension)) {
         return {
             extension,
@@ -1182,12 +1259,12 @@ function getSharedPreviewInfo(fileName, entryType = 'file') {
         };
     }
 
-    if (SHARED_UNSUPPORTED_EXTENSIONS.has(extension)) {
+    if (SHARED_ARCHIVE_EXTENSIONS.has(extension)) {
         return {
             extension,
-            previewKind: 'unsupported',
-            previewSupported: false,
-            previewReason: '该类文件暂不支持在线预览'
+            previewKind: 'archive',
+            previewSupported: true,
+            previewReason: ''
         };
     }
 
@@ -1589,6 +1666,126 @@ function sendPrivateProjectFileDownload(req, res) {
     } catch (error) {
         console.error('Error downloading project file:', error);
         return res.status(500).json({ error: '文件下载失败' });
+    }
+}
+
+function sendPrivateProjectFileContent(req, res) {
+    const username = req.user.username;
+    const { projectName, filePath } = req.params;
+    const resolvedFile = resolvePrivateProjectFile(username, projectName, filePath);
+    if (resolvedFile.error) {
+        return res.status(resolvedFile.status).json({ error: resolvedFile.error });
+    }
+
+    try {
+        const { fullPath, decodedPath } = resolvedFile;
+        const stats = fs.statSync(fullPath);
+        if (stats.isDirectory()) {
+            return res.status(415).json({
+                error: '文件夹暂不支持直接预览',
+                preview: getSharedPreviewInfo(path.basename(fullPath), 'folder')
+            });
+        }
+
+        const preview = getSharedPreviewInfo(fullPath, 'file');
+        if (!preview.previewSupported || !SHARED_TEXT_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.status(415).json({
+                error: preview.previewReason || '当前文件类型不支持文本内容预览',
+                preview
+            });
+        }
+
+        if (stats.size > 1024 * 1024 * 4) {
+            return res.status(400).json({ error: '文件过大，无法在线预览' });
+        }
+
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        return res.json({
+            name: path.basename(fullPath),
+            path: decodedPath,
+            content,
+            size: stats.size,
+            modifiedAt: stats.mtime,
+            ...preview
+        });
+    } catch (error) {
+        console.error('Error reading project file:', error);
+        return res.status(500).json({ error: '读取文件失败' });
+    }
+}
+
+async function sendPrivateProjectFilePreview(req, res) {
+    const username = req.user.username;
+    const { projectName, filePath } = req.params;
+    const resolvedFile = resolvePrivateProjectFile(username, projectName, filePath);
+    if (resolvedFile.error) {
+        return res.status(resolvedFile.status).json({ error: resolvedFile.error });
+    }
+
+    try {
+        const { fullPath, decodedPath } = resolvedFile;
+        const stats = fs.statSync(fullPath);
+        if (stats.isDirectory()) {
+            return res.status(415).json({
+                error: '文件夹暂不支持直接预览',
+                preview: getSharedPreviewInfo(path.basename(fullPath), 'folder')
+            });
+        }
+
+        const preview = getSharedPreviewInfo(fullPath, 'file');
+        if (!preview.previewSupported) {
+            return res.status(415).json({
+                error: preview.previewReason,
+                preview
+            });
+        }
+
+        if (SHARED_DIRECT_FILE_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.sendFile(fullPath);
+        }
+
+        if (SHARED_TEXT_PREVIEW_KINDS.has(preview.previewKind)) {
+            if (stats.size > 1024 * 1024 * 4) {
+                return res.status(400).json({ error: '文件过大，无法在线预览' });
+            }
+            return res.json({
+                name: path.basename(fullPath),
+                path: decodedPath,
+                content: fs.readFileSync(fullPath, 'utf8'),
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
+            });
+        }
+
+        if (preview.previewKind === 'archive') {
+            const archive = await listSharedZipEntries(fullPath);
+            return res.json({
+                name: path.basename(fullPath),
+                path: decodedPath,
+                archive,
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
+            });
+        }
+
+        if (preview.previewKind !== 'notebook') {
+            return res.status(400).json({ error: '当前文件类型不需要独立预览接口' });
+        }
+
+        const html = await renderNotebookPreviewHtml(fullPath);
+        return res.json({
+            name: path.basename(fullPath),
+            path: decodedPath,
+            html,
+            size: stats.size,
+            modifiedAt: stats.mtime,
+            ...preview
+        });
+    } catch (error) {
+        console.error('Error rendering project file preview:', error);
+        return res.status(500).json({ error: '文件预览生成失败' });
     }
 }
 
@@ -2011,46 +2208,20 @@ router.get('/projects/:projectName/folder', (req, res) => {
 });
 
 /**
- * GET /api/jupyter/projects/:projectName/files/:filePath/content
+ * GET /api/jupyter/projects/:projectName/files/*filePath/content
  * 获取文本文件内容
- * filePath 需要被 encodeURIComponent 编码
+ * filePath 支持 data/outputs 等多级嵌套路径
  */
-router.get('/projects/:projectName/files/:filePath/content', (req, res) => {
-    const username = req.user.username;
-    const { projectName, filePath } = req.params;
-    const userDir = path.join(USER_DATA_DIR, username);
-    const projectDir = path.join(userDir, projectName);
-    const fullPath = path.join(projectDir, filePath);
+router.get('/projects/:projectName/files/*filePath/content', (req, res) => {
+    return sendPrivateProjectFileContent(req, res);
+});
 
-    // 安全检查：确保路径在项目目录内
-    const realPath = path.resolve(fullPath);
-    const realProject = path.resolve(projectDir);
-    if (!realPath.startsWith(realProject)) {
-        return res.status(403).json({ error: '访问被拒绝' });
-    }
-
-    if (!fs.existsSync(fullPath)) {
-        return res.status(404).json({ error: '文件不存在' });
-    }
-
-    try {
-        const stats = fs.statSync(fullPath);
-
-        // 限制文件大小（最大 1MB）
-        if (stats.size > 1024 * 1024) {
-            return res.status(400).json({ error: '文件太大，无法预览' });
-        }
-
-        const content = fs.readFileSync(fullPath, 'utf8');
-        res.json({
-            content,
-            size: stats.size,
-            modifiedAt: stats.mtime
-        });
-    } catch (error) {
-        console.error('Error reading file:', error);
-        res.status(500).json({ error: '读取文件失败' });
-    }
+/**
+ * GET /api/jupyter/projects/:projectName/files/*filePath/preview
+ * 获取当前用户项目文件的专业预览内容
+ */
+router.get('/projects/:projectName/files/*filePath/preview', async (req, res) => {
+    return sendPrivateProjectFilePreview(req, res);
 });
 
 /**
@@ -3001,6 +3172,53 @@ function buildPublicWorkspaceProject(owner, projectName, projectDir, meta) {
     };
 }
 
+function listSharedZipEntries(filePath, options = {}) {
+    const maxEntries = Number.parseInt(options.maxEntries || '500', 10);
+
+    return new Promise(resolve => {
+        execFile(
+            'unzip',
+            ['-l', filePath],
+            { timeout: 7000, maxBuffer: 1024 * 1024 * 4 },
+            (error, stdout) => {
+                if (error) {
+                    resolve({
+                        entries: [],
+                        totalEntries: 0,
+                        truncated: false,
+                        error: 'Archive listing is unavailable on this machine.'
+                    });
+                    return;
+                }
+
+                const entries = String(stdout || '')
+                    .split(/\r?\n/)
+                    .map(line => {
+                        const match = line.match(/^\s*(\d+)\s+(\d{2,4}-\d{2}-\d{2,4})\s+(\d{2}:\d{2})\s+(.+?)\s*$/);
+                        if (!match) return null;
+                        const name = match[4];
+                        if (!name || name === 'Name') return null;
+                        return {
+                            size: Number.parseInt(match[1], 10) || 0,
+                            date: match[2],
+                            time: match[3],
+                            name,
+                            isDirectory: name.endsWith('/')
+                        };
+                    })
+                    .filter(Boolean);
+
+                resolve({
+                    entries: entries.slice(0, maxEntries),
+                    totalEntries: entries.length,
+                    truncated: entries.length > maxEntries,
+                    error: ''
+                });
+            }
+        );
+    });
+}
+
 function sendPublicWorkspaceFileContent(req, res) {
     const { owner, projectName, filePath } = req.params;
     const resolvedFile = resolveSharedProjectFile(owner, projectName, filePath);
@@ -3019,11 +3237,15 @@ function sendPublicWorkspaceFileContent(req, res) {
         }
 
         const preview = getSharedPreviewInfo(fullPath, 'file');
-        if (!preview.previewSupported) {
+        if (!preview.previewSupported || !SHARED_TEXT_PREVIEW_KINDS.has(preview.previewKind)) {
             return res.status(415).json({
-                error: preview.previewReason,
+                error: preview.previewReason || '当前文件类型不支持文本内容预览',
                 preview
             });
+        }
+
+        if (stats.size > 1024 * 1024 * 4) {
+            return res.status(400).json({ error: '文件过大，无法在线预览' });
         }
 
         const content = fs.readFileSync(fullPath, 'utf-8');
@@ -3063,6 +3285,33 @@ async function sendPublicWorkspaceNotebookPreview(req, res) {
             return res.status(415).json({
                 error: preview.previewReason,
                 preview
+            });
+        }
+
+        if (SHARED_DIRECT_FILE_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.sendFile(fullPath);
+        }
+
+        if (SHARED_TEXT_PREVIEW_KINDS.has(preview.previewKind)) {
+            return res.json({
+                name: path.basename(fullPath),
+                path: decodedPath,
+                content: fs.readFileSync(fullPath, 'utf8'),
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
+            });
+        }
+
+        if (preview.previewKind === 'archive') {
+            const archive = await listSharedZipEntries(fullPath);
+            return res.json({
+                name: path.basename(fullPath),
+                path: decodedPath,
+                archive,
+                size: stats.size,
+                modifiedAt: stats.mtime,
+                ...preview
             });
         }
 
@@ -3147,6 +3396,195 @@ function copyDirectorySync(src, dest) {
         }
     }
 }
+
+function findExistingCaseFork(username, sourceCase) {
+    const userDir = path.join(USER_DATA_DIR, username);
+    if (!sourceCase?.projectId || !fs.existsSync(userDir)) return null;
+
+    const entries = fs.readdirSync(userDir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === '__pycache__') continue;
+
+        const projectDir = path.join(userDir, entry.name);
+        const meta = getProjectMeta(projectDir);
+        const sourceProjectId = String(meta.sourceCase?.projectId || '').trim();
+        const forkedOwner = String(meta.forkedFrom?.owner || '').trim();
+        const forkedProjectName = String(meta.forkedFrom?.projectName || '').trim();
+
+        if (
+            sourceProjectId === sourceCase.projectId ||
+            (
+                forkedOwner === sourceCase.owner &&
+                forkedProjectName === sourceCase.projectName
+            )
+        ) {
+            return {
+                projectName: entry.name,
+                projectDir,
+                meta,
+                projectId: ensureProjectWorkspaceId(projectDir, meta)
+            };
+        }
+    }
+
+    return null;
+}
+
+function buildForkedCaseProjectResponse(username, userId, projectName, projectDir, meta) {
+    const fileSummary = getProjectFileSummary(projectDir);
+    return {
+        projectId: ensureProjectWorkspaceId(projectDir, meta),
+        name: projectName,
+        description: meta.description || '',
+        ...fileSummary,
+        ...getRuntimeFields(meta),
+        isPublic: false,
+        isCase: false,
+        caseTitle: '',
+        case: null,
+        dataBindings: resolveProjectDataBindings(meta, getUserDataList(userId).dataList, { projectDir }),
+        dataBindingCount: Array.isArray(meta.dataBindings) ? meta.dataBindings.length : 0,
+        forkedFrom: meta.forkedFrom || null,
+        sourceCase: meta.sourceCase || null,
+        owner: username
+    };
+}
+
+function forkPublicCaseProjectToUser({ sourceCase, currentUser, currentUserId, newName = '' }) {
+    if (!sourceCase) {
+        throw createRouteError(404, { error: 'Case project not found' });
+    }
+
+    if (sourceCase.owner === currentUser) {
+        throw createRouteError(400, { error: '不能 fork 自己的项目' });
+    }
+
+    let targetName = String(newName || '').trim() || sourceCase.projectName;
+    const userDir = path.join(USER_DATA_DIR, currentUser);
+    let targetDir = path.join(userDir, targetName);
+    let suffix = 1;
+    while (fs.existsSync(targetDir)) {
+        targetName = `${String(newName || '').trim() || sourceCase.projectName}-${suffix}`;
+        targetDir = path.join(userDir, targetName);
+        suffix++;
+    }
+
+    fs.mkdirSync(userDir, { recursive: true });
+    copyDirectorySync(sourceCase.projectDir, targetDir);
+
+    const sourceRuntime = resolveProjectRuntime(sourceCase.meta);
+    const runtimeMeta = buildProjectRuntimeMeta(sourceRuntime.ok ? sourceRuntime.imageId : DEFAULT_IMAGE);
+    const caseMeta = sourceCase.meta.case || {};
+    const newMeta = {
+        projectId: crypto.randomUUID(),
+        name: targetName,
+        description: sourceCase.meta.description || caseMeta.summary || '',
+        isPublic: false,
+        isCase: false,
+        dataBindings: Array.isArray(sourceCase.meta.dataBindings)
+            ? sourceCase.meta.dataBindings.map(binding => ({ ...binding }))
+            : [],
+        ...runtimeMeta,
+        forkedFrom: {
+            owner: sourceCase.owner,
+            projectName: sourceCase.projectName
+        },
+        sourceCase: {
+            projectId: sourceCase.projectId,
+            owner: sourceCase.owner,
+            projectName: sourceCase.projectName,
+            title: caseMeta.title || sourceCase.projectName
+        },
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser,
+        forkedAt: new Date().toISOString()
+    };
+    saveProjectMeta(targetDir, newMeta);
+
+    return {
+        status: 'forked',
+        project: {
+            ...buildForkedCaseProjectResponse(currentUser, currentUserId, targetName, targetDir, newMeta)
+        }
+    };
+}
+
+router.post('/cases/:projectId/fork', (req, res) => {
+    try {
+        const sourceCase = findPublicCaseByProjectId(req.params.projectId);
+        const result = forkPublicCaseProjectToUser({
+            sourceCase,
+            currentUser: req.user.username,
+            currentUserId: req.user.userId,
+            newName: req.body?.newName
+        });
+        return res.json(result);
+    } catch (error) {
+        console.error('Error forking public case project:', error);
+        return res.status(error.status || 500).json(error.payload || { error: 'Fork case project failed' });
+    }
+});
+
+router.post('/cases/:projectId/run', async (req, res) => {
+    try {
+        const sourceCase = findPublicCaseByProjectId(req.params.projectId);
+        if (!sourceCase) {
+            return res.status(404).json({ error: 'Case project not found' });
+        }
+
+        let projectName = sourceCase.projectName;
+        let project = {
+            projectId: sourceCase.projectId,
+            name: sourceCase.projectName,
+            owner: sourceCase.owner,
+            sourceCase: {
+                projectId: sourceCase.projectId,
+                owner: sourceCase.owner,
+                projectName: sourceCase.projectName
+            }
+        };
+
+        if (sourceCase.owner !== req.user.username) {
+            const existingFork = findExistingCaseFork(req.user.username, sourceCase);
+            if (existingFork) {
+                projectName = existingFork.projectName;
+                project = buildForkedCaseProjectResponse(
+                    req.user.username,
+                    req.user.userId,
+                    existingFork.projectName,
+                    existingFork.projectDir,
+                    existingFork.meta
+                );
+            } else {
+                const forkResult = forkPublicCaseProjectToUser({
+                    sourceCase,
+                    currentUser: req.user.username,
+                    currentUserId: req.user.userId,
+                    newName: req.body?.newName
+                });
+                projectName = forkResult.project.name;
+                project = forkResult.project;
+            }
+        }
+
+        const launch = await startJupyterProjectForUser(req, projectName);
+        return res.json({
+            ...launch,
+            project,
+            sourceCase: {
+                projectId: sourceCase.projectId,
+                owner: sourceCase.owner,
+                projectName: sourceCase.projectName
+            }
+        });
+    } catch (error) {
+        console.error('Error running public case project:', error);
+        return res.status(error.status || 500).json(error.payload || {
+            error: 'Run case project failed',
+            message: error.stderr || error.message || 'Unknown error'
+        });
+    }
+});
 
 /**
  * POST /api/jupyter/fork/:owner/:projectName
@@ -3333,7 +3771,7 @@ router.put('/projects/:projectName/case', (req, res) => {
  */
 router.get('/cases', async (req, res) => {
     try {
-        return res.json({ cases: await listPublicProjectSummaries() });
+        return res.json({ cases: await listPublicCaseSummaries() });
     } catch (error) {
         console.error('Error fetching cases:', error);
         return res.status(500).json({ error: 'Failed to fetch cases' });
@@ -3345,6 +3783,9 @@ router.get('/cases', async (req, res) => {
  * Read public case text/code artifacts.
  */
 router.get('/cases/:owner/:projectName/files/*filePath/content', (req, res) => {
+    if (!findPublicCaseByOwnerProject(req.params.owner, req.params.projectName)) {
+        return res.status(404).json({ error: 'Case project not found' });
+    }
     return sendPublicWorkspaceFileContent(req, res);
 });
 
@@ -3353,6 +3794,9 @@ router.get('/cases/:owner/:projectName/files/*filePath/content', (req, res) => {
  * Render public case notebook artifacts.
  */
 router.get('/cases/:owner/:projectName/files/*filePath/preview', async (req, res) => {
+    if (!findPublicCaseByOwnerProject(req.params.owner, req.params.projectName)) {
+        return res.status(404).json({ error: 'Case project not found' });
+    }
     return sendPublicWorkspaceNotebookPreview(req, res);
 });
 
@@ -3361,6 +3805,9 @@ router.get('/cases/:owner/:projectName/files/*filePath/preview', async (req, res
  * Download public case artifacts.
  */
 router.get('/cases/:owner/:projectName/files/*filePath/download', (req, res) => {
+    if (!findPublicCaseByOwnerProject(req.params.owner, req.params.projectName)) {
+        return res.status(404).json({ error: 'Case project not found' });
+    }
     return sendPublicWorkspaceFileDownload(req, res);
 });
 
@@ -3370,20 +3817,14 @@ router.get('/cases/:owner/:projectName/files/*filePath/download', (req, res) => 
  */
 router.get('/cases/:owner/:projectName', (req, res) => {
     const { owner, projectName } = req.params;
-    const projectDir = path.join(USER_DATA_DIR, owner, projectName);
-
-    if (!fs.existsSync(projectDir)) {
+    const project = findPublicCaseByOwnerProject(owner, projectName);
+    if (!project) {
         return res.status(404).json({ error: 'Case project not found' });
-    }
-
-    const meta = getProjectMeta(projectDir);
-    if (!meta.isPublic) {
-        return res.status(403).json({ error: 'This project is not public' });
     }
 
     try {
         return res.json({
-            case: buildPublicWorkspaceProject(owner, projectName, projectDir, meta)
+            case: buildPublicCaseDetail(project)
         });
     } catch (error) {
         console.error('Error fetching case detail:', error);

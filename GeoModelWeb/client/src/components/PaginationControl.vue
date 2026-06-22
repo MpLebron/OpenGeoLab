@@ -7,7 +7,7 @@
       :aria-label="previousLabel"
       @click="goToPage(normalizedCurrentPage - 1)"
     >
-      ‹
+      <AppIcon name="chevronRight" class="pagination-prev-icon" :size="14" :stroke-width="2" />
     </button>
 
     <template v-for="item in pageItems" :key="item.key">
@@ -33,13 +33,14 @@
       :aria-label="nextLabel"
       @click="goToPage(normalizedCurrentPage + 1)"
     >
-      ›
+      <AppIcon name="chevronRight" :size="14" :stroke-width="2" />
     </button>
   </nav>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import AppIcon from './AppIcon.vue'
 
 const props = defineProps({
   currentPage: {
@@ -160,8 +161,11 @@ const goToPage = page => {
 }
 
 .pagination-nav {
-  font-size: 1.55rem;
-  font-weight: 700;
+  font-size: 0;
+}
+
+.pagination-prev-icon {
+  transform: rotate(180deg);
 }
 
 .pagination-nav:not(:disabled):hover,
