@@ -277,9 +277,10 @@ const detailTo = computed(() => ({
 .application-tags {
   flex: 1 1 auto;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.38rem;
   min-width: 0;
+  overflow: hidden;
 }
 
 .application-tags span {
