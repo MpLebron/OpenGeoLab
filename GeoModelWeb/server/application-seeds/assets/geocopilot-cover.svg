@@ -1,107 +1,136 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
-  <title id="title">GeoCopilot cover</title>
-  <desc id="desc">A light geospatial AI interface with a 3D building scene and natural language command panel.</desc>
+  <title id="title">GeoCopilot OpenGMS-Jupyter-Agent cover</title>
+  <desc id="desc">A light JupyterLab notebook interface with an AI agent sidebar writing and repairing geospatial analysis cells.</desc>
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#effcff"/>
-      <stop offset="0.46" stop-color="#f6fbf2"/>
-      <stop offset="1" stop-color="#f5f0ff"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5fbff"/>
+      <stop offset="0.48" stop-color="#f9fbf4"/>
+      <stop offset="1" stop-color="#f4f1ff"/>
     </linearGradient>
-    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.96"/>
-      <stop offset="1" stop-color="#f4f8ff" stop-opacity="0.9"/>
+    <linearGradient id="mint" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#62d7c5"/>
+      <stop offset="1" stop-color="#3694ff"/>
     </linearGradient>
-    <linearGradient id="building" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7de3d7"/>
-      <stop offset="1" stop-color="#5b8df6"/>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0b3"/>
+      <stop offset="1" stop-color="#f5a36d"/>
     </linearGradient>
-    <linearGradient id="buildingWarm" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff1a7"/>
-      <stop offset="1" stop-color="#f5a66a"/>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ece4ff"/>
+      <stop offset="1" stop-color="#a88bff"/>
     </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#537092" flood-opacity="0.18"/>
+    <filter id="shadow" x="-18%" y="-18%" width="136%" height="150%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#53657f" flood-opacity="0.18"/>
     </filter>
-    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
-      <path d="M56 0H0V56" fill="none" stroke="#7aa2bd" stroke-width="1" stroke-opacity="0.14"/>
+    <pattern id="grid" width="52" height="52" patternUnits="userSpaceOnUse">
+      <path d="M52 0H0V52" fill="none" stroke="#7c99ae" stroke-width="1" stroke-opacity="0.12"/>
     </pattern>
   </defs>
 
-  <rect width="1200" height="675" rx="34" fill="url(#sky)"/>
+  <rect width="1200" height="675" rx="34" fill="url(#bg)"/>
   <rect width="1200" height="675" fill="url(#grid)"/>
 
-  <g opacity="0.72">
-    <path d="M122 484C276 365 391 344 535 416C680 488 783 472 916 360C1001 288 1070 266 1126 281" fill="none" stroke="#65c8c6" stroke-width="5" stroke-linecap="round"/>
-    <path d="M94 532C260 421 404 399 558 473C713 548 828 526 1014 399" fill="none" stroke="#b99df5" stroke-width="3" stroke-linecap="round" stroke-opacity="0.8"/>
+  <g opacity="0.78">
+    <path d="M104 516C235 432 329 411 453 456C585 504 675 480 788 382C878 304 968 285 1084 318" fill="none" stroke="#63cabb" stroke-width="5" stroke-linecap="round"/>
+    <path d="M127 562C275 474 397 462 532 522C654 576 792 527 1005 402" fill="none" stroke="#a98ef4" stroke-width="3" stroke-linecap="round" stroke-opacity="0.7"/>
   </g>
 
-  <g transform="translate(108 88)" filter="url(#softShadow)">
-    <rect width="398" height="470" rx="26" fill="url(#panel)" stroke="#d7e4ee"/>
-    <rect x="28" y="29" width="116" height="34" rx="17" fill="#e8fbf6" stroke="#b9efe2"/>
-    <text x="49" y="52" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700" fill="#12806f">GeoCopilot</text>
-    <text x="28" y="112" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="800" fill="#182235">Control 3D scenes</text>
-    <text x="28" y="150" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="600" fill="#607086">with natural language</text>
+  <g transform="translate(86 74)" filter="url(#shadow)">
+    <rect width="1030" height="520" rx="28" fill="#ffffff" fill-opacity="0.86" stroke="#dbe5ef"/>
 
-    <g transform="translate(28 205)">
-      <rect width="342" height="64" rx="18" fill="#ffffff" stroke="#d8e5f0"/>
-      <circle cx="34" cy="32" r="13" fill="#65d8c7"/>
-      <path d="M31 32h6M34 29v6" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-      <text x="62" y="37" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#1f2a3d">show all layers</text>
+    <g>
+      <rect width="1030" height="54" rx="28" fill="#101725"/>
+      <path d="M0 28C0 12.5 12.5 0 28 0h974c15.5 0 28 12.5 28 28v26H0Z" fill="#101725"/>
+      <circle cx="36" cy="27" r="8" fill="#ff7979"/>
+      <circle cx="62" cy="27" r="8" fill="#ffc861"/>
+      <circle cx="88" cy="27" r="8" fill="#67d0ad"/>
+      <text x="129" y="33" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#eef4ff">OpenGMS-Jupyter-Agent</text>
+      <rect x="800" y="14" width="178" height="26" rx="13" fill="#ffffff" fill-opacity="0.12"/>
+      <text x="824" y="32" font-family="IBM Plex Mono, Menlo, monospace" font-size="11" font-weight="600" fill="#cbd7e7">Notebook-aware AI</text>
     </g>
 
-    <g transform="translate(28 288)">
-      <rect width="342" height="64" rx="18" fill="#ffffff" stroke="#d8e5f0"/>
-      <circle cx="34" cy="32" r="13" fill="#8aa6ff"/>
-      <path d="M27 34c20-14 26-8 12 7" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-      <text x="62" y="37" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#1f2a3d">fly to the building</text>
+    <g transform="translate(24 78)">
+      <rect width="210" height="402" rx="22" fill="#f5f8fb" stroke="#dde7f0"/>
+      <text x="24" y="39" font-family="IBM Plex Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#768396">EXPLORER</text>
+      <rect x="22" y="62" width="166" height="34" rx="12" fill="#ffffff" stroke="#dfe8f1"/>
+      <circle cx="42" cy="79" r="7" fill="none" stroke="#8ba3b8" stroke-width="2"/>
+      <path d="M47 84l8 8" stroke="#8ba3b8" stroke-width="2" stroke-linecap="round"/>
+      <text x="64" y="84" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#8b98aa">Search files...</text>
+
+      <g transform="translate(22 132)" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e2a3a">
+        <path d="M0 0h15l6 7h60v22H0Z" fill="#ffffff" stroke="#dce6ef"/>
+        <text x="34" y="20">data</text>
+        <path d="M0 58h15l6 7h78v22H0Z" fill="#ffffff" stroke="#dce6ef"/>
+        <text x="34" y="78">outputs</text>
+        <rect x="0" y="116" width="154" height="36" rx="10" fill="#e9f8f6" stroke="#b9eee4"/>
+        <text x="34" y="140">analysis.ipynb</text>
+      </g>
     </g>
 
-    <g transform="translate(28 371)">
-      <rect width="342" height="64" rx="18" fill="#10182a"/>
-      <circle cx="34" cy="32" r="13" fill="#fff0a7"/>
-      <path d="M29 32h10" stroke="#10182a" stroke-width="3" stroke-linecap="round"/>
-      <text x="62" y="37" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" fill="#ffffff">AI thinking...</text>
+    <g transform="translate(260 78)">
+      <rect width="474" height="402" rx="22" fill="#fbfcfd" stroke="#dde7f0"/>
+      <text x="28" y="40" font-family="IBM Plex Mono, Menlo, monospace" font-size="13" font-weight="700" fill="#7f8b9d">root › analysis.ipynb</text>
+
+      <g transform="translate(28 68)">
+        <rect width="418" height="90" rx="18" fill="#ffffff" stroke="#e2e9f0"/>
+        <text x="22" y="34" font-family="IBM Plex Mono, Menlo, monospace" font-size="13" font-weight="700" fill="#98a2b3">In [1]:</text>
+        <text x="88" y="34" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="700" fill="#14946f">import geopandas as gpd</text>
+        <text x="88" y="60" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="700" fill="#3c83ee">run_model("watershed")</text>
+      </g>
+
+      <g transform="translate(28 180)">
+        <rect width="418" height="96" rx="18" fill="#fffaf1" stroke="#f1d7a6"/>
+        <text x="22" y="34" font-family="IBM Plex Mono, Menlo, monospace" font-size="13" font-weight="700" fill="#b28b43">Out [1]:</text>
+        <path d="M92 54c42-40 88 20 135-15s93-4 144-34" fill="none" stroke="#f1a35f" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="92" cy="54" r="5" fill="#f1a35f"/>
+        <circle cx="227" cy="39" r="5" fill="#62d7c5"/>
+        <circle cx="371" cy="5" r="5" fill="#8e79f2"/>
+      </g>
+
+      <g transform="translate(28 300)">
+        <rect width="418" height="72" rx="18" fill="#f7f5ff" stroke="#ddd3ff"/>
+        <text x="22" y="31" font-family="IBM Plex Mono, Menlo, monospace" font-size="13" font-weight="700" fill="#9278df">In [2]:</text>
+        <text x="88" y="31" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="700" fill="#1d2737"># GeoCopilot inserts next cell</text>
+        <text x="88" y="55" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="700" fill="#6c55c7">plot_results(outputs)</text>
+      </g>
+    </g>
+
+    <g transform="translate(760 78)">
+      <rect width="246" height="402" rx="22" fill="#ffffff" stroke="#dce7f0"/>
+      <rect x="20" y="20" width="130" height="32" rx="16" fill="#eafaf6" stroke="#b9eee4"/>
+      <text x="41" y="42" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="14" font-weight="800" fill="#0f8874">GeoCopilot</text>
+      <text x="20" y="86" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#111827">AI Agent</text>
+      <text x="20" y="112" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#697789">Reads notebook context and acts in place</text>
+
+      <g transform="translate(20 146)">
+        <rect width="206" height="58" rx="17" fill="#f7fbff" stroke="#dce8f2"/>
+        <circle cx="29" cy="29" r="13" fill="url(#mint)"/>
+        <text x="53" y="26" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#152235">Read context</text>
+        <text x="53" y="44" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#758195">Notebook + files</text>
+      </g>
+
+      <g transform="translate(20 218)">
+        <rect width="206" height="58" rx="17" fill="#fffaf1" stroke="#f0d9ae"/>
+        <circle cx="29" cy="29" r="13" fill="url(#amber)"/>
+        <text x="53" y="26" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#152235">Write & run cell</text>
+        <text x="53" y="44" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#758195">Code + Markdown</text>
+      </g>
+
+      <g transform="translate(20 290)">
+        <rect width="206" height="58" rx="17" fill="#f8f5ff" stroke="#ddd2ff"/>
+        <circle cx="29" cy="29" r="13" fill="url(#violet)"/>
+        <text x="53" y="26" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#152235">Repair errors</text>
+        <text x="53" y="44" font-family="IBM Plex Sans, Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#758195">Traceback aware</text>
+      </g>
     </g>
   </g>
 
-  <g transform="translate(512 116)" filter="url(#softShadow)">
-    <path d="M304 53L608 214L304 375L0 214Z" fill="#ffffff" fill-opacity="0.58" stroke="#d4e3ee" stroke-width="2"/>
-    <path d="M304 99L524 215L304 331L84 215Z" fill="#dff9f4" fill-opacity="0.7" stroke="#a8e6d8" stroke-width="2"/>
-
-    <g transform="translate(182 118)">
-      <path d="M0 130L82 84L82 213L0 258Z" fill="#6fd6ce"/>
-      <path d="M82 84L171 130L171 258L82 213Z" fill="#4f86e8"/>
-      <path d="M0 130L87 83L171 130L82 176Z" fill="#9df0df"/>
-      <path d="M26 136l36-20M26 171l36-20M26 206l36-20" stroke="#e8ffff" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
-      <path d="M109 137l35 19M109 172l35 19M109 207l35 19" stroke="#dbe8ff" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
-    </g>
-
-    <g transform="translate(304 70)">
-      <path d="M0 102L93 49L93 222L0 275Z" fill="url(#buildingWarm)"/>
-      <path d="M93 49L180 96L180 269L93 222Z" fill="#f18272"/>
-      <path d="M0 102L94 49L180 96L93 149Z" fill="#fff4b7"/>
-      <path d="M27 114l42-24M27 154l42-24M27 194l42-24" stroke="#fffbe6" stroke-width="6" stroke-linecap="round"/>
-      <path d="M120 111l35 19M120 151l35 19M120 191l35 19" stroke="#ffd2c9" stroke-width="6" stroke-linecap="round"/>
-    </g>
-
-    <g transform="translate(143 257)">
-      <path d="M0 72L66 34L66 143L0 181Z" fill="#a78bfa"/>
-      <path d="M66 34L132 70L132 179L66 143Z" fill="#6d9cff"/>
-      <path d="M0 72L66 34L132 70L66 109Z" fill="#d6c8ff"/>
-    </g>
-
-    <g opacity="0.95">
-      <path d="M440 75c41 26 62 60 61 101" fill="none" stroke="#1e293b" stroke-width="6" stroke-linecap="round"/>
-      <path d="M489 164l12 20l14-19" fill="none" stroke="#1e293b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="438" cy="74" r="13" fill="#65d8c7" stroke="#ffffff" stroke-width="5"/>
-    </g>
-  </g>
-
-  <g transform="translate(814 458)">
-    <rect width="236" height="70" rx="22" fill="#ffffff" fill-opacity="0.78" stroke="#d7e4ee"/>
-    <circle cx="43" cy="35" r="18" fill="#111827"/>
-    <path d="M37 35h12M43 29v12" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-    <text x="76" y="31" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#172033">Cesium + AI</text>
-    <text x="76" y="52" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#6d7b8d">3D scene command layer</text>
+  <g transform="translate(190 572)">
+    <rect width="820" height="54" rx="27" fill="#ffffff" fill-opacity="0.78" stroke="#d9e4ee"/>
+    <text x="34" y="35" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="800" fill="#687789">Notebook-aware context</text>
+    <circle cx="247" cy="27" r="5" fill="#62d7c5"/>
+    <text x="272" y="35" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="800" fill="#687789">Insert and re-run cells</text>
+    <circle cx="501" cy="27" r="5" fill="#f5a36d"/>
+    <text x="526" y="35" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" font-weight="800" fill="#687789">File and terminal tools</text>
   </g>
 </svg>

@@ -2,22 +2,22 @@
   "source": "local",
   "sourceId": "geocopilot",
   "id": "geocopilot",
-  "title": "GeoCopilot：面向 CesiumJS 数字孪生场景的 AI 语音助手",
-  "description": "GeoCopilot 是一个面向 CesiumJS 的 AI 场景控制插件，允许用户通过自然语言或语音命令控制 3D BIM / 数字孪生场景，例如图层显隐、相机飞行、视角缩放与组合操作。它适合用于把大语言模型能力接入三维地理场景，让非专业用户也能用对话方式探索复杂空间对象。",
-  "tags": ["CesiumJS", "GeoAI", "BIM", "Digital Twin", "Voice Assistant"],
+  "title": "GeoCopilot：OpenGMS-Jupyter-Agent 地理建模 Notebook 智能体",
+  "description": "OpenGMS-Jupyter-Agent 是一个面向 OpenGeoLab / JupyterLab 的 notebook-aware geospatial AI workflow。它把 AI agent 直接嵌入 JupyterLab 侧边栏，能够读取当前 Notebook、单元格代码、项目文件和执行输出，并在同一工作流中插入代码、运行单元格、诊断错误和继续多步骤地理建模分析。",
+  "tags": ["GeoCopilot", "JupyterLab", "OpenGMS", "AI Agent", "Notebook"],
   "category": "通用",
-  "author": "yosgi",
-  "time": "2025-7-14",
+  "author": "Zhoums396",
+  "time": "2026-6-24",
   "coverAsset": "assets/geocopilot-cover.svg",
   "coverImageUrl": "/api/application-covers/geocopilot-cover.svg",
   "links": {
-    "code": "https://github.com/yosgi/GeoCopilot",
-    "demo": "https://www.npmjs.com/package/geocopilot",
+    "code": "https://github.com/Zhoums396/OpenGMS-Jupyter-Agent",
+    "demo": "https://zhoums396.github.io/OpenGMS-Jupyter-Agent/",
     "paper": "",
-    "video": "https://raw.githubusercontent.com/yosgi/GeoCopilot/main/src/assets/example.gif"
+    "video": "https://zhoums396.github.io/OpenGMS-Jupyter-Agent/safari-demo-h264.mp4"
   },
-  "createdAt": "2025-07-14T00:00:00.000Z",
-  "updatedAt": "2025-07-14T00:00:00.000Z",
+  "createdAt": "2026-06-24T03:01:13.000Z",
+  "updatedAt": "2026-06-24T03:01:13.000Z",
   "sortDate": "2026-06-25T00:00:00.000Z",
-  "content": "# GeoCopilot\n\n![GeoCopilot cover](/api/application-covers/geocopilot-cover.svg)\n\nGeoCopilot 是一个面向 CesiumJS 的 AI-powered voice assistant plugin，核心目标是让用户用自然语言控制 3D BIM 与数字孪生场景。它把场景上下文、图层状态、相机控制和大语言模型工具调用组织到 React hooks 中，开发者可以把它嵌入自己的 Cesium 应用，用户则可以输入或说出类似“显示所有图层”“飞到建筑物”“切换到俯视图”的命令。\n\n## 适用场景\n\n- 数字孪生场景中的 BIM 图层检索、显隐与透明度控制。\n- CesiumJS 三维地图或建筑场景中的相机飞行、缩放、旋转和视角重置。\n- 面向非专业用户的自然语言空间交互，让用户不必查找复杂菜单即可控制场景。\n- 需要把 OpenAI / LangChain 工具调用接入 3D 场景操作的原型系统。\n\n## 关键能力\n\n- **AI 场景控制**：使用自然语言触发 Cesium 场景操作。\n- **图层管理**：支持显示、隐藏、仅显示指定 BIM 图层，并可调整透明度。\n- **相机控制**：支持 fly-to、zoom、rotate、top view、reset view 等常见三维浏览操作。\n- **场景上下文理解**：把当前场景对象、图层状态、相机信息转换为更适合 LLM 理解的上下文。\n- **实时反馈**：命令执行后返回 AI 响应与操作结果，便于用户确认当前状态。\n- **开发友好**：以 React hooks 组织 API，适合和 Cesium 以及 TypeScript 项目集成。\n\n## 安装与集成\n\n```bash\nnpm install geocopilot\n```\n\n基础集成通常包含三步：初始化 Cesium Viewer，使用 `useSceneContext` 维护场景上下文，再通过 `useGeoCopilot` 执行自然语言命令。项目还提供 `useLayerControl` 和 `useCameraControl`，分别处理图层对象注册、显隐控制以及相机操作。\n\n```tsx\nconst { contextManager } = useSceneContext()\nconst { loading, error, lastResponse, run, initialize } = useGeoCopilot(contextManager, apiKey)\n\ninitialize(viewer)\nawait run(\"show all layers\")\n```\n\n## 命令示例\n\n- `show all layers`：显示已注册的所有图层。\n- `hide structural layer`：隐藏结构图层。\n- `only show architecture and electrical`：仅显示指定图层。\n- `fly to the building`：飞行到建筑物位置。\n- `rotate left 90 degrees`：旋转相机。\n- `hide structural and electrical, then fly to the main entrance`：执行组合操作。\n\n## 技术要求\n\n- React 18+ 或 19+\n- Cesium 1.131.0+\n- LangChain 0.3.29+\n- OpenAI API key\n\n## 项目链接\n\n- GitHub: [yosgi/GeoCopilot](https://github.com/yosgi/GeoCopilot)\n- npm: [geocopilot](https://www.npmjs.com/package/geocopilot)\n- Demo GIF: [GeoCopilot live demo](https://raw.githubusercontent.com/yosgi/GeoCopilot/main/src/assets/example.gif)\n"
+  "content": "# GeoCopilot / OpenGMS-Jupyter-Agent\n\n![GeoCopilot cover](/api/application-covers/geocopilot-cover.svg)\n\nOpenGMS-Jupyter-Agent 是一个面向 OpenGeoLab 与 JupyterLab 的 notebook-aware geospatial AI workflow。它不是一个外置聊天页面，而是把 AI agent 放进 JupyterLab 侧边栏，让智能体能读取当前 Notebook、当前单元格、工作目录、项目文件和最近执行输出，然后直接在 Notebook 里插入代码、运行单元格、诊断错误并推进后续分析步骤。\n\n## 核心定位\n\n- **Jupyter-native agent**：围绕 Notebook 工作流设计，用户不需要在 Notebook 和外部工具之间来回切换。\n- **Notebook-aware context**：在回答或执行前读取 notebook name、current cell、working directory、project info、workspace files 和 recent outputs。\n- **Geospatial AI workflow**：面向 OpenGMS / OpenGeoLab 地理建模场景，把模型、数据、代码和执行反馈组织进同一个 Notebook 流程。\n- **Agent + Ask 双模式**：既可以直接问答，也可以让 agent 使用工具推进多步骤任务。\n\n## 主要能力\n\n- **读取 Notebook 和工作区上下文**：理解当前 Notebook、选中的单元格、项目文件与最近输出，生成更贴近当前分析状态的回答。\n- **插入、编辑并运行单元格**：支持添加代码单元格、添加 Markdown 解释、修改已有代码并重新执行。\n- **诊断失败并原地修复**：捕获 stdout、图表、traceback 和执行结果，用下一步 edit-and-rerun 修复失败单元格，而不是重新开始。\n- **文件和终端工具**：支持搜索文件、读取项目状态、执行必要的 terminal commands，以支撑较长的 notebook workflow。\n- **Smart cases 与历史记录**：提供可复用的 starter prompts、chat history 和 project inspection 能力，方便复现实验或延续上一次分析。\n\n## 页面结构\n\n项目官网包含 Home、Features、Download、Video 与 Docs 页面：\n\n- Home 用一句话说明产品：一个能读取 Notebook 上下文、写入可执行 cells、运行代码并从失败中恢复的 OpenGMS-Jupyter-Agent。\n- Features 展示 capability grid：context、cells、repair、workflow 四类能力。\n- Download 指向 GitHub 仓库与 JupyterLab extension 的 source install 路径。\n- Video 用 MP4 walkthrough 展示 agent 在真实 notebook session 里的工作过程。\n- Docs 解释安装、架构边界、agent service 和 companion extension 的分工。\n\n## 安装入口\n\n官网推荐从仓库中的 JupyterLab extension 开始 source install：\n\n```bash\ncd jupyterlab-geomodel\npip install -e .\njupyter labextension develop . --overwrite\n```\n\n仓库同时包含：\n\n- `GeoModelWeb`：Web application layer。\n- `agent-service`：Python agent service、skills 与后端编排逻辑。\n- `jupyterlab-geomodel`：OpenGeoLab Notebook 集成相关的 JupyterLab extension。\n- `jupyterlab-ai-agent`：独立 AI sidebar extension，是 agent 本体文档最清晰的位置。\n\n## 典型使用场景\n\n- **Notebook repair**：读取 traceback，定位失败 cell，修改并重新执行。\n- **Guided coding**：基于当前 Notebook 和项目文件生成下一段可运行代码或 Markdown 解释。\n- **Workflow reproduction**：读取文件、运行终端命令、检查历史记录并延续已有项目。\n- **Geospatial modeling support**：在 OpenGMS / OpenGeoLab 的 Notebook 环境中，把数据处理、模型调用、可视化和解释串成连贯流程。\n\n## 项目链接\n\n- Product page: [OpenGMS-Jupyter-Agent](https://zhoums396.github.io/OpenGMS-Jupyter-Agent/)\n- GitHub: [Zhoums396/OpenGMS-Jupyter-Agent](https://github.com/Zhoums396/OpenGMS-Jupyter-Agent)\n- Video walkthrough: [safari-demo-h264.mp4](https://zhoums396.github.io/OpenGMS-Jupyter-Agent/safari-demo-h264.mp4)\n"
 }
