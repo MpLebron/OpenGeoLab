@@ -9,6 +9,9 @@ const {
   buildApplicationSeedRecords,
   loadSeedFiles
 } = require('./seedLocalApplicationSchemes.js')
+const {
+  mapApplicationSchemeSummaryResponse
+} = require('../db/applicationSchemesRepository.js')
 
 const seedDir = path.resolve('GeoModelWeb/server/application-seeds')
 
@@ -62,6 +65,10 @@ test('PyGeoModel local application seed maps to scheme summary and detail record
   assert.equal(summary.links.code, 'https://github.com/MpLebron/PyGeoModel')
   assert.equal(summary.links.demo, 'https://mplebron.github.io/PyGeoModel-docs/')
   assert.equal(summary.links.case, 'https://mybinder.org/v2/gh/MpLebron/PyGeoModel-Case/main?urlpath=/doc/tree/code.ipynb')
+  assert.equal(
+    mapApplicationSchemeSummaryResponse(summary).links.case,
+    'https://mybinder.org/v2/gh/MpLebron/PyGeoModel-Case/main?urlpath=/doc/tree/code.ipynb'
+  )
   assert.equal(summary.coverImageUrl, '/api/application-covers/pygeomodel-cover.png')
   assert.equal(summary.visible, true)
   assert.deepEqual(seed.extraAssets, [

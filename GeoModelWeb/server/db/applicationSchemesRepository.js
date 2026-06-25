@@ -33,6 +33,7 @@ function normalizeLinks(links = {}) {
     return {
         code: links.code || '',
         demo: links.demo || '',
+        case: links.case || '',
         paper: links.paper || '',
         video: links.video || ''
     };
