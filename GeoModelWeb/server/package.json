@@ -6,6 +6,7 @@
     "dev": "node index.js",
     "start": "node index.js",
     "import:applications": "node scripts/importApplicationSchemes.js",
+    "seed:applications": "node scripts/seedLocalApplicationSchemes.js",
     "cleanup:legacy-cases": "node scripts/cleanupLegacyNotebookCases.js",
     "seed:cases": "node scripts/seedLocalCases.js",
     "build:runtime": "node scripts/buildJupyterRuntimeImages.js",
