@@ -44,7 +44,41 @@ test('GeoCopilot local application seed maps to scheme summary and detail record
   assert.equal(detail.detailSyncStatus, 'seeded')
 })
 
+test('PyGeoModel local application seed maps to scheme summary and detail records', () => {
+  const seedPath = path.join(seedDir, 'pygeomodel.json')
+  const seed = JSON.parse(fs.readFileSync(seedPath, 'utf8'))
+  const syncedAt = new Date('2026-06-25T02:30:00.000Z')
+
+  const { summary, detail } = buildApplicationSeedRecords(seed, syncedAt)
+
+  assert.equal(summary.source, 'local')
+  assert.equal(summary.sourceId, 'pygeomodel')
+  assert.equal(summary.id, 'pygeomodel')
+  assert.match(summary.title, /PyGeoModel/)
+  assert.match(summary.description, /OpenGMS/)
+  assert.ok(summary.tags.includes('PyGeoModel'))
+  assert.ok(summary.tags.includes('OpenGMS'))
+  assert.ok(summary.tags.includes('Python'))
+  assert.equal(summary.links.code, 'https://github.com/MpLebron/PyGeoModel')
+  assert.equal(summary.links.demo, 'https://mplebron.github.io/PyGeoModel-docs/')
+  assert.equal(summary.coverImageUrl, '/api/application-covers/pygeomodel-cover.png')
+  assert.equal(summary.visible, true)
+  assert.deepEqual(seed.extraAssets, [
+    'assets/pygeomodel-ecosystem.png',
+    'assets/pygeomodel-logo.png'
+  ])
+
+  assert.equal(detail.source, 'local')
+  assert.equal(detail.sourceId, 'pygeomodel')
+  assert.match(detail.content, /\/api\/application-covers\/pygeomodel-ecosystem\.png/)
+  assert.match(detail.content, /\/api\/application-covers\/pygeomodel-logo\.png/)
+  assert.match(detail.content, /pip install PyGeoModel/)
+  assert.match(detail.content, /## 主要能力/)
+  assert.equal(detail.detailSyncStatus, 'seeded')
+})
+
 test('local application seeds are discoverable from the seed directory', () => {
   const seeds = loadSeedFiles(seedDir)
   assert.ok(seeds.some(seed => seed.data.sourceId === 'geocopilot'))
+  assert.ok(seeds.some(seed => seed.data.sourceId === 'pygeomodel'))
 })

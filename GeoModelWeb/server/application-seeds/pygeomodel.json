@@ -1,0 +1,31 @@
+{
+  "source": "local",
+  "sourceId": "pygeomodel",
+  "id": "pygeomodel",
+  "title": "PyGeoModel：面向 OpenGMS 模型服务的 Python Notebook 工具包",
+  "description": "PyGeoModel 是一个面向 Python 与 Jupyter Notebook 工作流的 OpenGMS 地理模型服务工具包。它提供模型服务发现、元数据检查、智能推荐、服务调用、结果保存和模型问答能力，让研究人员能够在 Notebook 中以可复现的 Python 参数调用 OpenGMS 模型服务。",
+  "tags": [
+    "PyGeoModel",
+    "OpenGMS",
+    "Python"
+  ],
+  "category": "模型服务",
+  "author": "MpLebron",
+  "time": "2026-6-25",
+  "coverAsset": "assets/pygeomodel-cover.png",
+  "coverImageUrl": "/api/application-covers/pygeomodel-cover.png",
+  "links": {
+    "code": "https://github.com/MpLebron/PyGeoModel",
+    "demo": "https://mplebron.github.io/PyGeoModel-docs/",
+    "paper": "",
+    "video": ""
+  },
+  "createdAt": "2026-06-25T02:20:00.000Z",
+  "updatedAt": "2026-06-25T02:20:00.000Z",
+  "sortDate": "2026-06-25T02:20:00.000Z",
+  "content": "# PyGeoModel\n\n![PyGeoModel logo](/api/application-covers/pygeomodel-logo.png)\n\nPyGeoModel 是一个面向 OpenGMS geographic model services 的 Python client package。它把模型服务发现、模型元数据检查、智能推荐、远程任务调用和输出结果保存组织成一套 Python API，同时提供可选的 Jupyter Notebook 交互界面，适合把 OpenGMS 模型服务纳入可复现的城市与地理数据科学工作流。\n\n## 核心定位\n\n- **Python-first workflow**：主要使用 `GeoModeler` API 完成模型搜索、参数配置、任务调用和输出保存。\n- **Notebook-friendly interface**：在 Jupyter Notebook 中提供模型浏览、参数填写、任务执行、输出展示和模型问答界面。\n- **OpenGMS service bridge**：连接 OpenGMS 模型服务平台，把在线模型服务变成可在 Python 环境中调用和管理的研究工具。\n- **Assisted model selection**：根据 Notebook 和数据上下文返回模型推荐、候选模型和相关数据资源，辅助用户选择合适模型。\n\n## OpenGMS 模型生态\n\n![PyGeoModel OpenGMS model ecosystem](/api/application-covers/pygeomodel-ecosystem.png)\n\nPyGeoModel 面向 OpenGMS 模型生态中的水文、大气、土壤和城市建模服务。模型贡献者可以将模型实现、运行依赖、许可证和相关资源打包进入平台，模型用户则可以通过 Notebook 或 Python API 查询模型、理解参数、提交运行任务并下载结果。\n\n## 主要能力\n\n- **Discover model services**：搜索 OpenGMS 模型服务目录，获取候选模型。\n- **Inspect metadata**：查看模型描述、输入参数、输出资源和运行约束。\n- **Recommend candidates**：基于上下文返回推荐模型、候选列表和相关数据资源。\n- **Invoke OpenGMS tasks**：用显式 Python 参数调用远程模型服务，便于复现和审计。\n- **Save returned outputs**：把任务结果下载到本地工作目录，继续后续分析或可视化。\n- **Model Q&A**：围绕模型元数据和知识增强服务回答参数含义、输入数据和适用场景问题。\n\n## 快速开始\n\n```bash\npip install PyGeoModel\n```\n\n```python\nfrom pygeomodel import GeoModeler\n\nmodeler = GeoModeler()\nrecommendation = modeler.suggest_model()\n\nresult = modeler.invoke(\n    \"Roof Photovoltaic Carbon Emission Reduction Potential Assessment Model\",\n    params={\n        \"system_efficiency\": 0.8,\n        \"start_time\": \"2018-01\",\n        \"end_time\": \"2018-12\",\n        \"roof_vector_path\": \"data/xuanwu_rooftop.zip\",\n    },\n)\n\nsaved_files = result.save(output_dir=\"./data/\")\n```\n\n## Notebook 使用方式\n\n```python\nmodeler.show_models()\nmodeler.invoke_model(\"SWAT_Model\")\n```\n\nNotebook 界面会渲染模型搜索、模型元数据、参数输入、任务运行和结果展示；同一套核心 API 也可以直接写进 Python cell，因此图形化操作可以转换为明确的参数字典和可保存的输出文件。\n\n## 项目链接\n\n- Documentation: [PyGeoModel docs](https://mplebron.github.io/PyGeoModel-docs/)\n- GitHub: [MpLebron/PyGeoModel](https://github.com/MpLebron/PyGeoModel)\n- PyPI: [PyGeoModel](https://pypi.org/project/PyGeoModel/)\n- Binder case: [PyGeoModel-Case](https://mybinder.org/v2/gh/MpLebron/PyGeoModel-Case/main?urlpath=/doc/tree/code.ipynb)\n",
+  "extraAssets": [
+    "assets/pygeomodel-ecosystem.png",
+    "assets/pygeomodel-logo.png"
+  ]
+}
