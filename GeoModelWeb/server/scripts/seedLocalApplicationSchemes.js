@@ -26,6 +26,7 @@ function normalizeLinks(links = {}) {
     return {
         code: normalizeText(links.code),
         demo: normalizeText(links.demo),
+        case: normalizeText(links.case),
         paper: normalizeText(links.paper),
         video: normalizeText(links.video)
     };

@@ -17,6 +17,7 @@
   "links": {
     "code": "https://github.com/MpLebron/PyGeoModel",
     "demo": "https://mplebron.github.io/PyGeoModel-docs/",
+    "case": "https://mybinder.org/v2/gh/MpLebron/PyGeoModel-Case/main?urlpath=/doc/tree/code.ipynb",
     "paper": "",
     "video": ""
   },

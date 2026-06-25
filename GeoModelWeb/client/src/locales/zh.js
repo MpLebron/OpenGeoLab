@@ -33,6 +33,7 @@ export default {
         links: {
             code: '代码',
             demo: '演示',
+            case: '案例',
             paper: '论文',
             video: '视频'
         }

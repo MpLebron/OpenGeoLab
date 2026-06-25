@@ -96,10 +96,14 @@ const coverImageSrc = computed(() => resolvePublicResourceUrl(props.application.
 
 const actions = computed(() => {
   const links = props.application.links || {}
+  const thirdResource = links.case
+    ? { key: 'case', label: 'Case', href: links.case }
+    : { key: 'paper', label: 'Paper', href: links.paper }
+
   return [
     { key: 'code', label: 'Code', href: links.code },
     { key: 'demo', label: 'Demo', href: links.demo },
-    { key: 'paper', label: 'Paper', href: links.paper },
+    thirdResource,
     { key: 'video', label: 'Video', href: links.video }
   ]
 })
@@ -107,6 +111,7 @@ const actions = computed(() => {
 const actionIconName = (key) => ({
   code: 'code',
   demo: 'external',
+  case: 'book',
   paper: 'fileText',
   video: 'play'
 }[key] || 'external')
@@ -219,8 +224,7 @@ const detailTo = computed(() => ({
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.3;
-  margin-left: auto;
-  padding-top: 0.28rem;
+  justify-self: end;
   white-space: nowrap;
 }
 
@@ -267,9 +271,9 @@ const detailTo = computed(() => ({
 
 .application-meta-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.46rem;
   margin-top: 0.72rem;
   min-width: 0;
 }

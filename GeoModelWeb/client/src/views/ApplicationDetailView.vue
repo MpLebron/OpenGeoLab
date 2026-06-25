@@ -145,6 +145,7 @@ const activeLinks = computed(() => {
   return [
     { key: 'code', label: t('applicationDetail.links.code'), href: links.code },
     { key: 'demo', label: t('applicationDetail.links.demo'), href: links.demo },
+    { key: 'case', label: t('applicationDetail.links.case'), href: links.case },
     { key: 'paper', label: t('applicationDetail.links.paper'), href: links.paper },
     { key: 'video', label: t('applicationDetail.links.video'), href: links.video }
   ].filter(link => Boolean(link.href))
@@ -153,6 +154,7 @@ const activeLinks = computed(() => {
 const actionIconName = (key) => ({
   code: 'code',
   demo: 'external',
+  case: 'book',
   paper: 'fileText',
   video: 'play'
 }[key] || 'external')

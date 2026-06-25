@@ -33,6 +33,7 @@ export default {
         links: {
             code: 'Code',
             demo: 'Demo',
+            case: 'Case',
             paper: 'Paper',
             video: 'Video'
         }
