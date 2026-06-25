@@ -54,24 +54,38 @@ function loadSeedFiles(seedDir = SEED_DIR) {
         });
 }
 
-function copyCoverAsset(seed, seedFilePath) {
-    const coverAsset = normalizeText(seed.coverAsset);
-    if (!coverAsset) {
+function copyApplicationAsset(assetPath, seedFilePath) {
+    const normalizedAssetPath = normalizeText(assetPath);
+    if (!normalizedAssetPath) {
         return '';
     }
 
-    const sourcePath = path.resolve(path.dirname(seedFilePath), coverAsset);
-    const filename = path.basename(coverAsset);
+    const sourcePath = path.resolve(path.dirname(seedFilePath), normalizedAssetPath);
+    const filename = path.basename(normalizedAssetPath);
     const destinationPath = path.join(APPLICATION_COVER_DIR, filename);
 
     if (!fs.existsSync(sourcePath)) {
-        throw new Error(`Cover asset not found: ${sourcePath}`);
+        throw new Error(`Application asset not found: ${sourcePath}`);
     }
 
     fs.mkdirSync(APPLICATION_COVER_DIR, { recursive: true });
     fs.copyFileSync(sourcePath, destinationPath);
 
     return `/api/application-covers/${filename}`;
+}
+
+function copyCoverAsset(seed, seedFilePath) {
+    return copyApplicationAsset(seed.coverAsset, seedFilePath);
+}
+
+function copyExtraAssets(seed, seedFilePath) {
+    if (!Array.isArray(seed.extraAssets)) {
+        return [];
+    }
+
+    return seed.extraAssets
+        .map(assetPath => copyApplicationAsset(assetPath, seedFilePath))
+        .filter(Boolean);
 }
 
 function buildApplicationSeedRecords(seed, syncedAt = new Date()) {
@@ -140,6 +154,7 @@ async function seedLocalApplicationSchemes({ seedDir = SEED_DIR } = {}) {
         if (copiedCoverUrl) {
             record.summary.coverImageUrl = copiedCoverUrl;
         }
+        copyExtraAssets(data, filePath);
         return { filePath, ...record };
     });
 
@@ -195,7 +210,9 @@ if (require.main === module) {
 
 module.exports = {
     buildApplicationSeedRecords,
+    copyApplicationAsset,
     copyCoverAsset,
+    copyExtraAssets,
     loadSeedFiles,
     seedLocalApplicationSchemes
 };

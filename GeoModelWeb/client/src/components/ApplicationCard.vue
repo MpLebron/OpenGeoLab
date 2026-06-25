@@ -266,7 +266,8 @@ const detailTo = computed(() => ({
 }
 
 .application-meta-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
   gap: 0.75rem;
   margin-top: 0.72rem;
@@ -276,15 +277,14 @@ const detailTo = computed(() => ({
 .application-tags {
   flex: 1 1 auto;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.38rem;
   min-width: 0;
-  overflow: hidden;
 }
 
 .application-tags span {
-  max-width: 9.5rem;
-  flex: 0 1 auto;
+  max-width: min(100%, 9.5rem);
+  flex: 0 0 auto;
   min-width: 0;
   padding: 0.28rem 0.55rem;
   border: 1px solid var(--border-color);
