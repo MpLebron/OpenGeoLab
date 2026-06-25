@@ -82,7 +82,7 @@ watch(
 
 const visibleTags = computed(() => {
   return Array.isArray(props.application.tags)
-    ? props.application.tags.filter(Boolean).slice(0, 4)
+    ? props.application.tags.filter(Boolean).slice(0, 3)
     : []
 })
 
@@ -126,6 +126,7 @@ const detailTo = computed(() => ({
 
 <style scoped>
 .application-card {
+  container-type: inline-size;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -221,10 +222,11 @@ const detailTo = computed(() => ({
 
 .application-date {
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
   line-height: 1.3;
-  justify-self: end;
+  flex: 0 0 auto;
+  margin-left: auto;
   white-space: nowrap;
 }
 
@@ -270,10 +272,9 @@ const detailTo = computed(() => ({
 }
 
 .application-meta-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: flex-start;
-  gap: 0.46rem;
+  display: flex;
+  align-items: center;
+  gap: 0.36rem;
   margin-top: 0.72rem;
   min-width: 0;
 }
@@ -282,26 +283,32 @@ const detailTo = computed(() => ({
   flex: 1 1 auto;
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.38rem;
+  gap: 0.22rem;
   min-width: 0;
   overflow: hidden;
 }
 
 .application-tags span {
-  max-width: min(100%, 9.5rem);
+  max-width: min(100%, 7.75rem);
   flex: 0 0 auto;
   min-width: 0;
-  padding: 0.28rem 0.55rem;
+  padding: 0.2rem 0.36rem;
   border: 1px solid var(--border-color);
   border-radius: 3px;
   color: var(--text-muted);
   background: rgba(0, 30, 64, 0.035);
-  font-size: 0.76rem;
+  font-size: 0.67rem;
   font-weight: 700;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@container (max-width: 19rem) {
+  .application-tags span:nth-child(n+3) {
+    display: none;
+  }
 }
 
 .application-actions {
